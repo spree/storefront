@@ -98,7 +98,10 @@ export function ProductCarousel({
         modules={[Navigation]}
         spaceBetween={24}
         slidesPerView={1}
-        navigation
+        navigation={{
+          prevEl: prevRef.current,
+          nextEl: nextRef.current,
+        }}
         onBeforeInit={handleBeforeInit}
         onSlideChange={updateNavState}
         onReachBeginning={updateNavState}
