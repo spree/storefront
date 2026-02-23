@@ -1,5 +1,6 @@
 "use client";
 
+import type { StoreCountry } from "@spree/sdk";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { CheckIcon, ChevronDownIcon } from "@/components/icons";
@@ -20,7 +21,7 @@ function countryToFlag(countryCode: string): string {
 }
 
 export function CountrySwitcher() {
-  const { country, locale, currency, countries, store, loading } = useStore();
+  const { country, currency, countries, setCountry, loading } = useStore();
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
@@ -41,13 +42,14 @@ export function CountrySwitcher() {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  // Handle country selection
-  const handleCountrySelect = (selectedCountry: (typeof countries)[0]) => {
-    const newLocale = selectedCountry.default_locale || locale;
+  // Handle country selection — derive locale and currency from the country directly
+  const handleCountrySelect = (entry: StoreCountry) => {
+    const newLocale = entry.default_locale || "en";
     const pathRest = getPathWithoutPrefix(pathname);
-    const newPath = `/${selectedCountry.iso.toLowerCase()}/${newLocale}${pathRest}`;
+    const newPath = `/${entry.iso.toLowerCase()}/${newLocale}${pathRest}`;
 
-    setStoreCookies(selectedCountry.iso.toLowerCase(), newLocale);
+    setStoreCookies(entry.iso.toLowerCase(), newLocale);
+    setCountry(entry.iso.toLowerCase());
 
     setIsOpen(false);
     router.push(newPath);
@@ -108,7 +110,7 @@ export function CountrySwitcher() {
                     </span>
                     <span className="flex items-center gap-2">
                       <span className="text-gray-400 text-xs">
-                        {c.default_currency || store?.default_currency}
+                        {c.currency}
                       </span>
                       {isSelected && (
                         <CheckIcon className="w-4 h-4 text-primary-500" />
@@ -119,16 +121,6 @@ export function CountrySwitcher() {
               );
             })}
           </ul>
-          {store?.supported_currencies &&
-            store.supported_currencies.length > 1 && (
-              <div className="border-t border-gray-100 mt-1 pt-1">
-                <div className="px-3 py-2">
-                  <p className="text-xs text-gray-500">
-                    Currency is based on selected country
-                  </p>
-                </div>
-              </div>
-            )}
         </div>
       )}
     </div>

@@ -17,20 +17,6 @@ function formatDate(dateString: string | null): string {
   });
 }
 
-function getStatusColor(state: string): string {
-  switch (state) {
-    case "complete":
-      return "bg-green-100 text-green-800";
-    case "payment":
-    case "confirm":
-      return "bg-yellow-100 text-yellow-800";
-    case "canceled":
-      return "bg-red-100 text-red-800";
-    default:
-      return "bg-gray-100 text-gray-800";
-  }
-}
-
 function getPaymentStatusColor(state: string | null): string {
   switch (state) {
     case "paid":

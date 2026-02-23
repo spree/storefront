@@ -29,6 +29,7 @@ export function CartDrawer() {
   const basePath = extractBasePath(pathname);
   const drawerRef = useRef<HTMLDivElement>(null);
   const viewCartFiredRef = useRef(false);
+  const prevPathnameRef = useRef(pathname);
 
   // Close on escape key
   useEffect(() => {
@@ -47,7 +48,10 @@ export function CartDrawer() {
 
   // Close when navigating
   useEffect(() => {
-    closeCart();
+    if (prevPathnameRef.current !== pathname) {
+      prevPathnameRef.current = pathname;
+      closeCart();
+    }
   }, [pathname, closeCart]);
 
   // Track view_cart when drawer opens with items (fire once per open)

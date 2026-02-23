@@ -1,4 +1,5 @@
 import type { StoreTaxon, StoreTaxonomy } from "@spree/sdk";
+import Image from "next/image";
 import Link from "next/link";
 import { GridIcon } from "@/components/icons";
 import { getTaxonomies } from "@/lib/data/taxonomies";
@@ -55,39 +56,41 @@ export default async function CategoriesPage({ params }: CategoriesPageProps) {
 
                 {topLevelTaxons.length > 0 ? (
                   <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
-                    {topLevelTaxons.map((taxon) => (
-                      <Link
-                        key={taxon.id}
-                        href={`${basePath}/t/${taxon.permalink}`}
-                        className="group"
-                      >
-                        <div className="aspect-square bg-white border border-gray-200 rounded-xl overflow-hidden mb-3 group-hover:ring-2 group-hover:ring-primary-500 transition-all">
-                          {taxon.square_image_url || taxon.image_url ? (
-                            <img
-                              src={
-                                taxon.square_image_url ??
-                                taxon.image_url ??
-                                undefined
-                              }
-                              alt={taxon.name}
-                              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                            />
-                          ) : (
-                            <div className="w-full h-full flex items-center justify-center">
-                              <GridIcon className="w-12 h-12 text-gray-400" />
-                            </div>
+                    {topLevelTaxons.map((taxon) => {
+                      const imageSrc =
+                        taxon.square_image_url || taxon.image_url || null;
+                      return (
+                        <Link
+                          key={taxon.id}
+                          href={`${basePath}/t/${taxon.permalink}`}
+                          className="group"
+                        >
+                          <div className="relative aspect-square bg-white border border-gray-200 rounded-xl overflow-hidden mb-3 group-hover:ring-2 group-hover:ring-primary-500 transition-all">
+                            {imageSrc ? (
+                              <Image
+                                src={imageSrc}
+                                alt={taxon.name}
+                                fill
+                                className="object-cover group-hover:scale-105 transition-transform duration-300"
+                                sizes="(max-width: 640px) 50vw, (max-width: 768px) 33vw, (max-width: 1024px) 25vw, 20vw"
+                              />
+                            ) : (
+                              <div className="w-full h-full flex items-center justify-center">
+                                <GridIcon className="w-12 h-12 text-gray-400" />
+                              </div>
+                            )}
+                          </div>
+                          <h3 className="font-medium text-gray-900 group-hover:text-primary-500 transition-colors">
+                            {taxon.name}
+                          </h3>
+                          {taxon.children_count > 0 && (
+                            <p className="text-sm text-gray-500">
+                              {taxon.children_count} subcategories
+                            </p>
                           )}
-                        </div>
-                        <h3 className="font-medium text-gray-900 group-hover:text-primary-500 transition-colors">
-                          {taxon.name}
-                        </h3>
-                        {taxon.children_count > 0 && (
-                          <p className="text-sm text-gray-500">
-                            {taxon.children_count} subcategories
-                          </p>
-                        )}
-                      </Link>
-                    ))}
+                        </Link>
+                      );
+                    })}
                   </div>
                 ) : (
                   <p className="text-gray-500">No categories in this group.</p>

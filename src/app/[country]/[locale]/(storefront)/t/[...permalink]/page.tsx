@@ -1,3 +1,4 @@
+import Image from "next/image";
 import { notFound } from "next/navigation";
 import { Breadcrumbs } from "@/components/navigation/Breadcrumbs";
 import { getTaxon } from "@/lib/data/taxonomies";
@@ -35,10 +36,13 @@ export default async function CategoryPage({ params }: CategoryPageProps) {
       {/* Banner Image */}
       {taxon.image_url && (
         <div className="relative w-full h-48 md:h-64 lg:h-80 bg-gray-100">
-          <img
+          <Image
             src={taxon.image_url}
             alt={taxon.name}
-            className="w-full h-full object-cover"
+            fill
+            preload
+            className="object-cover"
+            sizes="100vw"
           />
           <div className="absolute inset-0 bg-black/30" />
           <div className="absolute inset-0 flex items-center justify-center">

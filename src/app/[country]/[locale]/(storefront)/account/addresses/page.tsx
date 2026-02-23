@@ -80,8 +80,12 @@ export default function AddressesPage() {
   );
 
   const fetchStates = useCallback(async (countryIso: string) => {
-    const country = await getCountry(countryIso);
-    return country?.states ?? [];
+    try {
+      const country = await getCountry(countryIso);
+      return country?.states ?? [];
+    } catch {
+      return [];
+    }
   }, []);
 
   useEffect(() => {

@@ -47,6 +47,9 @@ export function useProductListing({
   const pageRef = useRef(1);
   const hasMoreRef = useRef(false);
   const filtersRef = useRef<ActiveFilters>({ optionValues: [] });
+  const filterParamsRef = useRef(filterParams);
+  filterParamsRef.current = filterParams;
+  const filterParamsKey = JSON.stringify(filterParams);
   const loadIdRef = useRef(0);
 
   const fetchProducts = useCallback(
@@ -91,13 +94,15 @@ export function useProductListing({
   // Fetch filters (scoped to search query when present)
   useEffect(() => {
     if (storeLoading) return;
+    // Track filterParams changes for re-fetching on soft-nav
+    void filterParamsKey;
 
     let cancelled = false;
 
     const fetchFilters = async () => {
       setFiltersLoading(true);
       try {
-        const params = { ...filterParams };
+        const params = { ...filterParamsRef.current };
         if (searchQuery) {
           params["q[multi_search]"] = searchQuery;
         }
@@ -122,16 +127,15 @@ export function useProductListing({
     return () => {
       cancelled = true;
     };
-    // filterParams is stable per mount (object identity may differ but content is constant)
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currency, locale, storeLoading, searchQuery]);
+  }, [currency, locale, storeLoading, searchQuery, filterParamsKey]);
 
-  // Load products when search query or store context changes
+  // Load products when search query, store context, or filter params change
   useEffect(() => {
     if (storeLoading) return;
-    loadProducts(activeFilters, searchQuery);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [storeLoading, searchQuery]);
+    // Track filterParams changes for re-fetching on soft-nav
+    void filterParamsKey;
+    loadProducts(filtersRef.current, searchQuery);
+  }, [storeLoading, searchQuery, loadProducts, filterParamsKey]);
 
   const handleFilterChange = useCallback(
     (newFilters: ActiveFilters) => {
