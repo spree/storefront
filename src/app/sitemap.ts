@@ -216,9 +216,7 @@ async function resolveCountryLocales(
 
   if (mode === "default") {
     const defaultCountry = (
-      store.default_country_iso ||
-      process.env.NEXT_PUBLIC_DEFAULT_COUNTRY ||
-      "us"
+      process.env.NEXT_PUBLIC_DEFAULT_COUNTRY || "us"
     ).toLowerCase();
 
     return [{ country: defaultCountry, locale: storeDefaultLocale }];
@@ -239,9 +237,7 @@ async function resolveCountryLocales(
         "SITEMAP_LOCALE_MODE is 'selected' but SITEMAP_COUNTRIES is empty. Falling back to default country.",
       );
       const defaultCountry = (
-        store.default_country_iso ||
-        process.env.NEXT_PUBLIC_DEFAULT_COUNTRY ||
-        "us"
+        process.env.NEXT_PUBLIC_DEFAULT_COUNTRY || "us"
       ).toLowerCase();
       return [{ country: defaultCountry, locale: storeDefaultLocale }];
     }
