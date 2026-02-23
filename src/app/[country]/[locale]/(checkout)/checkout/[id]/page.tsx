@@ -16,6 +16,11 @@ import { DeliveryStep } from "@/components/checkout/DeliveryStep";
 import { OrderSummary } from "@/components/checkout/OrderSummary";
 import { PaymentStep } from "@/components/checkout/PaymentStep";
 import { useCheckout } from "@/contexts/CheckoutContext";
+import {
+  trackAddPaymentInfo,
+  trackAddShippingInfo,
+  trackBeginCheckout,
+} from "@/lib/analytics/gtm";
 import { getAddresses, updateAddress } from "@/lib/data/addresses";
 import {
   advanceCheckout,
@@ -110,6 +115,9 @@ export default function CheckoutPage({ params }: CheckoutPageProps) {
   const orderRef = useRef(order);
   orderRef.current = order;
 
+  // Guard to fire begin_checkout only once
+  const beginCheckoutFiredRef = useRef(false);
+
   // Handle coupon code application - uses ref to avoid stale closures
   const handleApplyCoupon = useCallback(async (code: string) => {
     const currentOrder = orderRef.current;
@@ -200,6 +208,15 @@ export default function CheckoutPage({ params }: CheckoutPageProps) {
       setIsAuthenticated(authStatus);
       setCurrentStep(getCheckoutStep(orderData.state));
 
+      if (!beginCheckoutFiredRef.current) {
+        try {
+          trackBeginCheckout(orderData);
+        } catch {
+          // Analytics should never break checkout flow
+        }
+        beginCheckoutFiredRef.current = true;
+      }
+
       // Set shipments from order data (already included via getCheckoutOrder)
       if (
         orderData.state === "delivery" ||
@@ -208,8 +225,11 @@ export default function CheckoutPage({ params }: CheckoutPageProps) {
       ) {
         setShipments(orderData.shipments || []);
       }
+
+      return orderData;
     } catch {
       setError("Failed to load checkout. Please try again.");
+      return null;
     } finally {
       setLoading(false);
     }
@@ -275,6 +295,9 @@ export default function CheckoutPage({ params }: CheckoutPageProps) {
     setProcessing(true);
     setError(null);
 
+    let trackingOrder: StoreOrder | null = null;
+    let trackingRateName: string | undefined;
+
     try {
       const result = await selectShippingRate(order.id, shipmentId, rateId);
       if (!result.success) {
@@ -282,11 +305,25 @@ export default function CheckoutPage({ params }: CheckoutPageProps) {
       } else if (result.order) {
         setOrder(result.order);
         setShipments(result.order.shipments || []);
+
+        const selectedRate = result.order.shipments
+          ?.flatMap((s) => s.shipping_rates || [])
+          ?.find((r) => r.id === rateId);
+        trackingOrder = result.order;
+        trackingRateName = selectedRate?.name;
       }
     } catch {
       setError("An error occurred. Please try again.");
     } finally {
       setProcessing(false);
+    }
+
+    if (trackingOrder) {
+      try {
+        trackAddShippingInfo(trackingOrder, trackingRateName);
+      } catch {
+        // Analytics should never break checkout flow
+      }
     }
   };
 
@@ -357,6 +394,12 @@ export default function CheckoutPage({ params }: CheckoutPageProps) {
         setError(sessionResult.error || "Failed to complete payment session");
         setProcessing(false);
         return;
+      }
+
+      try {
+        trackAddPaymentInfo(order);
+      } catch {
+        // Analytics should never break checkout flow
       }
 
       // Check if the order was already completed by the payment session completion.

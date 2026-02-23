@@ -1,7 +1,7 @@
 "use client";
 
 import type { StoreAddress, StoreCountry, StoreState } from "@spree/sdk";
-import { useEffect, useState } from "react";
+import { useMemo } from "react";
 import type { AddressFormData } from "@/lib/utils/address";
 import { AddressFormFields } from "./AddressFormFields";
 
@@ -28,33 +28,27 @@ export function AddressSelector({
   onEditAddress,
   idPrefix,
 }: AddressSelectorProps) {
-  const [selectedAddressId, setSelectedAddressId] = useState<string | "new">(
-    "new",
-  );
-
-  // Check if current address matches a saved address
-  useEffect(() => {
-    if (savedAddresses.length === 0) return;
-
-    const matchingAddress = savedAddresses.find(
+  // Derive selected address from current form data — no useEffect needed
+  const selectedAddressId = useMemo((): string => {
+    if (savedAddresses.length === 0) return "new";
+    const match = savedAddresses.find(
       (addr) =>
         addr.address1 === currentAddress.address1 &&
         addr.city === currentAddress.city &&
         addr.zipcode === currentAddress.zipcode &&
         addr.country_iso === currentAddress.country_iso,
     );
-
-    if (matchingAddress) {
-      setSelectedAddressId(matchingAddress.id);
-    } else if (currentAddress.address1) {
-      // If there's an address but it doesn't match saved ones, show as new
-      setSelectedAddressId("new");
-    }
-  }, [savedAddresses]); // eslint-disable-line react-hooks/exhaustive-deps
+    if (match) return match.id;
+    return "new";
+  }, [
+    savedAddresses,
+    currentAddress.address1,
+    currentAddress.city,
+    currentAddress.zipcode,
+    currentAddress.country_iso,
+  ]);
 
   const handleSelectAddress = (addressId: string) => {
-    setSelectedAddressId(addressId);
-
     if (addressId === "new") {
       // Clear form for new address
       onChange("firstname", "");

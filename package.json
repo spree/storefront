@@ -13,15 +13,19 @@
     "test:watch": "vitest"
   },
   "dependencies": {
+    "@next/third-parties": "^16.1.6",
     "@sentry/nextjs": "^10.38.0",
-    "@spree/next": "^0.2.3",
-    "@spree/sdk": "^0.2.3",
+    "@spree/next": "^0.5.0",
+    "@spree/sdk": "^0.5.0",
     "@stripe/react-stripe-js": "^5.6.0",
     "@stripe/stripe-js": "^8.7.0",
     "next": "^16",
     "react": "^19",
     "react-dom": "^19",
     "react-svg-credit-card-payment-icons": "^5.1.2"
+  },
+  "overrides": {
+    "minimatch": "^10.2.1"
   },
   "devDependencies": {
     "@biomejs/biome": "^2.3.14",

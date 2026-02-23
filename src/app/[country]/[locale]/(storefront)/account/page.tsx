@@ -19,7 +19,7 @@ export default function AccountPage() {
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const basePath = extractBasePath(pathname);
-  const { user, login, isAuthenticated, loading: authLoading } = useAuth();
+  const { login, isAuthenticated, loading: authLoading } = useAuth();
 
   // Get redirect URL from query params (e.g., from checkout)
   const redirectUrl = searchParams.get("redirect");

@@ -4,6 +4,7 @@ import type { StoreProduct } from "@spree/sdk";
 import { notFound } from "next/navigation";
 import { useEffect, useState } from "react";
 import { useStore } from "@/contexts/StoreContext";
+import { trackViewItem } from "@/lib/analytics/gtm";
 import { getProduct } from "@/lib/data/products";
 import { ProductDetails } from "./ProductDetails";
 
@@ -38,6 +39,7 @@ export function ProductDetailsWrapper({
         if (!cancelled) {
           setProduct(data);
           setError(false);
+          trackViewItem(data, currency);
         }
       } catch (err) {
         console.error("Failed to fetch product:", err);

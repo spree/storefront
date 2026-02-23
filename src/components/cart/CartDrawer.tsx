@@ -11,6 +11,7 @@ import {
   ShoppingBagIcon,
 } from "@/components/icons";
 import { useCart } from "@/contexts/CartContext";
+import { trackRemoveFromCart, trackViewCart } from "@/lib/analytics/gtm";
 import { extractBasePath } from "@/lib/utils/path";
 
 export function CartDrawer() {
@@ -27,6 +28,8 @@ export function CartDrawer() {
   const pathname = usePathname();
   const basePath = extractBasePath(pathname);
   const drawerRef = useRef<HTMLDivElement>(null);
+  const viewCartFiredRef = useRef(false);
+  const prevPathnameRef = useRef(pathname);
 
   // Close on escape key
   useEffect(() => {
@@ -45,8 +48,22 @@ export function CartDrawer() {
 
   // Close when navigating
   useEffect(() => {
-    closeCart();
+    if (prevPathnameRef.current !== pathname) {
+      prevPathnameRef.current = pathname;
+      closeCart();
+    }
   }, [pathname, closeCart]);
+
+  // Track view_cart when drawer opens with items (fire once per open)
+  useEffect(() => {
+    if (isOpen && cart && cart.item_count > 0 && !viewCartFiredRef.current) {
+      trackViewCart(cart);
+      viewCartFiredRef.current = true;
+    }
+    if (!isOpen) {
+      viewCartFiredRef.current = false;
+    }
+  }, [isOpen, cart]);
 
   if (!isOpen) return null;
 
@@ -146,7 +163,12 @@ export function CartDrawer() {
                           {item.name}
                         </Link>
                         <button
-                          onClick={() => removeItem(item.id)}
+                          onClick={async () => {
+                            await removeItem(item.id);
+                            if (cart) {
+                              trackRemoveFromCart(item, cart.currency);
+                            }
+                          }}
                           disabled={updating}
                           className="p-1 text-gray-400 hover:text-gray-600 transition-colors disabled:opacity-50"
                           aria-label="Remove item"

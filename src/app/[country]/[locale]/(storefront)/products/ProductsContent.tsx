@@ -1,9 +1,11 @@
 "use client";
 
 import { useSearchParams } from "next/navigation";
-import { useCallback } from "react";
+import { useCallback, useEffect } from "react";
 import { ProductListingLayout } from "@/components/products/ProductListingLayout";
+import { useStore } from "@/contexts/StoreContext";
 import { useProductListing } from "@/hooks/useProductListing";
+import { trackViewItemList, trackViewSearchResults } from "@/lib/analytics/gtm";
 import { getProducts } from "@/lib/data/products";
 
 interface ProductsContentProps {
@@ -12,6 +14,7 @@ interface ProductsContentProps {
 
 export function ProductsContent({ basePath }: ProductsContentProps) {
   const searchParams = useSearchParams();
+  const { currency } = useStore();
   const query = searchParams.get("q") || "";
 
   const fetchFn = useCallback(
@@ -26,6 +29,28 @@ export function ProductsContent({ basePath }: ProductsContentProps) {
     fetchFn,
     searchQuery: query,
   });
+
+  const listId = query ? "search-results" : "all-products";
+  const listName = query ? "Search Results" : "All Products";
+
+  // Track view_item_list / view_search_results when products load
+  useEffect(() => {
+    if (listing.loading || listing.totalCount === 0) return;
+
+    if (query) {
+      trackViewSearchResults(listing.products, query, currency);
+    } else {
+      trackViewItemList(listing.products, listId, listName, currency);
+    }
+  }, [
+    listing.products,
+    listing.loading,
+    listing.totalCount,
+    query,
+    listId,
+    listName,
+    currency,
+  ]);
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -53,6 +78,8 @@ export function ProductsContent({ basePath }: ProductsContentProps) {
         {...listing}
         basePath={basePath}
         onFilterChange={listing.handleFilterChange}
+        listId={listId}
+        listName={listName}
         emptyMessage={
           query
             ? `We couldn't find any products matching "${query}"`

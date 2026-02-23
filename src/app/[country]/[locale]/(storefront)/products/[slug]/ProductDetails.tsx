@@ -14,6 +14,7 @@ import { MediaGallery } from "@/components/products/MediaGallery";
 import { VariantPicker } from "@/components/products/VariantPicker";
 import { useCart } from "@/contexts/CartContext";
 import { useStore } from "@/contexts/StoreContext";
+import { trackAddToCart } from "@/lib/analytics/gtm";
 
 interface ProductDetailsProps {
   product: StoreProduct;
@@ -109,9 +110,11 @@ export function ProductDetails({ product, basePath }: ProductDetailsProps) {
       await addItem(variantId, quantity);
     } catch (error) {
       console.error("Failed to add to cart:", error);
+      return;
     } finally {
       setLoading(false);
     }
+    trackAddToCart(product, selectedVariant, quantity, currency);
   };
 
   return (

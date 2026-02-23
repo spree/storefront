@@ -1,14 +1,28 @@
+"use client";
+
 import type { StoreProduct } from "@spree/sdk";
 import Image from "next/image";
 import Link from "next/link";
 import { ImagePlaceholderIcon } from "@/components/icons";
+import { useStore } from "@/contexts/StoreContext";
+import { trackSelectItem } from "@/lib/analytics/gtm";
 
 interface ProductCardProps {
   product: StoreProduct;
   basePath?: string;
+  index?: number;
+  listId?: string;
+  listName?: string;
 }
 
-export function ProductCard({ product, basePath = "" }: ProductCardProps) {
+export function ProductCard({
+  product,
+  basePath = "",
+  index,
+  listId,
+  listName,
+}: ProductCardProps) {
+  const { currency } = useStore();
   const imageUrl = product.thumbnail_url || null;
 
   // Current display price
@@ -35,10 +49,17 @@ export function ProductCard({ product, basePath = "" }: ProductCardProps) {
       : product.price?.display_compare_at_amount
     : null;
 
+  const handleClick = () => {
+    if (index != null && listId && listName) {
+      trackSelectItem(product, listId, listName, index, currency);
+    }
+  };
+
   return (
     <Link
       href={`${basePath}/products/${product.slug}`}
       className="group block bg-white rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-shadow"
+      onClick={handleClick}
     >
       {/* Image */}
       <div className="relative aspect-square bg-gray-100">

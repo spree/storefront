@@ -7,6 +7,7 @@ import { usePathname, useSearchParams } from "next/navigation";
 import { use, useEffect, useRef, useState } from "react";
 import { CheckCircleSolidIcon, ImagePlaceholderIcon } from "@/components/icons";
 import { useCheckout } from "@/contexts/CheckoutContext";
+import { trackPurchase } from "@/lib/analytics/gtm";
 import { getCheckoutOrder } from "@/lib/data/checkout";
 import { completeCheckoutOrder } from "@/lib/data/payment";
 import { extractBasePath } from "@/lib/utils/path";
@@ -64,6 +65,11 @@ export default function OrderPlacedPage({ params }: OrderPlacedPageProps) {
           loadedRef.current = true;
           if (orderData) {
             setOrder(orderData);
+            try {
+              trackPurchase(orderData);
+            } catch {
+              // Analytics failure must not break the order confirmation UX
+            }
           } else {
             setError("Order not found.");
           }

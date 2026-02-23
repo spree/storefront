@@ -29,6 +29,8 @@ interface ProductListingLayoutProps {
   loadMoreRef: RefObject<HTMLDivElement | null>;
   taxonId?: string;
   emptyMessage?: string;
+  listId?: string;
+  listName?: string;
 }
 
 export function ProductListingLayout({
@@ -46,6 +48,8 @@ export function ProductListingLayout({
   loadMoreRef,
   taxonId,
   emptyMessage = "Try adjusting your filters",
+  listId,
+  listName,
 }: ProductListingLayoutProps) {
   return (
     <div className="lg:grid lg:grid-cols-4 lg:gap-8">
@@ -132,7 +136,12 @@ export function ProductListingLayout({
               </p>
             </div>
 
-            <ProductGrid products={products} basePath={basePath} />
+            <ProductGrid
+              products={products}
+              basePath={basePath}
+              listId={listId}
+              listName={listName}
+            />
 
             {/* Load more trigger */}
             <div

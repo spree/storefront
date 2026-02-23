@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { ImagePlaceholderIcon, SearchIcon } from "@/components/icons";
 import { useStore } from "@/contexts/StoreContext";
+import { trackQuickSearch, trackSelectItem } from "@/lib/analytics/gtm";
 import { getProducts } from "@/lib/data/products";
 
 interface SearchBarProps {
@@ -42,6 +43,9 @@ export function SearchBar({ basePath }: SearchBarProps) {
           { currency, locale },
         );
         setSuggestions(response.data);
+        if (response.data.length > 0) {
+          trackQuickSearch(response.data, searchQuery, currency);
+        }
       } catch (error) {
         console.error("Search failed:", error);
         setSuggestions([]);
@@ -99,7 +103,8 @@ export function SearchBar({ basePath }: SearchBarProps) {
   };
 
   // Handle suggestion click
-  const handleSuggestionClick = (product: StoreProduct) => {
+  const handleSuggestionClick = (product: StoreProduct, index: number) => {
+    trackSelectItem(product, "quick-search", "Quick Search", index, currency);
     router.push(`${basePath}/products/${product.slug}`);
     setIsOpen(false);
     setQuery("");
@@ -123,7 +128,7 @@ export function SearchBar({ basePath }: SearchBarProps) {
       case "Enter":
         if (selectedIndex >= 0) {
           e.preventDefault();
-          handleSuggestionClick(suggestions[selectedIndex]);
+          handleSuggestionClick(suggestions[selectedIndex], selectedIndex);
         }
         break;
       case "Escape":
@@ -183,7 +188,7 @@ export function SearchBar({ basePath }: SearchBarProps) {
                 >
                   <button
                     type="button"
-                    onClick={() => handleSuggestionClick(product)}
+                    onClick={() => handleSuggestionClick(product, index)}
                     tabIndex={-1}
                     className={`w-full flex items-center gap-3 p-3 text-left hover:bg-gray-50 transition-colors ${
                       index === selectedIndex ? "bg-gray-50" : ""

@@ -4,6 +4,7 @@ import type { StoreProduct } from "@spree/sdk";
 import { useEffect, useState } from "react";
 import { ProductGrid } from "@/components/products/ProductGrid";
 import { useStore } from "@/contexts/StoreContext";
+import { trackViewItemList } from "@/lib/analytics/gtm";
 import { getProducts } from "@/lib/data/products";
 
 interface FeaturedProductsProps {
@@ -30,6 +31,12 @@ export function FeaturedProducts({ basePath }: FeaturedProductsProps) {
         );
         if (!cancelled) {
           setProducts(response.data);
+          trackViewItemList(
+            response.data,
+            "featured-products",
+            "Featured Products",
+            currency,
+          );
         }
       } catch (error) {
         console.error("Failed to fetch featured products:", error);
@@ -61,5 +68,12 @@ export function FeaturedProducts({ basePath }: FeaturedProductsProps) {
     );
   }
 
-  return <ProductGrid products={products} basePath={basePath} />;
+  return (
+    <ProductGrid
+      products={products}
+      basePath={basePath}
+      listId="featured-products"
+      listName="Featured Products"
+    />
+  );
 }
