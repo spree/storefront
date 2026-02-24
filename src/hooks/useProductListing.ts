@@ -18,8 +18,10 @@ function filtersEqual(a: ActiveFilters, b: ActiveFilters): boolean {
   if (a.availability !== b.availability) return false;
   if (a.sortBy !== b.sortBy) return false;
   if (a.optionValues.length !== b.optionValues.length) return false;
-  for (let i = 0; i < a.optionValues.length; i++) {
-    if (a.optionValues[i] !== b.optionValues[i]) return false;
+  const aVals = [...a.optionValues].sort();
+  const bVals = [...b.optionValues].sort();
+  for (let i = 0; i < aVals.length; i++) {
+    if (aVals[i] !== bVals[i]) return false;
   }
   return true;
 }

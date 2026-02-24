@@ -164,7 +164,7 @@ export function StoreProvider({
     setLocaleState(newLocale);
   }, []);
 
-  const value = useMemo(
+  const value = useMemo<StoreContextValue>(
     () => ({
       country,
       locale,

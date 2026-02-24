@@ -125,7 +125,7 @@ export function VariantPicker({
   const getOptionValueDetails = (
     optionTypeId: string,
     optionValueName: string,
-  ) => {
+  ): StoreVariant["option_values"][0] | null => {
     return optionValueDetailsMap[`${optionTypeId}:${optionValueName}`] || null;
   };
 

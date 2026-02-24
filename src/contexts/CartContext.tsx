@@ -123,7 +123,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
     refreshCart();
   }, [refreshCart, pathname]);
 
-  const itemCount = useMemo(
+  const itemCount = useMemo<number>(
     () =>
       cart?.line_items?.reduce(
         (sum: number, item: StoreLineItem) => sum + item.quantity,
@@ -132,7 +132,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
     [cart],
   );
 
-  const value = useMemo(
+  const value = useMemo<CartContextType>(
     () => ({
       cart,
       loading,

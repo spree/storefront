@@ -20,7 +20,7 @@ const CheckoutContext = createContext<CheckoutContextValue | undefined>(
 export function CheckoutProvider({ children }: { children: ReactNode }) {
   const [summaryContent, setSummaryContent] = useState<ReactNode>(null);
 
-  const value = useMemo(
+  const value = useMemo<CheckoutContextValue>(
     () => ({ summaryContent, setSummaryContent }),
     [summaryContent],
   );

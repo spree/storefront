@@ -11,6 +11,10 @@ import {
   SearchPlusIcon,
 } from "@/components/icons";
 
+/** Tiny 10×10 neutral gray PNG used as a blur placeholder while images load. */
+const BLUR_PLACEHOLDER =
+  "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAoAAAAKCAYAAACNMs+9AAAACXBIWXMAAAsTAAALEwEAmpwYAAAAIElEQVQYV2P4////MwwMDAxMDAwMDGQJMJCvkGwNZCsEAGebBwVss9lRAAAAAElFTkSuQmCC";
+
 interface MediaGalleryProps {
   images: StoreImage[];
   productName: string;
@@ -47,6 +51,8 @@ export function MediaGallery({ images, productName }: MediaGalleryProps) {
             priority
             quality={85}
             sizes="(max-width: 768px) 100vw, 50vw"
+            placeholder="blur"
+            blurDataURL={BLUR_PLACEHOLDER}
           />
         ) : (
           <div className="absolute inset-0 flex items-center justify-center text-gray-400">

@@ -113,7 +113,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     router.refresh();
   }, [router]);
 
-  const value = useMemo(
+  const value = useMemo<AuthContextType>(
     () => ({
       user,
       loading,
