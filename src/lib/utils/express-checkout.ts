@@ -1,6 +1,12 @@
 /** Convert a string dollar amount (e.g. "99.99") to integer cents. */
 export function toCents(amount: string | number): number {
-  return Math.round(Number(amount) * 100);
+  const n = Number(amount);
+  if (!Number.isFinite(n)) {
+    throw new TypeError(
+      `toCents: expected a finite number, got ${typeof amount} (${String(amount)})`,
+    );
+  }
+  return Math.round(n * 100);
 }
 
 /** Generate a random 4-char suffix for Google Pay shipping rate ID workaround. */
@@ -122,6 +128,10 @@ export function buildShippingRateMap(
           amount: toCents(rate.cost),
         });
         selectionMap.set(id, []);
+      } else {
+        // Accumulate shipping cost from additional shipments
+        const existing = rateMap.get(rate.shipping_method_id)!;
+        existing.amount += toCents(rate.cost);
       }
       const stripeId = rateMap.get(rate.shipping_method_id)!.id;
       selectionMap.get(stripeId)!.push({

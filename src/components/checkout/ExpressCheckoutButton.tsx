@@ -33,7 +33,7 @@ import {
 } from "@/lib/utils/express-checkout";
 import { stripePromise } from "@/lib/utils/stripe";
 
-interface ExpressCheckoutButtonProps {
+export interface ExpressCheckoutButtonProps {
   cart: StoreOrder;
   basePath: string;
   onComplete: () => void;
@@ -52,6 +52,7 @@ function ExpressCheckoutInner({
   const [available, setAvailable] = useState<boolean | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [processing, setProcessing] = useState(false);
+  const isConfirmingRef = useRef(false);
   const isGooglePayRef = useRef(false);
   const shippingRateMapRef = useRef(
     new Map<string, Array<{ shipmentId: string; rateId: string }>>(),
@@ -82,6 +83,8 @@ function ExpressCheckoutInner({
 
   const handleClick = useCallback(
     (event: StripeExpressCheckoutElementClickEvent) => {
+      // Track payment type: Google Pay requires unique shipping rate IDs
+      // (rejects duplicates), so buildShippingRateMap appends a random suffix.
       isGooglePayRef.current = event.expressPaymentType === "google_pay";
       event.resolve({
         lineItems: buildLineItems(cart as unknown as Record<string, unknown>),
@@ -130,10 +133,21 @@ function ExpressCheckoutInner({
           return;
         }
 
-        event.resolve({
-          shippingRates,
-          lineItems: buildLineItems(order),
-        });
+        const lineItems = buildLineItems(order);
+        event.resolve({ shippingRates, lineItems });
+
+        // Sync Elements amount to match the default (first) shipping rate
+        // so subsequent rate changes can only decrease the authorized amount.
+        try {
+          const lineItemsSum = lineItems.reduce(
+            (sum, item) => sum + item.amount,
+            0,
+          );
+          const defaultShippingAmount = shippingRates[0]?.amount ?? 0;
+          elements?.update({ amount: lineItemsSum + defaultShippingAmount });
+        } catch (_) {
+          /* elements.update failed — non-fatal */
+        }
       } catch (_err) {
         try {
           event.reject();
@@ -142,7 +156,7 @@ function ExpressCheckoutInner({
         }
       }
     },
-    [cart.id],
+    [cart.id, elements],
   );
 
   const handleShippingRateChange = useCallback(
@@ -187,11 +201,14 @@ function ExpressCheckoutInner({
 
   const handleConfirm = useCallback(
     async (event: StripeExpressCheckoutElementConfirmEvent) => {
+      if (isConfirmingRef.current) return;
+
       if (!stripe || !elements) {
         event.paymentFailed({ reason: "fail" });
         return;
       }
 
+      isConfirmingRef.current = true;
       const orderId = cart.id;
       setError(null);
       setProcessing(true);
@@ -199,7 +216,12 @@ function ExpressCheckoutInner({
       let stripePaymentConfirmed = false;
 
       const fail = (
-        reason: "fail" | "invalid_shipping_address" | "invalid_payment_data",
+        reason:
+          | "fail"
+          | "invalid_shipping_address"
+          | "invalid_billing_address"
+          | "invalid_payment_data"
+          | "address_unserviceable",
         msg: string,
       ) => {
         if (!stripePaymentConfirmed) {
@@ -207,6 +229,7 @@ function ExpressCheckoutInner({
         }
         setError(msg);
         setProcessing(false);
+        isConfirmingRef.current = false;
       };
 
       try {
@@ -311,13 +334,23 @@ function ExpressCheckoutInner({
         stripePaymentConfirmed = true;
 
         try {
-          await expressCheckoutFinalize(orderId, sessionId);
+          const finalizeResult = await expressCheckoutFinalize(
+            orderId,
+            sessionId,
+          );
+          if (!finalizeResult.success) {
+            console.warn(
+              "Express checkout finalization failed (payment confirmed, backend will reconcile):",
+              finalizeResult.error,
+            );
+          }
         } catch (_completeErr) {
           /* non-blocking — backend will reconcile */
         }
 
         router.push(`${basePath}/order-placed/${orderId}`);
         onComplete();
+        isConfirmingRef.current = false;
       } catch (err) {
         const msg =
           err instanceof Error ? err.message : "An unexpected error occurred";

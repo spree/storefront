@@ -1,15 +1,23 @@
 "use client";
 
 import type { StoreLineItem } from "@spree/sdk";
+import dynamic from "next/dynamic";
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useRef } from "react";
-import { ExpressCheckoutButton } from "@/components/checkout";
 import { ShoppingBagIcon } from "@/components/icons";
 import { useCart } from "@/contexts/CartContext";
 import { trackRemoveFromCart, trackViewCart } from "@/lib/analytics/gtm";
 import { extractBasePath } from "@/lib/utils/path";
+
+const ExpressCheckoutButton = dynamic(
+  () =>
+    import("@/components/checkout/ExpressCheckoutButton").then(
+      (mod) => mod.ExpressCheckoutButton,
+    ),
+  { ssr: false, loading: () => null },
+);
 
 export default function CartPage() {
   const { cart, loading, updateItem, removeItem, refreshCart } = useCart();

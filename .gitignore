@@ -43,3 +43,6 @@ next-env.d.ts
 
 # claude code
 .claude/
+
+#certs for https
+certificates

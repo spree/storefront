@@ -85,8 +85,19 @@ export async function expressCheckoutFinalize(
   sessionId: string,
 ) {
   return actionResult(async () => {
-    await completeCheckoutPaymentSession(orderId, sessionId);
-    await completeCheckoutOrder(orderId);
+    const sessionResult = await completeCheckoutPaymentSession(
+      orderId,
+      sessionId,
+    );
+    if (!sessionResult.success) {
+      throw new Error(sessionResult.error);
+    }
+
+    const orderResult = await completeCheckoutOrder(orderId);
+    if (!orderResult.success) {
+      throw new Error(orderResult.error);
+    }
+
     return {};
   }, "Failed to finalize order");
 }

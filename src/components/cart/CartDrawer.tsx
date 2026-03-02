@@ -1,10 +1,10 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { ExpressCheckoutButton } from "@/components/checkout";
 import {
   CloseIcon,
   MinusIcon,
@@ -14,6 +14,14 @@ import {
 import { useCart } from "@/contexts/CartContext";
 import { trackRemoveFromCart, trackViewCart } from "@/lib/analytics/gtm";
 import { extractBasePath } from "@/lib/utils/path";
+
+const ExpressCheckoutButton = dynamic(
+  () =>
+    import("@/components/checkout/ExpressCheckoutButton").then(
+      (mod) => mod.ExpressCheckoutButton,
+    ),
+  { ssr: false, loading: () => null },
+);
 
 export function CartDrawer() {
   const {
@@ -25,6 +33,7 @@ export function CartDrawer() {
     updateItem,
     removeItem,
     itemCount,
+    refreshCart,
   } = useCart();
   const pathname = usePathname();
   const basePath = extractBasePath(pathname);
@@ -276,7 +285,10 @@ export function CartDrawer() {
               <ExpressCheckoutButton
                 cart={cart}
                 basePath={basePath}
-                onComplete={closeCart}
+                onComplete={async () => {
+                  await refreshCart();
+                  closeCart();
+                }}
                 onProcessingChange={handleProcessingChange}
               />
             )}
