@@ -1,10 +1,42 @@
-/** Convert a string dollar amount (e.g. "99.99") to integer cents. */
-export function toCents(amount: string | number): number {
+import type { StoreOrder, StoreShipment } from "@spree/sdk";
+
+/**
+ * Stripe zero-decimal currencies where the amount is already in the smallest unit.
+ * @see https://docs.stripe.com/currencies#zero-decimal
+ */
+const STRIPE_ZERO_DECIMAL_CURRENCIES = new Set([
+  "bif",
+  "clp",
+  "djf",
+  "gnf",
+  "jpy",
+  "kmf",
+  "krw",
+  "mga",
+  "pyg",
+  "rwf",
+  "ugx",
+  "vnd",
+  "vuv",
+  "xaf",
+  "xof",
+  "xpf",
+]);
+
+/**
+ * Convert a monetary amount to the smallest currency unit for Stripe.
+ * For most currencies this means multiplying by 100 (e.g. $9.99 → 999).
+ * For zero-decimal currencies (JPY, KRW, etc.) the amount is returned as-is.
+ */
+export function toCents(amount: string | number, currency?: string): number {
   const n = Number(amount);
   if (!Number.isFinite(n)) {
     throw new TypeError(
       `toCents: expected a finite number, got ${typeof amount} (${String(amount)})`,
     );
+  }
+  if (currency && STRIPE_ZERO_DECIMAL_CURRENCIES.has(currency.toLowerCase())) {
+    return Math.round(n);
   }
   return Math.round(n * 100);
 }
@@ -15,23 +47,24 @@ export function randomSuffix(): string {
 }
 
 /**
- * Build the line items array for the Stripe payment sheet from an order-like object.
+ * Build the line items array for the Stripe payment sheet from a Spree order.
  * NOTE: Shipping is excluded because the Express Checkout Element handles it
  * separately via shippingRates. Including it here would cause the line item
  * total to exceed the Elements amount, triggering an IntegrationError.
  */
-export function buildLineItems(order: Record<string, unknown>) {
+export function buildLineItems(order: StoreOrder) {
+  const currency = order.currency;
   const items: Array<{ name: string; amount: number }> = [];
 
-  const itemTotal = toCents(order.item_total as string);
+  const itemTotal = toCents(order.item_total, currency);
   items.push({ name: "Subtotal", amount: itemTotal });
 
-  const promoTotal = toCents(order.promo_total as string);
+  const promoTotal = toCents(order.promo_total, currency);
   if (promoTotal < 0) {
     items.push({ name: "Discount", amount: promoTotal });
   }
 
-  const additionalTaxTotal = toCents(order.additional_tax_total as string);
+  const additionalTaxTotal = toCents(order.additional_tax_total, currency);
   if (additionalTaxTotal > 0) {
     items.push({ name: "Tax", amount: additionalTaxTotal });
   }
@@ -80,17 +113,6 @@ export function buildSpreeAddress(
   };
 }
 
-interface SpreeShipment {
-  id: string;
-  shipping_rates: Array<{
-    id: string;
-    shipping_method_id: string;
-    name: string;
-    cost: number;
-    selected: boolean;
-  }>;
-}
-
 interface ShippingRateMapping {
   /** Stripe-formatted rates for the payment sheet */
   shippingRates: Array<{ id: string; displayName: string; amount: number }>;
@@ -104,8 +126,9 @@ interface ShippingRateMapping {
  * to each rate ID to work around its duplicate-ID rejection.
  */
 export function buildShippingRateMap(
-  shipments: SpreeShipment[],
+  shipments: StoreShipment[],
   isGooglePay: boolean,
+  currency: string,
 ): ShippingRateMapping {
   const rateMap = new Map<
     string,
@@ -125,13 +148,13 @@ export function buildShippingRateMap(
         rateMap.set(rate.shipping_method_id, {
           id,
           displayName: rate.name,
-          amount: toCents(rate.cost),
+          amount: toCents(rate.cost, currency),
         });
         selectionMap.set(id, []);
       } else {
         // Accumulate shipping cost from additional shipments
         const existing = rateMap.get(rate.shipping_method_id)!;
-        existing.amount += toCents(rate.cost);
+        existing.amount += toCents(rate.cost, currency);
       }
       const stripeId = rateMap.get(rate.shipping_method_id)!.id;
       selectionMap.get(stripeId)!.push({

@@ -36,7 +36,7 @@ import { stripePromise } from "@/lib/utils/stripe";
 export interface ExpressCheckoutButtonProps {
   cart: StoreOrder;
   basePath: string;
-  onComplete: () => void;
+  onComplete: () => void | Promise<void>;
   onProcessingChange?: (processing: boolean) => void;
 }
 
@@ -87,7 +87,7 @@ function ExpressCheckoutInner({
       // (rejects duplicates), so buildShippingRateMap appends a random suffix.
       isGooglePayRef.current = event.expressPaymentType === "google_pay";
       event.resolve({
-        lineItems: buildLineItems(cart as unknown as Record<string, unknown>),
+        lineItems: buildLineItems(cart),
       });
     },
     [cart],
@@ -110,21 +110,12 @@ function ExpressCheckoutInner({
           return;
         }
 
-        const order = result.order as Record<string, unknown>;
-        const shipments = (order.shipments || []) as Array<{
-          id: string;
-          shipping_rates: Array<{
-            id: string;
-            shipping_method_id: string;
-            name: string;
-            cost: number;
-            selected: boolean;
-          }>;
-        }>;
+        const order = result.order;
 
         const { shippingRates, selectionMap } = buildShippingRateMap(
-          shipments,
+          order.shipments,
           isGooglePayRef.current,
+          order.currency,
         );
         shippingRateMapRef.current = selectionMap;
 
@@ -176,8 +167,7 @@ function ExpressCheckoutInner({
           return;
         }
 
-        const order = result.order as Record<string, unknown>;
-        const lineItems = buildLineItems(order);
+        const lineItems = buildLineItems(result.order);
         const lineItemsSum = lineItems.reduce((s, i) => s + i.amount, 0);
         const newAmount = lineItemsSum + shippingRate.amount;
 
@@ -259,7 +249,7 @@ function ExpressCheckoutInner({
           fail("invalid_shipping_address", prepareResult.error);
           return;
         }
-        const advancedOrder = prepareResult.order as Record<string, unknown>;
+        const advancedOrder = prepareResult.order;
 
         const submitResult = await elements.submit();
         if (submitResult.error) {
@@ -280,10 +270,8 @@ function ExpressCheckoutInner({
           return;
         }
 
-        const orderPaymentMethods = (advancedOrder?.payment_methods ??
-          cart.payment_methods) as
-          | Array<{ id: string; session_required: boolean }>
-          | undefined;
+        const orderPaymentMethods =
+          advancedOrder?.payment_methods ?? cart.payment_methods;
         const sessionPaymentMethod = orderPaymentMethods?.find(
           (pm) => pm.session_required,
         );
@@ -349,8 +337,13 @@ function ExpressCheckoutInner({
         }
 
         router.push(`${basePath}/order-placed/${orderId}`);
-        onComplete();
-        isConfirmingRef.current = false;
+        try {
+          await onComplete();
+        } catch (_onCompleteErr) {
+          /* onComplete failed — non-blocking, navigation already fired */
+        } finally {
+          isConfirmingRef.current = false;
+        }
       } catch (err) {
         const msg =
           err instanceof Error ? err.message : "An unexpected error occurred";
@@ -431,6 +424,9 @@ function ExpressCheckoutInner({
   );
 }
 
+/** Shipping cost buffer in major currency units for Apple Pay pre-authorization. */
+const SHIPPING_BUFFER_AMOUNT = 200;
+
 export function ExpressCheckoutButton({
   cart,
   basePath,
@@ -443,12 +439,12 @@ export function ExpressCheckoutButton({
   // elements.update({ amount }) cannot INCREASE the authorized amount while the
   // Apple Pay sheet is open (stripe/react-stripe-js#506). By starting high, we
   // only ever decrease to the actual total once shipping is known.
+  // The buffer (200 in major currency units) covers typical shipping costs.
+  // The actual displayed total is computed from lineItems + selectedShippingRate.
   const amount = useMemo(() => {
-    const subtotal = toCents(cart.total);
-    // Add $200 buffer for shipping — the actual displayed total is computed
-    // from lineItems + selectedShippingRate, so this doesn't affect UX.
-    return subtotal + 20000;
-  }, [cart.total]);
+    const subtotal = toCents(cart.total, currency);
+    return subtotal + toCents(SHIPPING_BUFFER_AMOUNT, currency);
+  }, [cart.total, currency]);
 
   const options = useMemo(
     () => ({

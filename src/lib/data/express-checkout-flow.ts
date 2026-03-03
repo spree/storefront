@@ -1,6 +1,6 @@
 "use server";
 
-import type { AddressParams } from "@spree/sdk";
+import type { AddressParams, StoreOrder } from "@spree/sdk";
 import { selectShippingRate } from "@/lib/data/checkout";
 import {
   completeCheckoutOrder,
@@ -30,7 +30,7 @@ export async function expressCheckoutResolveShipping(
       throw new Error(advanceResult.error);
     }
 
-    return { order: advanceResult.order as Record<string, unknown> };
+    return { order: advanceResult.order };
   }, "Failed to resolve shipping");
 }
 
@@ -39,14 +39,14 @@ export async function expressCheckoutSelectRates(
   selections: Array<{ shipmentId: string; rateId: string }>,
 ) {
   return actionResult(async () => {
-    let order: Record<string, unknown> | null = null;
+    let order: StoreOrder | null = null;
 
     for (const { shipmentId, rateId } of selections) {
       const result = await selectShippingRate(orderId, shipmentId, rateId);
       if (!result.success) {
         throw new Error(result.error);
       }
-      order = result.order as Record<string, unknown>;
+      order = result.order;
     }
 
     if (!order) {
@@ -76,7 +76,7 @@ export async function expressCheckoutPreparePayment(
       throw new Error(advanceResult.error);
     }
 
-    return { order: advanceResult.order as Record<string, unknown> };
+    return { order: advanceResult.order };
   }, "Failed to prepare payment");
 }
 
