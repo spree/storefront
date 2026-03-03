@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { CheckIcon, LightningBoltIcon, SupportIcon } from "@/components/icons";
-import { generateHomeMetadata } from "@/lib/metadata/home";
 import { ProductCarousel } from "@/components/products/ProductCarousel";
+import { generateHomeMetadata } from "@/lib/metadata/home";
 
 interface HomePageProps {
   params: Promise<{
