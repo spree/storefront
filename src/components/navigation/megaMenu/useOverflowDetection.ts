@@ -33,7 +33,10 @@ export function useOverflowDetection(
     const headerContainer = measure.closest(
       "[data-header-container]",
     ) as HTMLElement | null;
-    if (!headerContainer) return;
+    if (!headerContainer) {
+      setIsOverflowing(false);
+      return;
+    }
 
     const check = () => {
       let siblingsWidth = 0;
