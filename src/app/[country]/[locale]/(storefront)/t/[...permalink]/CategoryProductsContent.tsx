@@ -1,5 +1,6 @@
 "use client";
 
+import type { ProductListParams } from "@spree/sdk";
 import { useCallback, useEffect, useMemo, useRef } from "react";
 import { ProductListingLayout } from "@/components/products/ProductListingLayout";
 import { useStore } from "@/contexts/StoreContext";
@@ -23,10 +24,7 @@ export function CategoryProductsContent({
   const { currency } = useStore();
 
   const fetchFn = useCallback(
-    (
-      params: Record<string, unknown>,
-      options: { currency: string; locale: string },
-    ) => getTaxonProducts(taxonPermalink, params, options),
+    (params: ProductListParams) => getTaxonProducts(taxonPermalink, params),
     [taxonPermalink],
   );
 

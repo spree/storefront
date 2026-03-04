@@ -35,7 +35,7 @@ export async function addToCart(variantId: string, quantity: number) {
 
 export async function updateCartItem(lineItemId: string, quantity: number) {
   return actionResult(async () => {
-    const cart = await updateItem(lineItemId, quantity);
+    const cart = await updateItem(lineItemId, { quantity });
     return { cart };
   }, "Failed to update cart item");
 }

@@ -15,7 +15,7 @@ interface SearchBarProps {
 
 export function SearchBar({ basePath }: SearchBarProps) {
   const router = useRouter();
-  const { currency, locale } = useStore();
+  const { currency } = useStore();
   const [query, setQuery] = useState("");
   const [suggestions, setSuggestions] = useState<StoreProduct[]>([]);
   const [isOpen, setIsOpen] = useState(false);
@@ -35,13 +35,10 @@ export function SearchBar({ basePath }: SearchBarProps) {
 
       setLoading(true);
       try {
-        const response = await getProducts(
-          {
-            "q[multi_search]": searchQuery,
-            per_page: 6,
-          },
-          { currency, locale },
-        );
+        const response = await getProducts({
+          multi_search: searchQuery,
+          limit: 6,
+        });
         setSuggestions(response.data);
         if (response.data.length > 0) {
           trackQuickSearch(response.data, searchQuery, currency);
@@ -53,7 +50,7 @@ export function SearchBar({ basePath }: SearchBarProps) {
         setLoading(false);
       }
     },
-    [currency, locale],
+    [currency],
   );
 
   // Debounced search

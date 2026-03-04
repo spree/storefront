@@ -21,7 +21,9 @@ export default async function CategoryPage({ params }: CategoryPageProps) {
 
   let taxon;
   try {
-    taxon = await getTaxon(fullPermalink, { includes: "ancestors,children" });
+    taxon = await getTaxon(fullPermalink, {
+      expand: ["ancestors", "children"],
+    });
   } catch (error) {
     console.error("Failed to fetch taxon:", error);
     notFound();

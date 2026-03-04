@@ -1,5 +1,6 @@
 "use client";
 
+import type { ProductListParams } from "@spree/sdk";
 import { useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef } from "react";
 import { ProductListingLayout } from "@/components/products/ProductListingLayout";
@@ -18,10 +19,7 @@ export function ProductsContent({ basePath }: ProductsContentProps) {
   const query = searchParams.get("q") || "";
 
   const fetchFn = useCallback(
-    (
-      params: Record<string, unknown>,
-      options: { currency: string; locale: string },
-    ) => getProducts(params, options),
+    (params: ProductListParams) => getProducts(params),
     [],
   );
 

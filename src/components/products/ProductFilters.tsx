@@ -9,6 +9,22 @@ import type {
 import { memo, useState } from "react";
 import { ChevronDownIcon } from "@/components/icons";
 
+const SORT_LABELS: Record<string, string> = {
+  manual: "Manual",
+  best_selling: "Best Selling",
+  "price asc": "Price (low-high)",
+  "price desc": "Price (high-low)",
+  "available_on desc": "Newest",
+  "available_on asc": "Oldest",
+  "name asc": "Name (A-Z)",
+  "name desc": "Name (Z-A)",
+};
+
+const AVAILABILITY_LABELS: Record<string, string> = {
+  in_stock: "In Stock",
+  out_of_stock: "Out of Stock",
+};
+
 interface ProductFiltersProps {
   taxonId?: string;
   filtersData: ProductFiltersResponse | null;
@@ -118,7 +134,7 @@ export const ProductFilters = memo(function ProductFilters({
         >
           {filtersData.sort_options.map((option) => (
             <option key={option.id} value={option.id}>
-              {option.label}
+              {SORT_LABELS[option.id] || option.id}
             </option>
           ))}
         </select>
@@ -141,7 +157,7 @@ export const ProductFilters = memo(function ProductFilters({
             return (
               <FilterSection
                 key={filter.id}
-                title={filter.label}
+                title="Price"
                 expanded={expandedSections.has(filter.id)}
                 onToggle={() => toggleSection(filter.id)}
               >
@@ -158,7 +174,7 @@ export const ProductFilters = memo(function ProductFilters({
             return (
               <FilterSection
                 key={filter.id}
-                title={filter.label}
+                title="Availability"
                 expanded={expandedSections.has(filter.id)}
                 onToggle={() => toggleSection(filter.id)}
               >
@@ -173,7 +189,7 @@ export const ProductFilters = memo(function ProductFilters({
             return (
               <FilterSection
                 key={filter.id}
-                title={filter.label}
+                title={(filter as OptionFilter).presentation}
                 expanded={expandedSections.has(filter.id)}
                 onToggle={() => toggleSection(filter.id)}
               >
@@ -304,7 +320,9 @@ function AvailabilityFilterSection({
             onChange={() => onChange(option.id as "in_stock" | "out_of_stock")}
             className="text-primary-500"
           />
-          <span className="text-sm text-gray-700">{option.label}</span>
+          <span className="text-sm text-gray-700">
+            {AVAILABILITY_LABELS[option.id] || option.id}
+          </span>
           <span className="text-xs text-gray-400">({option.count})</span>
         </label>
       ))}
@@ -343,7 +361,7 @@ function OptionFilterSection({
             onChange={() => onToggle(option.id)}
             className="rounded text-primary-500"
           />
-          <span className="text-sm text-gray-700">{option.label}</span>
+          <span className="text-sm text-gray-700">{option.presentation}</span>
           <span className="text-xs text-gray-400">({option.count})</span>
         </label>
       ))}

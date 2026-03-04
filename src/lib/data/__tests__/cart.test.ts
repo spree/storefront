@@ -111,7 +111,7 @@ describe("cart server actions", () => {
 
       const result = await updateCartItem("li-1", 3);
 
-      expect(mockUpdateItem).toHaveBeenCalledWith("li-1", 3);
+      expect(mockUpdateItem).toHaveBeenCalledWith("li-1", { quantity: 3 });
       expect(result).toEqual({ success: true, cart: mockCart });
     });
 

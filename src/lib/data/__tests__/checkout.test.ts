@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("@spree/next", () => ({
   getCheckout: vi.fn(),
-  updateAddresses: vi.fn(),
+  updateOrder: vi.fn(),
   advance: vi.fn(),
   getShipments: vi.fn(),
   selectShippingRate: vi.fn(),
@@ -19,7 +19,7 @@ import {
   getShipments as getShipmentsSdk,
   removeCoupon,
   selectShippingRate as selectShippingRateSdk,
-  updateAddresses,
+  updateOrder,
 } from "@spree/next";
 
 import {
@@ -31,11 +31,12 @@ import {
   removeCouponCode,
   selectShippingRate,
   updateOrderAddresses,
+  updateOrderMarket,
 } from "@/lib/data/checkout";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any -- test fixtures are intentionally partial
 const mockGetCheckout = getCheckout as any;
-const mockUpdateAddresses = updateAddresses as any;
+const mockUpdateOrder = updateOrder as any;
 const mockAdvance = advance as any;
 const mockGetShipments = getShipmentsSdk as any;
 const mockSelectShippingRate = selectShippingRateSdk as any;
@@ -72,17 +73,17 @@ describe("checkout server actions", () => {
 
   describe("updateOrderAddresses", () => {
     it("returns success with order", async () => {
-      mockUpdateAddresses.mockResolvedValue(mockOrder);
+      mockUpdateOrder.mockResolvedValue(mockOrder);
       const addresses = { email: "test@example.com" };
 
       const result = await updateOrderAddresses("order-1", addresses);
 
-      expect(mockUpdateAddresses).toHaveBeenCalledWith("order-1", addresses);
+      expect(mockUpdateOrder).toHaveBeenCalledWith("order-1", addresses);
       expect(result).toEqual({ success: true, order: mockOrder });
     });
 
     it("returns error on failure", async () => {
-      mockUpdateAddresses.mockRejectedValue(new Error("Invalid address"));
+      mockUpdateOrder.mockRejectedValue(new Error("Invalid address"));
 
       const result = await updateOrderAddresses("order-1", {});
 
@@ -93,13 +94,59 @@ describe("checkout server actions", () => {
     });
 
     it("returns fallback message for non-Error throws", async () => {
-      mockUpdateAddresses.mockRejectedValue("unexpected");
+      mockUpdateOrder.mockRejectedValue("unexpected");
 
       const result = await updateOrderAddresses("order-1", {});
 
       expect(result).toEqual({
         success: false,
         error: "Failed to update addresses",
+      });
+    });
+  });
+
+  describe("updateOrderMarket", () => {
+    it("returns success with updated order", async () => {
+      const updatedOrder = { ...mockOrder, currency: "EUR", locale: "de" };
+      mockUpdateOrder.mockResolvedValue(updatedOrder);
+
+      const result = await updateOrderMarket("order-1", {
+        currency: "EUR",
+        locale: "de",
+      });
+
+      expect(mockUpdateOrder).toHaveBeenCalledWith("order-1", {
+        currency: "EUR",
+        locale: "de",
+      });
+      expect(result).toEqual({ success: true, order: updatedOrder });
+    });
+
+    it("returns error on failure", async () => {
+      mockUpdateOrder.mockRejectedValue(new Error("Currency not supported"));
+
+      const result = await updateOrderMarket("order-1", {
+        currency: "XYZ",
+        locale: "en",
+      });
+
+      expect(result).toEqual({
+        success: false,
+        error: "Currency not supported",
+      });
+    });
+
+    it("returns fallback message for non-Error throws", async () => {
+      mockUpdateOrder.mockRejectedValue("unexpected");
+
+      const result = await updateOrderMarket("order-1", {
+        currency: "EUR",
+        locale: "de",
+      });
+
+      expect(result).toEqual({
+        success: false,
+        error: "Failed to update order market",
       });
     });
   });

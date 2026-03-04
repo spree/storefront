@@ -3,11 +3,11 @@
 import type {
   PaginatedResponse,
   ProductFiltersResponse,
+  ProductListParams,
   StoreProduct,
 } from "@spree/sdk";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { ActiveFilters } from "@/components/products/ProductFilters";
-import { useStore } from "@/contexts/StoreContext";
 import { getProductFilters } from "@/lib/data/products";
 import { buildProductQueryParams } from "@/lib/utils/product-query";
 
@@ -26,13 +26,12 @@ function filtersEqual(a: ActiveFilters, b: ActiveFilters): boolean {
 }
 
 interface UseProductListingOptions {
-  /** Function that fetches a page of products given query params and store options. */
+  /** Function that fetches a page of products given query params. */
   fetchFn: (
-    params: Record<string, unknown>,
-    options: { currency: string; locale: string },
+    params: ProductListParams,
   ) => Promise<PaginatedResponse<StoreProduct>>;
   /** Optional params passed to getProductFilters (e.g. { taxon_id }). */
-  filterParams?: Record<string, unknown>;
+  filterParams?: ProductListParams;
   /** Optional search query string. */
   searchQuery?: string;
 }
@@ -42,8 +41,6 @@ export function useProductListing({
   filterParams = {},
   searchQuery = "",
 }: UseProductListingOptions) {
-  const { currency, locale, loading: storeLoading } = useStore();
-
   const [products, setProducts] = useState<StoreProduct[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
@@ -75,16 +72,13 @@ export function useProductListing({
     async (page: number, filters: ActiveFilters, query: string) => {
       try {
         const queryParams = buildProductQueryParams(filters, query);
-        return await fetchFn(
-          { page, per_page: 12, ...queryParams },
-          { currency, locale },
-        );
+        return await fetchFn({ page, limit: 12, ...queryParams });
       } catch (error) {
         console.error("Failed to fetch products:", error);
         return null;
       }
     },
-    [fetchFn, currency, locale],
+    [fetchFn],
   );
 
   const loadProducts = useCallback(
@@ -112,7 +106,6 @@ export function useProductListing({
 
   // Fetch filters (scoped to search query when present)
   useEffect(() => {
-    if (storeLoading) return;
     // Track filterParams changes for re-fetching on soft-nav
     void filterParamsKey;
 
@@ -123,12 +116,9 @@ export function useProductListing({
       try {
         const params = { ...filterParamsRef.current };
         if (searchQuery) {
-          params["q[multi_search]"] = searchQuery;
+          params.multi_search = searchQuery;
         }
-        const response = await getProductFilters(params, {
-          currency,
-          locale,
-        });
+        const response = await getProductFilters(params);
         if (!cancelled) {
           setFiltersData(response);
         }
@@ -146,15 +136,14 @@ export function useProductListing({
     return () => {
       cancelled = true;
     };
-  }, [currency, locale, storeLoading, searchQuery, filterParamsKey]);
+  }, [searchQuery, filterParamsKey]);
 
-  // Load products when search query, store context, or filter params change
+  // Load products when search query or filter params change
   useEffect(() => {
-    if (storeLoading) return;
     // Track filterParams changes for re-fetching on soft-nav
     void filterParamsKey;
     loadProducts(filtersRef.current, searchQuery);
-  }, [storeLoading, searchQuery, loadProducts, filterParamsKey]);
+  }, [searchQuery, loadProducts, filterParamsKey]);
 
   const handleFilterChange = useCallback(
     (newFilters: ActiveFilters) => {
