@@ -26,7 +26,7 @@ export default async function ProductPage({ params }: ProductPageProps) {
 
   let product;
   try {
-    product = await getCachedProduct(slug, "images", locale);
+    product = await getCachedProduct(slug, ["images"], locale);
   } catch {
     product = null;
   }

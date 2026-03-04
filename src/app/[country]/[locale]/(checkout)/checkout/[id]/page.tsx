@@ -31,7 +31,8 @@ import {
   updateOrderAddresses,
 } from "@/lib/data/checkout";
 import { isAuthenticated as checkAuth } from "@/lib/data/cookies";
-import { getCountries, getCountry } from "@/lib/data/countries";
+import { getCountry } from "@/lib/data/countries";
+import { getMarketCountries, resolveMarket } from "@/lib/data/markets";
 import {
   completeCheckoutOrder,
   completeCheckoutPaymentSession,
@@ -95,7 +96,7 @@ function CheckoutSidebar({
 
 export default function CheckoutPage({ params }: CheckoutPageProps) {
   // use() must be called before all other hooks to avoid hook order issues
-  const { id: orderId } = use(params);
+  const { id: orderId, country: urlCountry } = use(params);
   const router = useRouter();
   const pathname = usePathname();
   const basePath = extractBasePath(pathname);
@@ -176,19 +177,25 @@ export default function CheckoutPage({ params }: CheckoutPageProps) {
     handleRemoveCoupon,
   ]);
 
-  // Load order and countries
+  // Load order and market-scoped countries
   const loadOrder = useCallback(async () => {
     setLoading(true);
     setError(null);
 
     try {
-      const [orderData, countriesData, addressesData, authStatus] =
-        await Promise.all([
-          getCheckoutOrder(orderId),
-          getCountries(),
-          getAddresses(),
-          checkAuth(),
-        ]);
+      const [orderData, market, addressesData, authStatus] = await Promise.all([
+        getCheckoutOrder(orderId),
+        resolveMarket(urlCountry).catch(() => null),
+        getAddresses(),
+        checkAuth(),
+      ]);
+
+      // Fetch countries scoped to the resolved market
+      const countriesData = market
+        ? await getMarketCountries(market.id).catch(() => ({
+            data: [] as StoreCountry[],
+          }))
+        : { data: [] as StoreCountry[] };
 
       if (!orderData) {
         setError("Order not found or you don't have access to it.");
@@ -233,7 +240,7 @@ export default function CheckoutPage({ params }: CheckoutPageProps) {
     } finally {
       setLoading(false);
     }
-  }, [orderId, basePath, router]);
+  }, [orderId, urlCountry, basePath, router]);
 
   useEffect(() => {
     loadOrder();

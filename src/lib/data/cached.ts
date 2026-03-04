@@ -2,13 +2,13 @@ import { getProduct, getStore, getTaxon } from "@spree/next";
 import { cache } from "react";
 
 export const getCachedProduct = cache(
-  (slugOrId: string, includes: string, locale: string) =>
-    getProduct(slugOrId, { includes }, { locale }),
+  (slugOrId: string, expand: string[], locale: string) =>
+    getProduct(slugOrId, { expand }, { locale }),
 );
 
 export const getCachedTaxon = cache(
-  (idOrPermalink: string, includes: string, locale: string) =>
-    getTaxon(idOrPermalink, { includes }, { locale }),
+  (idOrPermalink: string, expand: string[], locale: string) =>
+    getTaxon(idOrPermalink, { expand }, { locale }),
 );
 
 export const getCachedStore = cache((locale: string) => getStore({ locale }));

@@ -1,6 +1,6 @@
 "use client";
 
-import type { StoreCountry, StoreStore } from "@spree/sdk";
+import type { StoreCountry, StoreMarket, StoreStore } from "@spree/sdk";
 import { usePathname, useRouter } from "next/navigation";
 import {
   createContext,
@@ -12,17 +12,24 @@ import {
   useRef,
   useState,
 } from "react";
-import { getCountries as getCountriesAction } from "@/lib/data/countries";
+import { getMarkets as getMarketsAction } from "@/lib/data/markets";
 import { getStore as getStoreAction } from "@/lib/data/store";
 import { setStoreCookies } from "@/lib/utils/cookies";
 import { getPathWithoutPrefix } from "@/lib/utils/path";
+
+/** Country enriched with market info (currency, locale, etc.) */
+export interface CountryWithMarket extends StoreCountry {
+  currency: string;
+  default_locale: string;
+  marketId: string | null;
+}
 
 interface StoreContextValue {
   country: string;
   locale: string;
   currency: string;
   store: StoreStore | null;
-  countries: StoreCountry[];
+  countries: CountryWithMarket[];
   setCountry: (country: string) => void;
   setLocale: (locale: string) => void;
   loading: boolean;
@@ -36,22 +43,45 @@ interface StoreProviderProps {
   initialLocale: string;
 }
 
+/** Build a flat country list from markets, enriching each country with market info. */
+function buildCountriesFromMarkets(
+  markets: StoreMarket[],
+): CountryWithMarket[] {
+  const seen = new Set<string>();
+  const result: CountryWithMarket[] = [];
+
+  for (const market of markets) {
+    for (const country of market.countries ?? []) {
+      if (seen.has(country.iso)) continue;
+      seen.add(country.iso);
+
+      result.push({
+        ...country,
+        currency: market.currency,
+        default_locale: market.default_locale,
+        marketId: market.id,
+      });
+    }
+  }
+
+  return result;
+}
+
 /** Find a country by ISO code in the flat countries list. */
 function findCountry(
-  countries: StoreCountry[],
+  countries: CountryWithMarket[],
   countryIso: string,
-): StoreCountry | undefined {
+): CountryWithMarket | undefined {
   return countries.find(
     (c) => c.iso.toLowerCase() === countryIso.toLowerCase(),
   );
 }
 
 function resolveCountryAndCurrency(
-  countries: StoreCountry[],
-  storeData: StoreStore,
+  countries: CountryWithMarket[],
   urlCountry: string,
 ): {
-  country: StoreCountry | undefined;
+  country: CountryWithMarket | undefined;
   currency: string;
   locale: string;
   needsRedirect: boolean;
@@ -97,26 +127,26 @@ export function StoreProvider({
   const [locale, setLocaleState] = useState(initialLocale);
   const [currency, setCurrency] = useState("USD");
   const [store, setStore] = useState<StoreStore | null>(null);
-  const [countries, setCountries] = useState<StoreCountry[]>([]);
+  const [countries, setCountries] = useState<CountryWithMarket[]>([]);
   const [loading, setLoading] = useState(true);
   const pathnameRef = useRef(pathname);
   pathnameRef.current = pathname;
 
-  // Fetch store and countries data on mount
+  // Fetch store and markets data on mount
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [storeData, countriesData] = await Promise.all([
+        const [storeData, marketsData] = await Promise.all([
           getStoreAction(),
-          getCountriesAction(),
+          getMarketsAction(),
         ]);
 
         setStore(storeData);
-        setCountries(countriesData.data);
+        const enrichedCountries = buildCountriesFromMarkets(marketsData.data);
+        setCountries(enrichedCountries);
 
         const resolved = resolveCountryAndCurrency(
-          countriesData.data,
-          storeData,
+          enrichedCountries,
           initialCountry,
         );
 
@@ -153,8 +183,9 @@ export function StoreProvider({
     (newCountry: string): void => {
       setCountryState(newCountry);
       const countryObj = findCountry(countries, newCountry);
-      if (countryObj?.currency) {
+      if (countryObj) {
         setCurrency(countryObj.currency);
+        setLocaleState(countryObj.default_locale);
       }
     },
     [countries],

@@ -32,7 +32,11 @@ export default async function CategoryPage({ params }: CategoryPageProps) {
 
   let taxon;
   try {
-    taxon = await getCachedTaxon(fullPermalink, "ancestors,children", locale);
+    taxon = await getCachedTaxon(
+      fullPermalink,
+      ["ancestors", "children"],
+      locale,
+    );
   } catch (error) {
     console.error("Failed to fetch taxon:", error);
     notFound();

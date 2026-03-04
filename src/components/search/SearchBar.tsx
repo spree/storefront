@@ -37,7 +37,7 @@ export function SearchBar({ basePath }: SearchBarProps) {
       try {
         const response = await getProducts({
           multi_search: searchQuery,
-          per_page: 6,
+          limit: 6,
         });
         setSuggestions(response.data);
         if (response.data.length > 0) {

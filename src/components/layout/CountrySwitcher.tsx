@@ -1,10 +1,11 @@
 "use client";
 
-import type { StoreCountry } from "@spree/sdk";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { CheckIcon, ChevronDownIcon } from "@/components/icons";
-import { useStore } from "@/contexts/StoreContext";
+import { useCart } from "@/contexts/CartContext";
+import { type CountryWithMarket, useStore } from "@/contexts/StoreContext";
+import { updateOrderMarket } from "@/lib/data/checkout";
 import { setStoreCookies } from "@/lib/utils/cookies";
 import { getPathWithoutPrefix } from "@/lib/utils/path";
 
@@ -22,6 +23,7 @@ function countryToFlag(countryCode: string): string {
 
 export function CountrySwitcher() {
   const { country, currency, countries, setCountry, loading } = useStore();
+  const { cart, refreshCart } = useCart();
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
@@ -42,11 +44,25 @@ export function CountrySwitcher() {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  // Handle country selection — derive locale and currency from the country directly
-  const handleCountrySelect = (entry: StoreCountry) => {
+  // Handle country selection — derive locale and currency from the country's market
+  const handleCountrySelect = async (entry: CountryWithMarket) => {
     const newLocale = entry.default_locale || "en";
+    const newCurrency = entry.currency;
     const pathRest = getPathWithoutPrefix(pathname);
     const newPath = `/${entry.iso.toLowerCase()}/${newLocale}${pathRest}`;
+
+    // Update existing cart if currency or locale changed
+    if (cart && (cart.currency !== newCurrency || cart.locale !== newLocale)) {
+      const result = await updateOrderMarket(cart.id, {
+        currency: newCurrency,
+        locale: newLocale,
+      });
+      if (!result.success) {
+        setIsOpen(false);
+        return;
+      }
+      await refreshCart();
+    }
 
     setStoreCookies(entry.iso.toLowerCase(), newLocale);
     setCountry(entry.iso.toLowerCase());

@@ -35,8 +35,8 @@ export default async function CategoriesPage({ params }: CategoriesPageProps) {
   let taxonomies: StoreTaxonomy[] = [];
   try {
     const response = await getTaxonomies({
-      per_page: 100,
-      includes: "taxons",
+      limit: 100,
+      expand: ["taxons"],
     });
     taxonomies = response.data;
   } catch (error) {

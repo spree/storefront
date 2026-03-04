@@ -72,7 +72,7 @@ export function useProductListing({
     async (page: number, filters: ActiveFilters, query: string) => {
       try {
         const queryParams = buildProductQueryParams(filters, query);
-        return await fetchFn({ page, per_page: 12, ...queryParams });
+        return await fetchFn({ page, limit: 12, ...queryParams });
       } catch (error) {
         console.error("Failed to fetch products:", error);
         return null;

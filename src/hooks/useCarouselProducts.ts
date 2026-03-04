@@ -28,7 +28,7 @@ export function useCarouselProducts({
       setLoading(true);
       setError(null);
       try {
-        const params = { per_page: limit };
+        const params = { limit };
 
         const response = taxonId
           ? await getTaxonProducts(taxonId, params)
