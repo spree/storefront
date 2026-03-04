@@ -7,6 +7,7 @@ const nextConfig: NextConfig = {
   },
   transpilePackages: ["@spree/next", "@spree/sdk"],
   turbopack: {
+    root: __dirname,
     rules: {
       "*.svg": {
         loaders: ["@svgr/webpack"],
