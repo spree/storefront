@@ -10,5 +10,5 @@ export async function getCountries() {
 }
 
 export async function getCountry(iso: string) {
-  return _getCountry(iso, { include: "states" });
+  return _getCountry(iso, { expand: "states" });
 }
