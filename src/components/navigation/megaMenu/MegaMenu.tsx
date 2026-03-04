@@ -187,9 +187,9 @@ export function MegaMenu({ basePath, config }: MegaMenuProps) {
     const fetchData = async () => {
       try {
         const [taxonomiesRes, ...taxonResults] = await Promise.all([
-          getTaxonomies({ per_page: 100, includes: "taxons" }),
+          getTaxonomies({ limit: 100, expand: ["taxons"] }),
           ...extraTaxonSlugs.map((slug) =>
-            getTaxon(slug, { includes: "children" }),
+            getTaxon(slug, { expand: ["children"] }),
           ),
         ]);
         setTaxonomies(taxonomiesRes.data);
