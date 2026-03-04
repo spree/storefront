@@ -41,6 +41,7 @@ function MobileNavItem({
   return (
     <li>
       <button
+        type="button"
         onClick={onToggle}
         className="flex items-center justify-between w-full px-4 py-3 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
         aria-expanded={isExpanded}
@@ -53,21 +54,23 @@ function MobileNavItem({
         />
       </button>
 
-      {isExpanded && children.length > 0 && (
+      {isExpanded && (
         <div className="bg-gray-50 pb-2">
-          <ul className="space-y-1 px-4">
-            {children.map((child) => (
-              <li key={child.id}>
-                <Link
-                  href={taxonHref(basePath, child)}
-                  className="block py-2 pl-4 text-sm text-gray-600 hover:text-gray-900 transition-colors"
-                  onClick={onClose}
-                >
-                  {child.name}
-                </Link>
-              </li>
-            ))}
-          </ul>
+          {children.length > 0 && (
+            <ul className="space-y-1 px-4">
+              {children.map((child) => (
+                <li key={child.id}>
+                  <Link
+                    href={taxonHref(basePath, child)}
+                    className="block py-2 pl-4 text-sm text-gray-600 hover:text-gray-900 transition-colors"
+                    onClick={onClose}
+                  >
+                    {child.name}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          )}
           <Link
             href={viewAllHref}
             className="block px-4 pl-8 py-2 text-xs font-bold text-primary-500 uppercase tracking-wide hover:text-primary-700 transition-colors"

@@ -278,6 +278,9 @@ export function MegaMenu({ basePath, config }: MegaMenuProps) {
   }, []);
 
   const handleMouseLeave = useCallback(() => {
+    if (closeTimeoutRef.current) {
+      clearTimeout(closeTimeoutRef.current);
+    }
     closeTimeoutRef.current = setTimeout(() => {
       setActiveIndex(null);
     }, CLOSE_DELAY_MS);
@@ -377,6 +380,7 @@ export function MegaMenu({ basePath, config }: MegaMenuProps) {
 
       {/* Hamburger button — always visible on mobile, visible on desktop when overflowing */}
       <button
+        type="button"
         onClick={() => setDrawerOpen(true)}
         className={`p-2 text-gray-600 hover:text-gray-900 transition-colors ${
           isOverflowing ? "" : "md:hidden"

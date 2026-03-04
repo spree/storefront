@@ -35,6 +35,13 @@ export function DrawerShell({
   useEffect(() => {
     if (isOpen) {
       triggerRef.current = document.activeElement;
+      requestAnimationFrame(() => {
+        if (!drawerRef.current) return;
+        const focusable = drawerRef.current.querySelector<HTMLElement>(
+          'a[href], button:not([disabled]), textarea, input, select, [tabindex]:not([tabindex="-1"])',
+        );
+        (focusable ?? drawerRef.current).focus();
+      });
     }
   }, [isOpen]);
 
@@ -45,12 +52,13 @@ export function DrawerShell({
       if (e.key === "Escape") onClose();
     };
 
+    const prevOverflow = document.body.style.overflow;
     document.addEventListener("keydown", handleEscape);
     document.body.style.overflow = "hidden";
 
     return () => {
       document.removeEventListener("keydown", handleEscape);
-      document.body.style.overflow = "";
+      document.body.style.overflow = prevOverflow;
     };
   }, [isOpen, onClose]);
 
@@ -98,6 +106,7 @@ export function DrawerShell({
         role="dialog"
         aria-modal="true"
         aria-label={title}
+        tabIndex={-1}
         onKeyDown={handleKeyDown}
       >
         <div className="flex items-center justify-between p-4 border-b border-gray-200">
@@ -106,6 +115,7 @@ export function DrawerShell({
               <h2 className="text-lg font-semibold text-gray-900">{title}</h2>
               {headerExtra}
               <button
+                type="button"
                 onClick={onClose}
                 className="p-2 -mr-2 text-gray-500 hover:text-gray-700 transition-colors"
                 aria-label={`Close ${title.toLowerCase()}`}
@@ -116,6 +126,7 @@ export function DrawerShell({
           ) : (
             <>
               <button
+                type="button"
                 onClick={onClose}
                 className="p-2 -ml-2 text-gray-500 hover:text-gray-700 transition-colors"
                 aria-label={`Close ${title.toLowerCase()}`}

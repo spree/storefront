@@ -23,7 +23,10 @@ export function useOverflowDetection(
 
   useEffect(() => {
     const measure = measureRef.current;
-    if (!measure || itemCount === 0) return;
+    if (!measure || itemCount === 0) {
+      setIsOverflowing(false);
+      return;
+    }
 
     minWidthRef.current = measure.scrollWidth;
 
