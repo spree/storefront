@@ -81,6 +81,9 @@ SPREE_PUBLISHABLE_KEY=your_publishable_api_key_here
 | Variable | Description | Default |
 |----------|-------------|---------|
 | `GTM_ID` | Google Tag Manager container ID (e.g. `GTM-XXXXXXX`) | _(disabled)_ |
+| `SITEMAP_LOCALE_MODE` | Which country/locale pairs to include in the sitemap: `default`, `selected`, or `all` | `default` |
+| `SITEMAP_COUNTRIES` | Comma-separated country ISO codes (only used when `SITEMAP_LOCALE_MODE=selected`) | _(empty)_ |
+| `ROBOTS_DISALLOW_AI` | Block AI training bots (GPTBot, CCBot, Google-Extended, etc.) in robots.txt | `false` |
 | `SENTRY_DSN` | Sentry DSN for error tracking (e.g. `https://key@o0.ingest.sentry.io/0`) | _(disabled)_ |
 | `SENTRY_ORG` | Sentry organization slug (for source map uploads) | _(none)_ |
 | `SENTRY_PROJECT` | Sentry project slug (for source map uploads) | _(none)_ |
@@ -88,6 +91,13 @@ SPREE_PUBLISHABLE_KEY=your_publishable_api_key_here
 | `SENTRY_SEND_DEFAULT_PII` | Send PII (IP addresses, cookies, user data) to Sentry server-side | `false` |
 | `NEXT_PUBLIC_SENTRY_SEND_DEFAULT_PII` | Send PII to Sentry client-side | `false` |
 
+> **Sitemap locale modes:**
+> - `default` — only the store's default country and locale (good for single-region stores)
+> - `selected` — only countries listed in `SITEMAP_COUNTRIES` (e.g. `SITEMAP_COUNTRIES=us,gb,de`)
+> - `all` — every country available in the Spree store
+>
+> Each country resolves its locale from the country's `default_locale` in the Spree API, falling back to the store's default locale.
+>
 > **Privacy note:** PII collection is disabled by default. Only set `SENTRY_SEND_DEFAULT_PII` / `NEXT_PUBLIC_SENTRY_SEND_DEFAULT_PII` to `true` if you have appropriate user consent or a privacy policy covering this data.
 
 ### Development
@@ -235,6 +245,7 @@ The easiest way to deploy is using [Vercel](https://vercel.com/new):
 3. Add environment variables:
    - `SPREE_API_URL` and `SPREE_PUBLISHABLE_KEY` (required)
    - `GTM_ID` (optional — Google Tag Manager)
+   - `SITEMAP_LOCALE_MODE`, `SITEMAP_COUNTRIES` (optional — for multi-region sitemap)
    - `SENTRY_DSN`, `SENTRY_ORG`, `SENTRY_PROJECT`, `SENTRY_AUTH_TOKEN` (optional — for error tracking with readable stack traces)
 4. Deploy
 
