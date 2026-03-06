@@ -20,6 +20,7 @@ export { default as InfoCircleIcon } from "./info-circle.svg";
 export { default as LightningBoltIcon } from "./lightning-bolt.svg";
 export { default as LockIcon } from "./lock.svg";
 export { default as MapPinIcon } from "./map-pin.svg";
+export { default as MenuIcon } from "./menu.svg";
 export { default as MinusIcon } from "./minus.svg";
 export { default as PlusIcon } from "./plus.svg";
 export { default as SearchIcon } from "./search.svg";
