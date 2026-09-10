@@ -30,10 +30,15 @@ import {
   type PayPalPaymentFormHandle,
 } from "@/components/checkout/PayPalPaymentForm";
 import {
+  RazorpayPaymentForm,
+  type RazorpayPaymentFormHandle,
+} from "@/components/checkout/RazorpayPaymentForm";
+import {
   confirmWithSavedCard,
   StripePaymentForm,
   type StripePaymentFormHandle,
 } from "@/components/checkout/StripePaymentForm";
+
 import { Checkbox } from "@/components/ui/checkbox";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { useCountryStates } from "@/hooks/useCountryStates";
@@ -164,12 +169,15 @@ export function PaymentSection({
   const [paymentSessionId, setPaymentSessionId] = useState<string | null>(null);
   const [gatewayError, setGatewayError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+
   const gatewayHandleRef = useRef<
     | StripePaymentFormHandle
     | AdyenPaymentFormHandle
     | PayPalPaymentFormHandle
+    | RazorpayPaymentFormHandle
     | null
   >(null);
+
   const initRef = useRef(false);
   const sessionRequestIdRef = useRef(0);
   const completionInFlightRef = useRef(false);
@@ -179,7 +187,8 @@ export function PaymentSection({
       handle:
         | StripePaymentFormHandle
         | AdyenPaymentFormHandle
-        | PayPalPaymentFormHandle,
+        | PayPalPaymentFormHandle
+        | RazorpayPaymentFormHandle,
     ) => {
       gatewayHandleRef.current = handle;
     },
@@ -571,8 +580,14 @@ export function PaymentSection({
                 | undefined;
               const gatewayId = resolveGatewayId(selectedMethod.type);
               const isStripe = gatewayId === "stripe";
+
+              // --- ADDED RAZORPAY TO APPROVAL FLAG ---
               const isApprovalDriven =
-                gatewayId === "adyen" || gatewayId === "paypal";
+                gatewayId === "adyen" ||
+                gatewayId === "paypal" ||
+                gatewayId === "razorpay";
+              // ---------------------------------------
+
               const canUseSavedCard =
                 isStripe && Boolean(selectedCardId && clientSecret);
 
@@ -602,7 +617,7 @@ export function PaymentSection({
                 return { error };
               }
 
-              // Approval-driven gateways (Adyen, PayPal) complete the order
+              // Approval-driven gateways (Adyen, PayPal, Razorpay) complete the order
               // via handleGatewayApproved when their callback fires — don't
               // call onPaymentComplete here or we'll race with the callback.
               if (isApprovalDriven) {
@@ -943,6 +958,19 @@ export function PaymentSection({
                                     key={orderId}
                                     paypalOrderId={orderId}
                                     currency={cart.currency}
+                                    onReady={handleGatewayReady}
+                                    onApproved={handleGatewayApproved}
+                                  />
+                                </div>
+                              ) : null;
+                            }
+                            case "razorpay": {
+                              return ext ? (
+                                <div className="p-4">
+                                  <RazorpayPaymentForm
+                                    key={ext._external_id as string}
+                                    sessionData={ext}
+                                    cart={cart}
                                     onReady={handleGatewayReady}
                                     onApproved={handleGatewayApproved}
                                   />
