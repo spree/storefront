@@ -332,7 +332,21 @@
     "showPassword": "Pokaż hasło",
     "hidePassword": "Ukryj hasło",
     "forgotPassword": "Zapomniałeś hasła?",
-    "policyConsentRequired": "Musisz zaakceptować regulamin sklepu, aby utworzyć konto"
+    "policyConsentRequired": "Musisz zaakceptować regulamin sklepu, aby utworzyć konto",
+    "orContinueWith": "Lub kontynuuj przez",
+    "continueWith": "Kontynuuj przez {provider}",
+    "providerNeedsEmail": "Poprosimy Cię o adres e-mail, aby dokończyć tworzenie konta",
+    "socialLoginFailed": "Nie udało się zalogować. Spróbuj ponownie.",
+    "socialLoginCancelled": "Logowanie zostało anulowane.",
+    "socialErrorExpired": "Próba logowania wygasła. Zacznij od nowa.",
+    "socialErrorUnavailable": "Ta opcja logowania jest teraz niedostępna.",
+    "emailTaken": "Konto z tym adresem e-mail już istnieje. Zaloguj się hasłem.",
+    "completeRegistrationTitle": "Jeszcze jeden krok",
+    "completeRegistrationDescription": "Dodaj adres e-mail, aby dokończyć tworzenie konta.",
+    "completeRegistration": "Utwórz konto",
+    "completingRegistration": "Tworzenie konta...",
+    "firstName": "Imię",
+    "lastName": "Nazwisko"
   },
   "register": {
     "createAccount": "Utwórz konto",

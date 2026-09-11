@@ -332,7 +332,21 @@
     "showPassword": "Mostrar contrasena",
     "hidePassword": "Ocultar contrasena",
     "forgotPassword": "¿Olvidaste tu contrasena?",
-    "policyConsentRequired": "Debes aceptar las politicas de la tienda para crear una cuenta"
+    "policyConsentRequired": "Debes aceptar las politicas de la tienda para crear una cuenta",
+    "orContinueWith": "O continúa con",
+    "continueWith": "Continuar con {provider}",
+    "providerNeedsEmail": "Te pediremos un correo electrónico para terminar de crear tu cuenta",
+    "socialLoginFailed": "No pudimos iniciar tu sesión. Inténtalo de nuevo.",
+    "socialLoginCancelled": "Se canceló el inicio de sesión.",
+    "socialErrorExpired": "Tu intento de inicio de sesión caducó. Empieza de nuevo.",
+    "socialErrorUnavailable": "Esa opción de inicio de sesión no está disponible ahora mismo.",
+    "emailTaken": "Ya existe una cuenta con este correo electrónico. Inicia sesión con tu contraseña.",
+    "completeRegistrationTitle": "Un paso más",
+    "completeRegistrationDescription": "Añade tu correo electrónico para terminar de crear tu cuenta.",
+    "completeRegistration": "Crear cuenta",
+    "completingRegistration": "Creando tu cuenta...",
+    "firstName": "Nombre",
+    "lastName": "Apellido"
   },
   "register": {
     "createAccount": "Crear cuenta",

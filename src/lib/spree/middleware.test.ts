@@ -100,8 +100,10 @@ describe("Spree locale middleware", () => {
   it.each([
     "/us/en/account",
     "/us/en/account/register",
+    "/us/en/account/complete-registration",
     "/us/en/account/forgot-password",
     "/us/en/account/reset-password?token=reset-token",
+    "/us/en/account/callback/google?code=code-1&state=state-1",
   ])("keeps the public account route accessible: %s", (pathname) => {
     const response = middleware(
       new NextRequest(`https://store.example${pathname}`),

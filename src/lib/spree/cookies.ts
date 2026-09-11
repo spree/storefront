@@ -10,9 +10,14 @@ import {
 const DEFAULT_CART_COOKIE = "_spree_cart_token";
 const DEFAULT_ACCESS_TOKEN_COOKIE = "_spree_jwt";
 const DEFAULT_REFRESH_TOKEN_COOKIE = "_spree_refresh_token";
+const OAUTH_STATE_COOKIE = "_spree_oauth_state";
+const REGISTRATION_TOKEN_COOKIE = "_spree_registration_token";
 const CART_TOKEN_MAX_AGE = 60 * 60 * 24 * 30; // 30 days
 const ACCESS_TOKEN_MAX_AGE = 60 * 60 * 24 * 7; // 7 days
 const REFRESH_TOKEN_MAX_AGE = 60 * 60 * 24 * 30; // 30 days
+// The API signs both tokens with a 15-minute expiry, so the storefront's copies
+// expire exactly when the API stops accepting them.
+const SOCIAL_LOGIN_MAX_AGE = 60 * 15; // 15 minutes
 
 /**
  * Whether the current execution context may write cookies. Next.js allows
@@ -224,4 +229,106 @@ export async function isPoisonedDtcCartId(
   if (surface !== "dtc") return false;
   const wholesaleCartId = await getCartId("wholesale");
   return Boolean(wholesaleCartId) && wholesaleCartId === cartId;
+}
+
+// --- Social login (OAuth state + pending registration) ---
+//
+// Two short-lived httpOnly cookies carry a social sign-in across the provider
+// redirect. `state` is minted by the API inside the authorization URL; holding
+// it here lets the callback refuse a code that arrives with a different one,
+// so an attacker cannot plant their own account in the shopper's session. The
+// registration token is the API's stand-in for an account it has not created
+// yet — it exists only between the callback and the completion screen.
+//
+// The name and options are exported because the callback is a route handler
+// that answers with a redirect it built itself; setting the cookie on that
+// response is the one way to be sure it leaves with the redirect.
+
+export const OAUTH_STATE_COOKIE_NAME = OAUTH_STATE_COOKIE;
+export const REGISTRATION_TOKEN_COOKIE_NAME = REGISTRATION_TOKEN_COOKIE;
+
+/** What a social sign-in has to remember between the two legs. */
+export interface SocialLoginContext {
+  /** The state the API signed into the authorization URL. */
+  state: string;
+  /** Where the shopper was headed, for the callback to send them on. */
+  returnTo?: string;
+}
+
+export function oauthStateCookieOptions() {
+  return {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "lax" as const,
+    path: "/",
+    maxAge: SOCIAL_LOGIN_MAX_AGE,
+  };
+}
+
+export function registrationTokenCookieOptions() {
+  return {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "lax" as const,
+    path: "/",
+    maxAge: SOCIAL_LOGIN_MAX_AGE,
+  };
+}
+
+export async function getSocialLoginContext(): Promise<
+  SocialLoginContext | undefined
+> {
+  const cookieStore = await cookies();
+  const raw = cookieStore.get(OAUTH_STATE_COOKIE)?.value;
+  if (!raw) return undefined;
+
+  try {
+    const parsed: unknown = JSON.parse(raw);
+    if (!parsed || typeof parsed !== "object") return undefined;
+
+    const { state, returnTo } = parsed as Partial<SocialLoginContext>;
+    if (typeof state !== "string") return undefined;
+
+    return {
+      state,
+      returnTo: typeof returnTo === "string" ? returnTo : undefined,
+    };
+  } catch {
+    return undefined;
+  }
+}
+
+export async function setSocialLoginContext(
+  context: SocialLoginContext,
+): Promise<void> {
+  const cookieStore = await cookies();
+  cookieStore.set(
+    OAUTH_STATE_COOKIE,
+    JSON.stringify(context),
+    oauthStateCookieOptions(),
+  );
+}
+
+export async function clearSocialLoginContext(): Promise<void> {
+  const cookieStore = await cookies();
+  cookieStore.set(OAUTH_STATE_COOKIE, "", { maxAge: -1, path: "/" });
+}
+
+export async function getRegistrationToken(): Promise<string | undefined> {
+  const cookieStore = await cookies();
+  return cookieStore.get(REGISTRATION_TOKEN_COOKIE)?.value;
+}
+
+export async function setRegistrationToken(token: string): Promise<void> {
+  const cookieStore = await cookies();
+  cookieStore.set(
+    REGISTRATION_TOKEN_COOKIE,
+    token,
+    registrationTokenCookieOptions(),
+  );
+}
+
+export async function clearRegistrationToken(): Promise<void> {
+  const cookieStore = await cookies();
+  cookieStore.set(REGISTRATION_TOKEN_COOKIE, "", { maxAge: -1, path: "/" });
 }

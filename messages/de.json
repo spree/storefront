@@ -332,7 +332,21 @@
     "showPassword": "Passwort anzeigen",
     "hidePassword": "Passwort verbergen",
     "forgotPassword": "Passwort vergessen?",
-    "policyConsentRequired": "Sie müssen den Geschäftsrichtlinien zustimmen, um ein Konto zu erstellen"
+    "policyConsentRequired": "Sie müssen den Geschäftsrichtlinien zustimmen, um ein Konto zu erstellen",
+    "orContinueWith": "Oder weiter mit",
+    "continueWith": "Weiter mit {provider}",
+    "providerNeedsEmail": "Sie werden nach einer E-Mail-Adresse gefragt, um Ihr Konto fertig einzurichten",
+    "socialLoginFailed": "Die Anmeldung ist fehlgeschlagen. Bitte versuchen Sie es erneut.",
+    "socialLoginCancelled": "Die Anmeldung wurde abgebrochen.",
+    "socialErrorExpired": "Ihr Anmeldeversuch ist abgelaufen. Bitte starten Sie erneut.",
+    "socialErrorUnavailable": "Diese Anmeldeoption ist derzeit nicht verfügbar.",
+    "emailTaken": "Ein Konto mit dieser E-Mail-Adresse existiert bereits. Melden Sie sich stattdessen mit Ihrem Passwort an.",
+    "completeRegistrationTitle": "Noch ein Schritt",
+    "completeRegistrationDescription": "Geben Sie Ihre E-Mail-Adresse an, um Ihr Konto fertig einzurichten.",
+    "completeRegistration": "Konto erstellen",
+    "completingRegistration": "Konto wird erstellt...",
+    "firstName": "Vorname",
+    "lastName": "Nachname"
   },
   "register": {
     "createAccount": "Konto erstellen",

@@ -332,7 +332,21 @@
     "showPassword": "Afficher le mot de passe",
     "hidePassword": "Masquer le mot de passe",
     "forgotPassword": "Mot de passe oublie ?",
-    "policyConsentRequired": "Vous devez accepter les politiques du magasin pour creer un compte"
+    "policyConsentRequired": "Vous devez accepter les politiques du magasin pour creer un compte",
+    "orContinueWith": "Ou continuer avec",
+    "continueWith": "Continuer avec {provider}",
+    "providerNeedsEmail": "Une adresse e-mail vous sera demandée pour finaliser la création de votre compte",
+    "socialLoginFailed": "Nous n'avons pas pu vous connecter. Veuillez réessayer.",
+    "socialLoginCancelled": "La connexion a été annulée.",
+    "socialErrorExpired": "Votre tentative de connexion a expiré. Veuillez recommencer.",
+    "socialErrorUnavailable": "Cette option de connexion n'est pas disponible pour le moment.",
+    "emailTaken": "Un compte existe déjà avec cette adresse e-mail. Connectez-vous avec votre mot de passe.",
+    "completeRegistrationTitle": "Une dernière étape",
+    "completeRegistrationDescription": "Ajoutez votre adresse e-mail pour finaliser la création de votre compte.",
+    "completeRegistration": "Créer un compte",
+    "completingRegistration": "Création de votre compte...",
+    "firstName": "Prénom",
+    "lastName": "Nom"
   },
   "register": {
     "createAccount": "Creer un compte",

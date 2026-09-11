@@ -35,9 +35,14 @@ export interface SpreeMiddlewareConfig {
 const PUBLIC_ACCOUNT_PATHS = new Set([
   "/account",
   "/account/register",
+  "/account/complete-registration",
   "/account/forgot-password",
   "/account/reset-password",
 ]);
+
+// Reached before a session exists, and at a depth the exact-path set cannot
+// name: the provider appends its own segments.
+const PUBLIC_ACCOUNT_PREFIXES = ["/account/callback/"];
 
 function isProtectedAccountPath(pathname: string, localizedPrefix: string) {
   const localizedPath = pathname.slice(localizedPrefix.length);
@@ -45,7 +50,8 @@ function isProtectedAccountPath(pathname: string, localizedPrefix: string) {
 
   return (
     normalizedPath.startsWith("/account/") &&
-    !PUBLIC_ACCOUNT_PATHS.has(normalizedPath)
+    !PUBLIC_ACCOUNT_PATHS.has(normalizedPath) &&
+    !PUBLIC_ACCOUNT_PREFIXES.some((prefix) => normalizedPath.startsWith(prefix))
   );
 }
 

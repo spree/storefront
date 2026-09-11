@@ -332,7 +332,21 @@
     "showPassword": "Show password",
     "hidePassword": "Hide password",
     "forgotPassword": "Forgot password?",
-    "policyConsentRequired": "You must agree to the store policies to create an account"
+    "policyConsentRequired": "You must agree to the store policies to create an account",
+    "orContinueWith": "Or continue with",
+    "continueWith": "Continue with {provider}",
+    "providerNeedsEmail": "You will be asked for an email address to finish creating your account",
+    "socialLoginFailed": "We could not sign you in. Please try again.",
+    "socialLoginCancelled": "Sign-in was cancelled.",
+    "socialErrorExpired": "Your sign-in attempt expired. Please start again.",
+    "socialErrorUnavailable": "That sign-in option is not available right now.",
+    "emailTaken": "An account with this email already exists. Sign in with your password instead.",
+    "completeRegistrationTitle": "One more step",
+    "completeRegistrationDescription": "Add your email address to finish creating your account.",
+    "completeRegistration": "Create Account",
+    "completingRegistration": "Creating your account...",
+    "firstName": "First name",
+    "lastName": "Last name"
   },
   "register": {
     "createAccount": "Create Account",
