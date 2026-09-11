@@ -39,6 +39,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { useCountryStates } from "@/hooks/useCountryStates";
 import { getCreditCards } from "@/lib/data/credit-cards";
 import {
+  applyStoreCredit,
   createCheckoutPaymentSession,
   createDirectPayment,
   updateCheckoutPaymentSession,
@@ -72,6 +73,7 @@ interface PaymentSectionProps {
     use_shipping?: boolean;
   }) => Promise<boolean>;
   onPaymentComplete: (result: PaymentCompleteResult) => Promise<void>;
+  onCartUpdate?: (cart: Cart) => void;
   processing: boolean;
   setProcessing: (processing: boolean) => void;
   onSessionMethodChange?: (isSessionBased: boolean) => void;
@@ -86,6 +88,7 @@ export function PaymentSection({
   fetchStates,
   onUpdateBillingAddress,
   onPaymentComplete,
+  onCartUpdate,
   processing,
   setProcessing,
   onSessionMethodChange,
@@ -616,6 +619,37 @@ export function PaymentSection({
               return {};
             }
 
+            // Store credit is drawn through its own endpoint, which returns the
+            // cart: a balance spread over several credits takes more than one
+            // payment, so there is no single payment to create.
+            if (selectedMethod.type === "store_credit") {
+              const creditResult = await applyStoreCredit(cart.id);
+              if (!creditResult.success) {
+                const msg = creditResult.error || t("failedToApplyStoreCredit");
+                setGatewayError(msg);
+                setProcessing(false);
+                return { error: msg };
+              }
+
+              // The credit is applied either way, so the parent's cart is now
+              // stale — hand it the new totals before deciding what to do.
+              onCartUpdate?.(creditResult.cart);
+
+              // Credit covering only part of the order leaves a balance for
+              // another method. What was applied stands.
+              if (!creditResult.cart.covered_by_store_credit) {
+                const msg = t("storeCreditPartiallyCovers", {
+                  amount: creditResult.cart.display_amount_due ?? "",
+                });
+                setGatewayError(msg);
+                setProcessing(false);
+                return { error: msg };
+              }
+
+              await onPaymentComplete({ type: "direct" });
+              return {};
+            }
+
             // Direct payment flow (Check, Cash on Delivery, etc.)
             const paymentResult = await createDirectPayment(
               cart.id,
@@ -651,6 +685,7 @@ export function PaymentSection({
       billAddress,
       onUpdateBillingAddress,
       onPaymentComplete,
+      onCartUpdate,
       cart.id,
       setProcessing,
       t,
@@ -881,18 +916,6 @@ export function PaymentSection({
                         </div>
                       )}
 
-                      {/* Shared: gateway error */}
-                      {gatewayError && !loading && (
-                        <div className="px-4 py-3">
-                          <div className="rounded-sm border border-red-300 bg-red-50 px-4 py-3">
-                            <p className="text-sm text-red-700 flex items-center gap-2">
-                              <CircleAlert className="h-4 w-4 flex-shrink-0" />
-                              {gatewayError}
-                            </p>
-                          </div>
-                        </div>
-                      )}
-
                       {/* Gateway-specific payment form */}
                       {!loading &&
                         sessionExternalData &&
@@ -983,6 +1006,17 @@ export function PaymentSection({
           );
         })}
       </RadioGroup>
+
+      {/* Payment error — outside the method list so it reaches every method,
+          not only the session-based ones that mount a gateway form. */}
+      {gatewayError && !loading && (
+        <div className="mt-3 rounded-sm border border-red-300 bg-red-50 px-4 py-3">
+          <p className="text-sm text-red-700 flex items-center gap-2">
+            <CircleAlert className="h-4 w-4 flex-shrink-0" />
+            {gatewayError}
+          </p>
+        </div>
+      )}
 
       {/* Billing address — below payment box */}
       <div className="mt-4">

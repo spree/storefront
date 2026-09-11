@@ -74,6 +74,9 @@ export async function updateCheckoutPaymentSession(
 /**
  * Creates a direct payment for non-session payment methods
  * (e.g. Check, Cash on Delivery, Bank Transfer).
+ *
+ * Store credit is not one of them — use {@link applyStoreCredit} instead.
+ * Passing it here is refused with a `store_credits_endpoint_required` error.
  */
 export async function createDirectPayment(
   cartId: string,
@@ -91,6 +94,30 @@ export async function createDirectPayment(
     updateTag(checkoutTag(surface));
     return { payment };
   }, "Failed to create payment");
+}
+
+/**
+ * Applies the customer's store credit to the cart.
+ *
+ * Store credit is a non-session method but is not created through the payments
+ * endpoint: a balance spread over several credits takes more than one payment
+ * to draw, so the API applies it here and answers with the updated cart. Read
+ * `amount_due` on the result to see whether anything is still to collect.
+ */
+export async function applyStoreCredit(cartId: string) {
+  return actionResult(async () => {
+    const surface = await resolveSurfaceForCart(cartId);
+    const options = await getCartOptions(surface);
+    const id = await requireCartId(surface);
+    const cart = await getClientForSurface(surface).carts.storeCredits.apply(
+      id,
+      undefined,
+      options,
+    );
+    updateTag(checkoutTag(surface));
+    updateTag(cartTag(surface));
+    return { cart };
+  }, "Failed to apply store credit");
 }
 
 export async function completeCheckoutPaymentSession(
