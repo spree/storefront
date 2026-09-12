@@ -4,6 +4,7 @@ import { connection } from "next/server";
 import { Suspense } from "react";
 import { getAddresses } from "@/lib/data/addresses";
 import { getCheckoutOrder } from "@/lib/data/checkout";
+import { getCompanyAddresses } from "@/lib/data/companies";
 import { isAuthenticated as checkAuth } from "@/lib/data/cookies";
 import { getCountry } from "@/lib/data/countries";
 import { getMarketCountries, resolveMarket } from "@/lib/data/markets";
@@ -34,11 +35,19 @@ async function CheckoutDataLoader({ params }: CheckoutPageProps) {
   const authStatus = await checkAuth();
 
   // Fetch initial data in parallel during SSR
-  const [cartData, market, addressesData] = await Promise.all([
+  const [cartData, market, personalAddresses] = await Promise.all([
     getCheckoutOrder(cartId),
     resolveMarket(urlCountry).catch(() => null),
     authStatus ? getAddresses() : Promise.resolve({ data: [] as Address[] }),
   ]);
+
+  // Buying for a company ships to the company's sites, so its book replaces
+  // the buyer's own rather than joining it — offering someone's home address
+  // beside their employer's invites the mis-click. The set matches what the
+  // server will accept: the node's own sites and the ones it inherits.
+  const addressesData = cartData?.company_id
+    ? await getCompanyAddresses(cartData.company_id)
+    : personalAddresses;
 
   // Redirect to order-placed if already complete
   if (cartData?.current_step === "complete") {

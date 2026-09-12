@@ -128,7 +128,7 @@ export function buildSpreeAddress(
     address2: address.line2 || undefined,
     city: address.city,
     postal_code: address.postal_code,
-    country_iso: address.country,
+    country_code: address.country,
     state_name: address.state || undefined,
     phone: phone || undefined,
   };

@@ -29,6 +29,7 @@ function SessionFallback() {
 
 interface AuthenticatedAccountShellProps {
   children: React.ReactNode;
+  hasCompanies?: boolean;
   loginHref: string;
 }
 
@@ -39,6 +40,7 @@ interface AuthenticatedAccountShellProps {
  */
 export function AuthenticatedAccountShell({
   children,
+  hasCompanies,
   loginHref,
 }: AuthenticatedAccountShellProps) {
   const router = useRouter();
@@ -50,5 +52,5 @@ export function AuthenticatedAccountShell({
 
   if (loading || !isAuthenticated) return <SessionFallback />;
 
-  return <AccountShell>{children}</AccountShell>;
+  return <AccountShell hasCompanies={hasCompanies}>{children}</AccountShell>;
 }

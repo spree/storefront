@@ -89,12 +89,32 @@ function AddressCard({ address, onEdit, onDelete }: AddressCardProps) {
   );
 }
 
+/**
+ * The mutations a book needs. Injected because the same book is kept by two
+ * owners — a shopper keeps their own, a company keeps its sites — and only
+ * where the rows live differs.
+ */
+export interface AddressBookActions {
+  create: (data: AddressParams) => Promise<{
+    success: boolean;
+    error?: string;
+    address?: Address;
+  }>;
+  update: (
+    id: string,
+    data: AddressParams,
+  ) => Promise<{ success: boolean; error?: string; address?: Address }>;
+  remove: (id: string) => Promise<{ success: boolean; error?: string }>;
+}
+
 interface AddressManagementProps {
   initialAddresses: Address[];
   countries: Country[];
   showAddButton: boolean;
   emptyState: boolean;
   user?: User | null;
+  /** Defaults to the signed-in shopper's own book. */
+  actions?: AddressBookActions;
 }
 
 export function AddressManagement({
@@ -103,7 +123,13 @@ export function AddressManagement({
   showAddButton,
   emptyState,
   user,
+  actions,
 }: AddressManagementProps) {
+  const book: AddressBookActions = actions ?? {
+    create: createAddress,
+    update: updateAddress,
+    remove: deleteAddress,
+  };
   const t = useTranslations("address");
   const [addresses, setAddresses] = useState<Address[]>(initialAddresses);
   const [modalOpen, setModalOpen] = useState(false);
@@ -130,7 +156,7 @@ export function AddressManagement({
 
   const handleSave = async (data: AddressParams, id?: string) => {
     if (id) {
-      const result = await updateAddress(id, data);
+      const result = await book.update(id, data);
       if (!result.success) {
         throw new Error(result.error);
       }
@@ -141,7 +167,7 @@ export function AddressManagement({
         );
       }
     } else {
-      const result = await createAddress(data);
+      const result = await book.create(data);
       if (!result.success) {
         throw new Error(result.error);
       }
@@ -153,7 +179,7 @@ export function AddressManagement({
   };
 
   const handleDelete = async (id: string) => {
-    const result = await deleteAddress(id);
+    const result = await book.remove(id);
     if (result.success) {
       setAddresses((prev) => prev.filter((addr) => addr.id !== id));
     } else {

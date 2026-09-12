@@ -332,7 +332,8 @@
     "showPassword": "Mostrar contrasena",
     "hidePassword": "Ocultar contrasena",
     "forgotPassword": "¿Olvidaste tu contrasena?",
-    "policyConsentRequired": "Debes aceptar las politicas de la tienda para crear una cuenta"
+    "policyConsentRequired": "Debes aceptar las politicas de la tienda para crear una cuenta",
+    "companies": "Empresas"
   },
   "register": {
     "createAccount": "Crear cuenta",
@@ -628,5 +629,36 @@
       "signInForPricing": "Inicia sesión para ver precios",
       "signInToOrder": "Inicia sesión para pedir"
     }
+  },
+  "companies": {
+    "title": "Empresas",
+    "subtitle": "Las organizaciones para las que puede comprar.",
+    "empty": "Todavía no es miembro de ninguna empresa.",
+    "members": "Miembros",
+    "addMember": "Añadir",
+    "addMemberPlaceholder": "colega@ejemplo.es",
+    "addMemberFailed": "No se pudo añadir a esa persona.",
+    "removeMember": "Eliminar miembro",
+    "invitationPending": "Invitación enviada",
+    "revoke": "Revocar",
+    "addresses": "Libreta de direcciones",
+    "addressesHelp": "Dónde recibe esta organización sus entregas. También se muestran las sedes heredadas de una entidad superior.",
+    "viewOrders": "Ver pedidos de la empresa",
+    "ordersTitle": "Pedidos de la empresa",
+    "invitationTitle": "Unirse a {company}",
+    "invitationBody": "Le han invitado a comprar en {store} como {email}.",
+    "invitationMissingToken": "A este enlace le falta el código de invitación.",
+    "invitationInvalidTitle": "Esta invitación ya no es válida",
+    "invitationInvalidBody": "Puede que ya se haya aceptado, se haya revocado o haya caducado. Pida una nueva.",
+    "invitationWrongAccount": "Esta invitación se envió a {invited}, pero ha iniciado sesión como {current}. Inicie sesión con la dirección invitada.",
+    "invitationAcceptFailed": "No se pudo aceptar la invitación.",
+    "acceptAsSignedIn": "Aceptar invitación",
+    "acceptAndRegister": "Crear cuenta y unirse",
+    "accepting": "Aceptando…",
+    "firstName": "Nombre",
+    "lastName": "Apellidos",
+    "password": "Contraseña",
+    "buyingFor": "Comprando para",
+    "buyPersonally": "Comprar a título personal"
   }
 }

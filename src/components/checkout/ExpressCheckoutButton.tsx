@@ -121,7 +121,7 @@ function ExpressCheckoutInner({
         const result = await expressCheckoutResolveShipping(cart.id, {
           city: address.city,
           postal_code: address.postal_code,
-          country_iso: address.country,
+          country_code: address.country,
           state_name: address.state || undefined,
         });
 

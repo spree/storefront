@@ -332,7 +332,8 @@
     "showPassword": "Show password",
     "hidePassword": "Hide password",
     "forgotPassword": "Forgot password?",
-    "policyConsentRequired": "You must agree to the store policies to create an account"
+    "policyConsentRequired": "You must agree to the store policies to create an account",
+    "companies": "Companies"
   },
   "register": {
     "createAccount": "Create Account",
@@ -628,5 +629,36 @@
       "signInForPricing": "Sign in for pricing",
       "signInToOrder": "Sign in to order"
     }
+  },
+  "companies": {
+    "title": "Companies",
+    "subtitle": "The organizations you can buy for.",
+    "empty": "You are not a member of any company yet.",
+    "members": "Members",
+    "addMember": "Add",
+    "addMemberPlaceholder": "colleague@example.com",
+    "addMemberFailed": "Could not add that person.",
+    "removeMember": "Remove member",
+    "invitationPending": "Invitation sent",
+    "revoke": "Revoke",
+    "addresses": "Address book",
+    "addressesHelp": "Where this organization takes delivery. Sites inherited from a parent are shown too.",
+    "viewOrders": "View company orders",
+    "ordersTitle": "Company orders",
+    "invitationTitle": "Join {company}",
+    "invitationBody": "You have been invited to buy on {store} as {email}.",
+    "invitationMissingToken": "This link is missing its invitation code.",
+    "invitationInvalidTitle": "This invitation is no longer valid",
+    "invitationInvalidBody": "It may have been accepted already, revoked, or simply expired. Ask whoever invited you to send a new one.",
+    "invitationWrongAccount": "This invitation was sent to {invited}, but you are signed in as {current}. Sign in as the invited address to accept it.",
+    "invitationAcceptFailed": "Could not accept the invitation.",
+    "acceptAsSignedIn": "Accept invitation",
+    "acceptAndRegister": "Create account and join",
+    "accepting": "Accepting…",
+    "firstName": "First name",
+    "lastName": "Last name",
+    "password": "Password",
+    "buyingFor": "Buying for",
+    "buyPersonally": "Buy personally"
   }
 }

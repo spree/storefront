@@ -236,3 +236,28 @@ export async function associateCartWithUser(
     return {};
   }, "Failed to associate cart");
 }
+
+/**
+ * Says who this basket is for. Standing is enforced server-side — a cart
+ * cannot name a company its buyer may not act for — so a refused id comes back
+ * as a failed result rather than being silently ignored.
+ *
+ * Passing null returns the basket to a personal purchase, dropping the
+ * company's catalog, pricing and tax anchoring with it.
+ */
+export async function setCartCompany(
+  cartId: string,
+  companyId: string | null,
+  surface: Surface = DEFAULT_SURFACE,
+) {
+  return actionResult(async () => {
+    const spreeToken = await getCartToken(surface);
+    const cart = await getClientForSurface(surface).carts.update(
+      cartId,
+      { company_id: companyId },
+      { spreeToken },
+    );
+    updateTag(cartTag(surface));
+    return { cart };
+  }, "Failed to set the company for this cart");
+}

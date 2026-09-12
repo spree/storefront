@@ -21,6 +21,7 @@ import {
   PaymentSection,
   type PaymentSectionHandle,
 } from "@/components/checkout/PaymentSection";
+import { BuyingForSelector } from "@/components/companies/BuyingForSelector";
 import { PolicyConsent } from "@/components/policy/PolicyConsent";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useAuth } from "@/contexts/AuthContext";
@@ -699,6 +700,12 @@ function CheckoutPageContentInner({
             : "relative"
         }
       >
+        {/* Whose purchase this is, before the addresses it decides. */}
+        <BuyingForSelector
+          cartId={cart.id}
+          selectedCompanyId={cart.company_id ?? null}
+        />
+
         {/* Contact + Delivery */}
         <div id="checkout-section-address">
           <AddressSection
