@@ -1,6 +1,6 @@
 "use server";
 
-import type { Order, OrderGroup } from "@spree/sdk";
+import type { Cart, Order, OrderGroup } from "@spree/sdk";
 import { updateTag } from "next/cache";
 import {
   cacheTagSuffix,
@@ -104,7 +104,9 @@ export async function createDirectPayment(
  * to draw, so the API applies it here and answers with the updated cart. Read
  * `amount_due` on the result to see whether anything is still to collect.
  */
-export async function applyStoreCredit(cartId: string) {
+export async function applyStoreCredit(
+  cartId: string,
+): Promise<{ success: true; cart: Cart } | { success: false; error: string }> {
   return actionResult(async () => {
     const surface = await resolveSurfaceForCart(cartId);
     const options = await getCartOptions(surface);
