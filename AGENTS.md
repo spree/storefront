@@ -1,4 +1,6 @@
-# Claude Code Rules for Next.js Spree Storefront
+# Engineering Guide for the Next.js Spree Storefront
+
+This file tells any coding agent how this project is built, tested, and styled.
 
 ## Project Overview
 

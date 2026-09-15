@@ -64,7 +64,13 @@ jobs:
     # "skipped", not failed). The secrets context is unavailable in
     # job-level `if`, so key presence is checked in the first step instead:
     # same-repo runs fail loudly there when the keys are missing.
+    # Opt-in for this template. A same-repo pull request would otherwise reach
+    # the Stripe key check below and fail loudly, and nobody working in their
+    # own copy of this repo has those keys. Lint, Type Check and Unit Tests
+    # need no secrets and still run on every pull request. To enable this job,
+    # set repository variable RUN_E2E to "true" and supply the Stripe keys.
     if: >-
+      vars.RUN_E2E == 'true' &&
       github.actor != 'dependabot[bot]' &&
       (github.event_name != 'pull_request' ||
       github.event.pull_request.head.repo.full_name == github.repository)
