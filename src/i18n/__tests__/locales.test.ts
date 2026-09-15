@@ -14,7 +14,7 @@ import {
 describe("locale configuration", () => {
   it("resolves configured locales case-insensitively", () => {
     expect(resolveSupportedLocale("EN")).toBe("en");
-    expect(resolveSupportedLocale("it")).toBeUndefined();
+    expect(resolveSupportedLocale("ja")).toBeUndefined();
     expect(SUPPORTED_LOCALES).toContain(DEFAULT_LOCALE);
   });
 

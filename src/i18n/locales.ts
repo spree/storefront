@@ -11,6 +11,7 @@ const MESSAGE_LOADERS = {
   en: () => import("../../messages/en.json"),
   es: () => import("../../messages/es.json"),
   fr: () => import("../../messages/fr.json"),
+  it: () => import("../../messages/it.json"),
   pl: () => import("../../messages/pl.json"),
 } as const;
 
