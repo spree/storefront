@@ -41,6 +41,7 @@
     "openSearch": "Ouvrir la recherche",
     "closeSearch": "Fermer la recherche",
     "myAccount": "Mon compte",
+    "wishlist": "Liste d'envies",
     "wholesale": "Vente en gros"
   },
   "regionPreferences": {
@@ -67,6 +68,7 @@
     "policies": "Politiques",
     "poweredBy": "Propulse par",
     "copyright": "© {year} {storeName}. Propulse par Spree Commerce.",
+    "wishlist": "Liste d'envies",
     "wholesale": "Professionnels & vente en gros"
   },
   "home": {
@@ -332,7 +334,9 @@
     "showPassword": "Afficher le mot de passe",
     "hidePassword": "Masquer le mot de passe",
     "forgotPassword": "Mot de passe oublie ?",
-    "policyConsentRequired": "Vous devez accepter les politiques du magasin pour creer un compte"
+    "policyConsentRequired": "Vous devez accepter les politiques du magasin pour creer un compte",
+    "wishlist": "Liste d'envies",
+    "wishlistDescription": "Gérez vos produits enregistrés"
   },
   "register": {
     "createAccount": "Creer un compte",
@@ -545,6 +549,26 @@
     "shipping": "Livraison",
     "finalizingPayment": "Finalisation du paiement...",
     "or": "ou"
+  },
+  "wishlist": {
+    "myWishlist": "Ma liste d'envies",
+    "addToWishlist": "Ajouter à la liste d'envies",
+    "addedToWishlist": "Ajouté à la liste d'envies",
+    "removeFromWishlist": "Retirer de la liste d'envies",
+    "emptyTitle": "Votre liste d'envies est vide",
+    "emptyDescription": "Enregistrez les produits que vous aimez et retrouvez-les ici plus tard.",
+    "signInRequired": "Connectez-vous pour voir et gérer votre liste d'envies.",
+    "signInToView": "Se connecter pour voir la liste d'envies",
+    "failedToLoad": "Impossible de charger votre liste d'envies. Veuillez réessayer.",
+    "failedToAdd": "Impossible d'ajouter cet article à votre liste d'envies. Veuillez réessayer.",
+    "failedToRemove": "Impossible de retirer cet article de votre liste d'envies. Veuillez réessayer.",
+    "addToCart": "Ajouter au panier",
+    "addingToCart": "Ajout en cours...",
+    "remove": "Retirer",
+    "quantity": "Qté : {quantity}",
+    "refresh": "Actualiser",
+    "outlineHeart": "♡",
+    "filledHeart": "♥"
   },
   "wholesale": {
     "portalTitle": "Portail grossiste",

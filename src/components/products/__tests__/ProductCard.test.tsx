@@ -7,6 +7,10 @@ vi.mock("next-intl", () => ({
   useTranslations: () => (key: string) => key,
 }));
 
+vi.mock("@/components/wishlist/WishlistButton", () => ({
+  WishlistButton: () => <button type="button">wishlist</button>,
+}));
+
 vi.mock("@/contexts/StoreContext", () => ({
   useStore: () => ({ currency: "USD", locale: "en", loading: false }),
 }));

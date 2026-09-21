@@ -41,6 +41,7 @@
     "openSearch": "Abrir busqueda",
     "closeSearch": "Cerrar busqueda",
     "myAccount": "Mi cuenta",
+    "wishlist": "Lista de deseos",
     "wholesale": "Mayorista"
   },
   "regionPreferences": {
@@ -67,6 +68,7 @@
     "policies": "Politicas",
     "poweredBy": "Impulsado por",
     "copyright": "© {year} {storeName}. Impulsado por Spree Commerce.",
+    "wishlist": "Lista de deseos",
     "wholesale": "Comercio y venta al por mayor"
   },
   "home": {
@@ -332,7 +334,9 @@
     "showPassword": "Mostrar contrasena",
     "hidePassword": "Ocultar contrasena",
     "forgotPassword": "¿Olvidaste tu contrasena?",
-    "policyConsentRequired": "Debes aceptar las politicas de la tienda para crear una cuenta"
+    "policyConsentRequired": "Debes aceptar las politicas de la tienda para crear una cuenta",
+    "wishlist": "Lista de deseos",
+    "wishlistDescription": "Gestiona tus productos guardados"
   },
   "register": {
     "createAccount": "Crear cuenta",
@@ -545,6 +549,26 @@
     "shipping": "Envio",
     "finalizingPayment": "Finalizando tu pago...",
     "or": "o"
+  },
+  "wishlist": {
+    "myWishlist": "Mi lista de deseos",
+    "addToWishlist": "Agregar a la lista de deseos",
+    "addedToWishlist": "Agregado a la lista de deseos",
+    "removeFromWishlist": "Quitar de la lista de deseos",
+    "emptyTitle": "Tu lista de deseos está vacía",
+    "emptyDescription": "Guarda los productos que te encantan y encuéntralos aquí más tarde.",
+    "signInRequired": "Inicia sesión para ver y administrar tu lista de deseos.",
+    "signInToView": "Inicia sesión para ver la lista de deseos",
+    "failedToLoad": "No se pudo cargar tu lista de deseos. Inténtalo de nuevo.",
+    "failedToAdd": "No se pudo agregar este artículo a tu lista de deseos. Inténtalo de nuevo.",
+    "failedToRemove": "No se pudo quitar este artículo de tu lista de deseos. Inténtalo de nuevo.",
+    "addToCart": "Agregar al carrito",
+    "addingToCart": "Agregando...",
+    "remove": "Quitar",
+    "quantity": "Cant.: {quantity}",
+    "refresh": "Actualizar",
+    "outlineHeart": "♡",
+    "filledHeart": "♥"
   },
   "wholesale": {
     "portalTitle": "Portal mayorista",

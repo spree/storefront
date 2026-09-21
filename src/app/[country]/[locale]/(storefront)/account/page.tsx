@@ -5,6 +5,7 @@ import {
   CreditCard,
   Eye,
   EyeOff,
+  Heart,
   MapPin,
   ShoppingBag,
   User,
@@ -206,6 +207,24 @@ export default function AccountPage() {
                   </h2>
                   <p className="mt-1 text-sm text-gray-500">
                     {t("orderHistoryDescription")}
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
+          </Link>
+
+          <Link href={`${basePath}/account/wishlist`}>
+            <Card className="hover:border-gray-300 transition-colors h-full">
+              <CardContent className="flex items-center gap-4 py-0">
+                <div className="p-3 bg-gray-100 rounded-xl">
+                  <Heart className="w-6 h-6 text-primary" />
+                </div>
+                <div>
+                  <h2 className="text-lg font-medium text-gray-900">
+                    {t("wishlist")}
+                  </h2>
+                  <p className="mt-1 text-sm text-gray-500">
+                    {t("wishlistDescription")}
                   </p>
                 </div>
               </CardContent>

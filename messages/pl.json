@@ -41,6 +41,7 @@
     "openSearch": "Otwórz wyszukiwanie",
     "closeSearch": "Zamknij wyszukiwanie",
     "myAccount": "Moje konto",
+    "wishlist": "Lista życzeń",
     "wholesale": "Hurt"
   },
   "regionPreferences": {
@@ -67,6 +68,7 @@
     "policies": "Regulaminy",
     "poweredBy": "Zasilany przez",
     "copyright": "© {year} {storeName}. Zasilany przez Spree Commerce.",
+    "wishlist": "Lista życzeń",
     "wholesale": "Handel i sprzedaż hurtowa"
   },
   "home": {
@@ -332,7 +334,9 @@
     "showPassword": "Pokaż hasło",
     "hidePassword": "Ukryj hasło",
     "forgotPassword": "Zapomniałeś hasła?",
-    "policyConsentRequired": "Musisz zaakceptować regulamin sklepu, aby utworzyć konto"
+    "policyConsentRequired": "Musisz zaakceptować regulamin sklepu, aby utworzyć konto",
+    "wishlist": "Lista życzeń",
+    "wishlistDescription": "Zarządzaj zapisanymi produktami"
   },
   "register": {
     "createAccount": "Utwórz konto",
@@ -545,6 +549,26 @@
     "shipping": "Dostawa",
     "finalizingPayment": "Finalizowanie płatności...",
     "or": "lub"
+  },
+  "wishlist": {
+    "myWishlist": "Moja lista życzeń",
+    "addToWishlist": "Dodaj do listy życzeń",
+    "addedToWishlist": "Dodano do listy życzeń",
+    "removeFromWishlist": "Usuń z listy życzeń",
+    "emptyTitle": "Twoja lista życzeń jest pusta",
+    "emptyDescription": "Zapisz produkty, które lubisz, i znajdź je tutaj później.",
+    "signInRequired": "Zaloguj się, aby przeglądać i zarządzać listą życzeń.",
+    "signInToView": "Zaloguj się, aby zobaczyć listę życzeń",
+    "failedToLoad": "Nie udało się załadować listy życzeń. Spróbuj ponownie.",
+    "failedToAdd": "Nie udało się dodać tego produktu do listy życzeń. Spróbuj ponownie.",
+    "failedToRemove": "Nie udało się usunąć tego produktu z listy życzeń. Spróbuj ponownie.",
+    "addToCart": "Dodaj do koszyka",
+    "addingToCart": "Dodawanie...",
+    "remove": "Usuń",
+    "quantity": "Ilość: {quantity}",
+    "refresh": "Odśwież",
+    "outlineHeart": "♡",
+    "filledHeart": "♥"
   },
   "wholesale": {
     "portalTitle": "Portal hurtowy",
