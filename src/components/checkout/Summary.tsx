@@ -68,6 +68,13 @@ export function Summary({ cart }: SummaryProps) {
           )}
         </div>
 
+        {(cart.fees ?? []).map((fee) => (
+          <div key={fee.id} className="flex justify-between text-sm">
+            <span className="text-gray-700">{fee.label}</span>
+            <span className="text-gray-900">{fee.display_amount}</span>
+          </div>
+        ))}
+
         {cart.discount_total && parseFloat(cart.discount_total) !== 0 && (
           <div className="flex justify-between text-sm">
             <span className="text-gray-700">{tc("discount")}</span>
