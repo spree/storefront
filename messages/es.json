@@ -267,7 +267,9 @@
     "policyConsentRequired": "Debes aceptar las politicas de la tienda antes de realizar tu pedido",
     "iAgreeToThe": "Acepto las",
     "policySeparatorComma": ", ",
-    "policySeparatorAnd": " y "
+    "policySeparatorAnd": " y ",
+    "failedToApplyStoreCredit": "No se pudo aplicar el crédito de la tienda. Inténtalo de nuevo.",
+    "storeCreditPartiallyCovers": "Tu crédito de la tienda cubre parte de este pedido. Aún quedan {amount} — elige otro método de pago para finalizar."
   },
   "address": {
     "firstName": "Nombre",

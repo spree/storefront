@@ -740,6 +740,7 @@ function CheckoutPageContentInner({
             fetchStates={fetchStates}
             onUpdateBillingAddress={handleUpdateBillingAddress}
             onPaymentComplete={handlePaymentComplete}
+            onCartUpdate={setCart}
             processing={processing}
             setProcessing={setProcessing}
             onSessionMethodChange={setIsSessionPayment}

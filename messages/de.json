@@ -267,7 +267,9 @@
     "policyConsentRequired": "Sie müssen den Geschäftsrichtlinien zustimmen, bevor Sie Ihre Bestellung aufgeben",
     "iAgreeToThe": "Ich stimme zu",
     "policySeparatorComma": ", ",
-    "policySeparatorAnd": " und "
+    "policySeparatorAnd": " und ",
+    "failedToApplyStoreCredit": "Guthaben konnte nicht angewendet werden. Bitte versuchen Sie es erneut.",
+    "storeCreditPartiallyCovers": "Ihr Guthaben deckt einen Teil dieser Bestellung. {amount} sind noch offen — wählen Sie eine andere Zahlungsart, um abzuschließen."
   },
   "address": {
     "firstName": "Vorname",

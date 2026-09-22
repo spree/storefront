@@ -267,7 +267,9 @@
     "policyConsentRequired": "You must agree to the store policies before placing your order",
     "iAgreeToThe": "I agree to the",
     "policySeparatorComma": ", ",
-    "policySeparatorAnd": " and "
+    "policySeparatorAnd": " and ",
+    "failedToApplyStoreCredit": "Failed to apply store credit. Please try again.",
+    "storeCreditPartiallyCovers": "Your store credit covers part of this order. {amount} is still due — choose another payment method to finish."
   },
   "address": {
     "firstName": "First name",

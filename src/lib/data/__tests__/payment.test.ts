@@ -9,6 +9,9 @@ const mockClient = {
       create: vi.fn(),
       complete: vi.fn(),
     },
+    storeCredits: {
+      apply: vi.fn(),
+    },
   },
 };
 
@@ -35,6 +38,7 @@ vi.mock("next/cache", () => ({
 }));
 
 import {
+  applyStoreCredit,
   completeCheckoutOrder,
   completeCheckoutPaymentSession,
   confirmPaymentAndCompleteCart,
@@ -99,6 +103,56 @@ describe("payment server actions", () => {
       expect(result).toEqual({
         success: false,
         error: "Gateway unavailable",
+      });
+    });
+  });
+
+  describe("applyStoreCredit", () => {
+    it("returns the updated cart", async () => {
+      const coveredCart = {
+        id: "cart-1",
+        amount_due: "0.0",
+        covered_by_store_credit: true,
+      };
+      mockClient.carts.storeCredits.apply.mockResolvedValue(coveredCart);
+
+      const result = await applyStoreCredit("cart-1");
+
+      // No amount — draws the whole outstanding balance, across as many
+      // credits as it takes.
+      expect(mockClient.carts.storeCredits.apply).toHaveBeenCalledWith(
+        "cart-1",
+        undefined,
+        { spreeToken: "order-token-123", token: undefined },
+      );
+      expect(result).toEqual({ success: true, cart: coveredCart });
+    });
+
+    it("reports a balance the credit did not cover", async () => {
+      mockClient.carts.storeCredits.apply.mockResolvedValue({
+        id: "cart-1",
+        amount_due: "25.0",
+        display_amount_due: "$25.00",
+        covered_by_store_credit: false,
+      });
+
+      const result = await applyStoreCredit("cart-1");
+
+      expect(result.success).toBe(true);
+      expect(result.success && result.cart.covered_by_store_credit).toBe(false);
+      expect(result.success && result.cart.display_amount_due).toBe("$25.00");
+    });
+
+    it("returns error on failure", async () => {
+      mockClient.carts.storeCredits.apply.mockRejectedValue(
+        new Error("User does not have any Store Credits available"),
+      );
+
+      const result = await applyStoreCredit("cart-1");
+
+      expect(result).toEqual({
+        success: false,
+        error: "User does not have any Store Credits available",
       });
     });
   });

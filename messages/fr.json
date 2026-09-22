@@ -267,7 +267,9 @@
     "policyConsentRequired": "Vous devez accepter les politiques du magasin avant de passer votre commande",
     "iAgreeToThe": "J'accepte les",
     "policySeparatorComma": ", ",
-    "policySeparatorAnd": " et "
+    "policySeparatorAnd": " et ",
+    "failedToApplyStoreCredit": "Impossible d'appliquer l'avoir. Veuillez réessayer.",
+    "storeCreditPartiallyCovers": "Votre avoir couvre une partie de cette commande. Il reste {amount} à payer — choisissez un autre moyen de paiement pour finaliser."
   },
   "address": {
     "firstName": "Prenom",

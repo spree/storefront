@@ -267,7 +267,9 @@
     "policyConsentRequired": "Musisz zaakceptować regulamin sklepu przed złożeniem zamówienia",
     "iAgreeToThe": "Zgadzam się z",
     "policySeparatorComma": ", ",
-    "policySeparatorAnd": " i "
+    "policySeparatorAnd": " i ",
+    "failedToApplyStoreCredit": "Nie udało się użyć środków na koncie. Spróbuj ponownie.",
+    "storeCreditPartiallyCovers": "Środki na koncie pokrywają część tego zamówienia. Do zapłaty pozostaje {amount} — wybierz inną metodę płatności, aby zakończyć."
   },
   "address": {
     "firstName": "Imię",
