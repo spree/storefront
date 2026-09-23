@@ -1,3 +1,4 @@
+import type { Order, OrderGroup } from "@spree/sdk";
 import { act, render, screen, waitFor } from "@testing-library/react";
 import { Suspense } from "react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
@@ -42,6 +43,8 @@ import ConfirmPaymentPage from "../[id]/page";
 
 const mockConfirm = vi.mocked(confirmPaymentAndCompleteCart);
 
+const placedOrder = { id: "or_1", number: "R100" } as Order;
+
 function renderPage(params = { id: "cart-1", country: "us", locale: "en" }) {
   const resolvedParams = Promise.resolve(params);
   return render(
@@ -71,7 +74,7 @@ describe("ConfirmPaymentPage", () => {
     mockSearchParams.set("session", "session-1");
     mockConfirm.mockResolvedValue({
       success: true as const,
-      order: { id: "cart-1" },
+      order: placedOrder,
     });
 
     await act(async () => {
@@ -90,12 +93,37 @@ describe("ConfirmPaymentPage", () => {
     });
   });
 
+  it("carries a split checkout's order ids to order-placed", async () => {
+    mockSearchParams.set("session", "session-1");
+    mockConfirm.mockResolvedValue({
+      success: true as const,
+      order: {
+        id: "og_1",
+        number: "R100",
+        orders: [
+          { id: "or_1", number: "R100-1" },
+          { id: "or_2", number: "R100-2" },
+        ],
+      } as OrderGroup,
+    });
+
+    await act(async () => {
+      renderPage();
+    });
+
+    await waitFor(() => {
+      expect(mockReplace).toHaveBeenCalledWith(
+        "/us/en/order-placed/cart-1?orders=or_1%2Cor_2",
+      );
+    });
+  });
+
   it("passes sessionResult query param to confirmPaymentAndCompleteCart", async () => {
     mockSearchParams.set("session", "session-1");
     mockSearchParams.set("sessionResult", "eyJhYmMiOiJ4eXoifQ==");
     mockConfirm.mockResolvedValue({
       success: true as const,
-      order: { id: "cart-1" },
+      order: placedOrder,
     });
 
     await act(async () => {
@@ -134,7 +162,7 @@ describe("ConfirmPaymentPage", () => {
   it("passes undefined session when no query param", async () => {
     mockConfirm.mockResolvedValue({
       success: true as const,
-      order: { id: "cart-1" },
+      order: placedOrder,
     });
 
     await act(async () => {
@@ -177,7 +205,7 @@ describe("ConfirmPaymentPage", () => {
     mockSearchParams.set("session", "session-1");
     mockConfirm.mockResolvedValue({
       success: true as const,
-      order: { id: "cart-1" },
+      order: placedOrder,
     });
 
     let result: ReturnType<typeof renderPage>;

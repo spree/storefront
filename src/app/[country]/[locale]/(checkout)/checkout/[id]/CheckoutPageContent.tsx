@@ -47,6 +47,7 @@ import {
   completeCheckoutOrder,
   completeCheckoutPaymentSession,
 } from "@/lib/data/payment";
+import { orderPlacedPath } from "@/lib/utils/order-placed";
 import { extractBasePath } from "@/lib/utils/path";
 import { CheckoutSidebar } from "./CheckoutSidebar";
 import type { CheckoutInitialData } from "./page";
@@ -496,7 +497,9 @@ function CheckoutPageContentInner({
           cacheCompletedOrder(currentOrder.id, completeResult.order);
         }
 
-        routerRef.current.push(`${basePath}/order-placed/${currentOrder.id}`);
+        routerRef.current.push(
+          orderPlacedPath(basePath, currentOrder.id, completeResult.order),
+        );
       } catch {
         setError(tRef.current("generalError"));
         setProcessing(false);
