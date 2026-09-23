@@ -418,7 +418,8 @@
     "standardShipping": "Livraison standard",
     "payment": "Paiement",
     "giftCard": "Carte cadeau",
-    "confirmationSentTo": "Confirmation envoyee a"
+    "confirmationSentTo": "Confirmation envoyee a",
+    "splitIntoOrders": "Vos articles proviennent de {count} vendeurs : votre achat a donc été passé en {count} commandes distinctes."
   },
   "coupon": {
     "placeholder": "Carte cadeau ou code de reduction",

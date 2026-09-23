@@ -41,12 +41,20 @@ function markProcessed(eventId: string): void {
 }
 
 /**
- * Handle order.completed webhook — send order confirmation email.
+ * `order.placed` and `order.canceled` carry `notify_customer` in the payload.
+ * It is `false` when whoever placed or canceled the order asked for the
+ * customer not to be emailed — e.g. an admin placing a draft silently, or the
+ * extra orders a split marketplace checkout places beside the first one.
  */
-export async function handleOrderCompleted(event: WebhookEvent<Order>) {
+type OrderEventData = Order & { notify_customer?: boolean | null };
+
+/**
+ * Handle order.placed webhook — send order confirmation email.
+ */
+export async function handleOrderPlaced(event: WebhookEvent<OrderEventData>) {
   if (isAlreadyProcessed(event.id)) return;
   const order = event.data;
-  if (!order.email) return;
+  if (!order.email || order.notify_customer === false) return;
 
   const customerName =
     order.shipping_address?.full_name || order.billing_address?.full_name || "";
@@ -93,10 +101,10 @@ export async function handleOrderCompleted(event: WebhookEvent<Order>) {
 /**
  * Handle order.canceled webhook — send cancellation email.
  */
-export async function handleOrderCanceled(event: WebhookEvent<Order>) {
+export async function handleOrderCanceled(event: WebhookEvent<OrderEventData>) {
   if (isAlreadyProcessed(event.id)) return;
   const order = event.data;
-  if (!order.email) return;
+  if (!order.email || order.notify_customer === false) return;
 
   const customerName =
     order.shipping_address?.full_name || order.billing_address?.full_name || "";
@@ -123,12 +131,13 @@ export async function handleOrderCanceled(event: WebhookEvent<Order>) {
 }
 
 /**
- * Handle order.shipped webhook — send shipment notification email.
+ * Handle order.fulfilled webhook — send shipment notification email.
  *
- * We subscribe to order.shipped (not shipment.shipped) because the order
- * payload includes the email, customer name, and all shipment details.
+ * Fires once every fulfillment on the order was handed over. We subscribe to
+ * order.fulfilled (not fulfillment.fulfilled) because the order payload
+ * includes the email, customer name, and all fulfillment details.
  */
-export async function handleOrderShipped(event: WebhookEvent<Order>) {
+export async function handleOrderFulfilled(event: WebhookEvent<Order>) {
   if (isAlreadyProcessed(event.id)) return;
   const order = event.data;
   if (!order.email) return;
@@ -136,9 +145,10 @@ export async function handleOrderShipped(event: WebhookEvent<Order>) {
   const customerName =
     order.shipping_address?.full_name || order.billing_address?.full_name || "";
 
-  // Build shipment data from the order's fulfillments
+  // Build shipment data from the order's handed-over fulfillments. Spree 6.0
+  // fulfillment statuses: unfulfilled → fulfilled → delivered (no "shipped").
   const shipments = (order.fulfillments || [])
-    .filter((f) => f.status === "shipped")
+    .filter((f) => f.status === "fulfilled" || f.status === "delivered")
     .map((fulfillment) => {
       // Map fulfillment items back to line items for display data
       const shippedItems = (fulfillment.items || []).map((fi) => {

@@ -418,7 +418,8 @@
     "standardShipping": "Standard Shipping",
     "payment": "Payment",
     "giftCard": "Gift Card",
-    "confirmationSentTo": "Confirmation sent to"
+    "confirmationSentTo": "Confirmation sent to",
+    "splitIntoOrders": "Your items come from {count} sellers, so your purchase was placed as {count} separate orders."
   },
   "coupon": {
     "placeholder": "Gift card or discount code",

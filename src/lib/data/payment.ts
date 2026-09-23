@@ -1,6 +1,6 @@
 "use server";
 
-import type { Order } from "@spree/sdk";
+import type { Order, OrderGroup } from "@spree/sdk";
 import { updateTag } from "next/cache";
 import {
   cacheTagSuffix,
@@ -111,7 +111,9 @@ export async function completeCheckoutPaymentSession(
 }
 
 /**
- * Completes the order. Treats 403 and 422 as success:
+ * Completes the order. Answers with the order, or with the order group when a
+ * marketplace cart spanned several sellers and was split — narrow the result
+ * with `isOrderGroup`. Treats 403 and 422 as success:
  * - 403 = cart already completed (e.g. webhook handler completed it)
  * - 422 = state_lock_version conflict (concurrent request)
  *
@@ -125,10 +127,9 @@ export async function completeCheckoutOrder(
   const surface = knownSurface ?? (await resolveSurfaceForCart(cartId));
   try {
     const options = await getCartOptions(surface);
-    const order: Order = await getClientForSurface(surface).carts.complete(
-      cartId,
-      options,
-    );
+    const order: Order | OrderGroup = await getClientForSurface(
+      surface,
+    ).carts.complete(cartId, options);
     updateTag(checkoutTag(surface));
     updateTag(cartTag(surface));
     return { success: true as const, order };
@@ -137,7 +138,9 @@ export async function completeCheckoutOrder(
       const status = (error as { status: number }).status;
       if (status === 403 || status === 422) {
         // Order already completed — try to fetch it so the thank-you page
-        // can cache and display it without a second round-trip.
+        // can cache and display it without a second round-trip. A split
+        // checkout's group can't be fetched by cart id; that resolves to
+        // null and the thank-you page falls back to its own lookup.
         const completedOrder = await getOrder(cartId, undefined, surface).catch(
           () => null,
         );
@@ -165,7 +168,8 @@ export async function confirmPaymentAndCompleteCart(
   redirectResult?: string,
   adyenSessionId?: string,
 ): Promise<
-  { success: true; order: unknown } | { success: false; error: string }
+  | { success: true; order: Order | OrderGroup | null }
+  | { success: false; error: string }
 > {
   // Cookies may have been cleared during the offsite redirect, so verify the
   // surface against the cart's own channel rather than trusting the cookie.
@@ -190,11 +194,18 @@ export async function confirmPaymentAndCompleteCart(
       const completedOrder = await getOrder(cartId, undefined, surface).catch(
         () => null,
       );
-      return { success: true, order: completedOrder };
+      if (completedOrder) return { success: true, order: completedOrder };
+
+      // A split marketplace checkout completed into an order group, which
+      // `orders.get(cartId)` can't resolve. Completing is idempotent — the
+      // API replays a completed cart's result — so ask for it again.
+      const replay = await completeCheckoutOrder(cartId, surface);
+      return { success: true, order: replay.success ? replay.order : null };
     }
 
     if (cart.current_step === "complete") {
-      return { success: true, order: cart };
+      // Already complete — the thank-you page loads the result itself.
+      return { success: true, order: null };
     }
 
     if (sessionId) {
