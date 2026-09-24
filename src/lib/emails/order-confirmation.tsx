@@ -38,6 +38,12 @@ interface Address {
   phone?: string | null;
 }
 
+interface Fee {
+  id: string;
+  label: string;
+  display_amount: string;
+}
+
 interface OrderConfirmationEmailProps {
   orderNumber: string;
   customerName: string;
@@ -46,6 +52,7 @@ interface OrderConfirmationEmailProps {
   items: LineItem[];
   displayItemTotal: string;
   displayDeliveryTotal: string;
+  fees?: Fee[];
   displayDiscountTotal?: string;
   displayTaxTotal: string;
   displayTotal: string;
@@ -62,6 +69,7 @@ export function OrderConfirmationEmail({
   items,
   displayItemTotal,
   displayDeliveryTotal,
+  fees = [],
   displayDiscountTotal,
   displayTaxTotal,
   displayTotal,
@@ -149,6 +157,12 @@ export function OrderConfirmationEmail({
               <Column style={totalsLabel}>Shipping</Column>
               <Column style={totalsValue}>{displayDeliveryTotal}</Column>
             </Row>
+            {fees.map((fee) => (
+              <Row key={fee.id}>
+                <Column style={totalsLabel}>{fee.label}</Column>
+                <Column style={totalsValue}>{fee.display_amount}</Column>
+              </Row>
+            ))}
             {displayDiscountTotal &&
               Number.parseFloat(
                 displayDiscountTotal.replace(/[^0-9.-]/g, ""),

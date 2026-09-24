@@ -49,6 +49,9 @@ export const emailFixtures: EmailFixture[] = [
         ],
         displayItemTotal: "$134.96",
         displayDeliveryTotal: "$5.99",
+        fees: [
+          { id: "fee_1", label: "Gift wrapping", display_amount: "$4.00" },
+        ],
         displayDiscountTotal: "-$10.00",
         displayTaxTotal: "$11.25",
         displayTotal: "$142.20",

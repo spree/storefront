@@ -248,6 +248,15 @@ export function CartDrawer() {
                         <span>{cart.display_discount_total}</span>
                       </div>
                     )}
+                  {(cart?.fees ?? []).map((fee) => (
+                    <div
+                      key={fee.id}
+                      className="flex justify-between items-center text-sm"
+                    >
+                      <span>{fee.label}</span>
+                      <span>{fee.display_amount}</span>
+                    </div>
+                  ))}
                   <div className="flex justify-between items-center">
                     <span>{tc("shipping")}</span>
                     <span className="text-gray-500">

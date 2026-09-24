@@ -78,6 +78,11 @@ export async function handleOrderCompleted(event: WebhookEvent<Order>) {
       })),
       displayItemTotal: order.display_item_total ?? "",
       displayDeliveryTotal: order.display_delivery_total ?? "",
+      fees: (order.fees || []).map((fee) => ({
+        id: fee.id,
+        label: fee.label,
+        display_amount: fee.display_amount ?? "",
+      })),
       displayDiscountTotal: order.display_discount_total ?? undefined,
       displayTaxTotal: order.display_tax_total ?? "",
       displayTotal: order.display_total ?? "",

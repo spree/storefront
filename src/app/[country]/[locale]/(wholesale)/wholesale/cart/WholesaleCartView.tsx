@@ -161,6 +161,12 @@ export function WholesaleCartView() {
                   <dd>{cart.display_discount_total}</dd>
                 </div>
               )}
+              {(cart.fees ?? []).map((fee) => (
+                <div key={fee.id} className="flex justify-between">
+                  <dt className="text-slate-500">{fee.label}</dt>
+                  <dd className="text-slate-900">{fee.display_amount}</dd>
+                </div>
+              ))}
               {cart.tax_total && parseFloat(cart.tax_total) > 0 && (
                 <div className="flex justify-between">
                   <dt className="text-slate-500">{tc("tax")}</dt>
