@@ -1,6 +1,6 @@
 "use server";
 
-import type { Order } from "@spree/sdk";
+import type { Order, OrderGroup } from "@spree/sdk";
 import { updateTag } from "next/cache";
 import {
   cacheTagSuffix,
@@ -110,6 +110,10 @@ export async function completeCheckoutPaymentSession(
   }, "Failed to complete payment session");
 }
 
+function isOrderGroup(value: Order | OrderGroup): value is OrderGroup {
+  return "orders" in value;
+}
+
 /**
  * Completes the order. Treats 403 and 422 as success:
  * - 403 = cart already completed (e.g. webhook handler completed it)
@@ -125,10 +129,16 @@ export async function completeCheckoutOrder(
   const surface = knownSurface ?? (await resolveSurfaceForCart(cartId));
   try {
     const options = await getCartOptions(surface);
-    const order: Order = await getClientForSurface(surface).carts.complete(
-      cartId,
-      options,
-    );
+    // A marketplace cart splits across sellers, so completion returns an
+    // OrderGroup instead of a single Order. This storefront shows one order on
+    // the thank-you page, so take the first — a single-seller checkout has
+    // exactly one, and the group's own totals are not what that page renders.
+    const completed: Order | OrderGroup = await getClientForSurface(
+      surface,
+    ).carts.complete(cartId, options);
+    const order: Order | null = isOrderGroup(completed)
+      ? (completed.orders[0] ?? null)
+      : completed;
     updateTag(checkoutTag(surface));
     updateTag(cartTag(surface));
     return { success: true as const, order };
