@@ -67,4 +67,18 @@ describe("Market locale routes", () => {
       locale: "en",
     });
   });
+
+  it("renders a regional Market locale with a lowercase route segment", () => {
+    const current = market({
+      default_locale: "en-GB",
+      supported_locales: [],
+      countries: [country("GB")],
+    });
+
+    expect(getMarketLocales(current)).toEqual(["en-gb"]);
+    expect(isLocaleEnabledForMarket(current, "en-GB")).toBe(true);
+    expect(getMarketLocaleTargets([current])).toEqual([
+      { marketId: "market-1", country: "gb", locale: "en-gb" },
+    ]);
+  });
 });

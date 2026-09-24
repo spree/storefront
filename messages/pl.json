@@ -48,6 +48,7 @@
     "description": "Wybierz region i język. Waluta jest ustawiana na podstawie wybranego regionu.",
     "region": "Region",
     "language": "Język",
+    "noSupportedLanguage": "Język niedostępny",
     "updatePreferences": "Zaktualizuj preferencje",
     "updatingPreferences": "Aktualizowanie preferencji...",
     "updatePreferencesFailed": "Nie udało się zaktualizować preferencji regionalnych. Spróbuj ponownie."

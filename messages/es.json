@@ -48,6 +48,7 @@
     "description": "Elige tu región e idioma. La moneda depende de la región seleccionada.",
     "region": "Región",
     "language": "Idioma",
+    "noSupportedLanguage": "Idioma no disponible",
     "updatePreferences": "Actualizar preferencias",
     "updatingPreferences": "Actualizando preferencias...",
     "updatePreferencesFailed": "No pudimos actualizar tus preferencias regionales. Inténtalo de nuevo."

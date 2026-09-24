@@ -9,11 +9,13 @@ import {
   matchLocale,
   negotiateAcceptLanguage,
   negotiateLocale,
+  toRouteLocale,
 } from "@/i18n/normalize";
 
 describe("locale configuration", () => {
   it("resolves configured locales case-insensitively", () => {
     expect(resolveSupportedLocale("EN")).toBe("en");
+    expect(resolveSupportedLocale("en-GB")).toBe("en-gb");
     expect(resolveSupportedLocale("it")).toBeUndefined();
     expect(SUPPORTED_LOCALES).toContain(DEFAULT_LOCALE);
   });
@@ -22,6 +24,7 @@ describe("locale configuration", () => {
     expect(canonicalizeLocale("zh_cn")).toBe("zh-CN");
     expect(canonicalizeLocale("sr_latn_rs")).toBe("sr-Latn-RS");
     expect(canonicalizeLocale("not_a_locale_!")).toBeUndefined();
+    expect(toRouteLocale("en-GB")).toBe("en-gb");
   });
 
   it("preserves configured spelling and negotiates a base language", () => {

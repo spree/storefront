@@ -48,6 +48,7 @@
     "description": "Wählen Sie Ihre Region und Sprache. Die Währung wird durch die ausgewählte Region festgelegt.",
     "region": "Region",
     "language": "Sprache",
+    "noSupportedLanguage": "Sprache nicht verfügbar",
     "updatePreferences": "Einstellungen aktualisieren",
     "updatingPreferences": "Einstellungen werden aktualisiert...",
     "updatePreferencesFailed": "Die regionalen Einstellungen konnten nicht aktualisiert werden. Bitte versuchen Sie es erneut."

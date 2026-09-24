@@ -18,4 +18,14 @@ describe("localized route fallback", () => {
       "/us/en",
     );
   });
+
+  it("normalizes regional locale redirects to lowercase", () => {
+    expect(
+      buildLocalizedRedirectPath({
+        country: "GB",
+        locale: "en-GB",
+        pathname: "/gb/en/products",
+      }),
+    ).toBe("/gb/en-gb/products");
+  });
 });

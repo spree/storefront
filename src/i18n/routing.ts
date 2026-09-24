@@ -1,3 +1,5 @@
+import { toRouteLocale } from "@/i18n/normalize";
+
 export const REQUEST_PATHNAME_HEADER = "x-spree-request-pathname";
 export const REQUEST_SEARCH_HEADER = "x-spree-request-search";
 
@@ -17,7 +19,9 @@ export function buildLocalizedRedirectPath({
   pathname,
   search,
 }: LocalizedRedirectParams): string {
-  const prefix = `/${country.toLowerCase()}/${locale}`;
+  const normalizedLocale =
+    toRouteLocale(locale) ?? locale.trim().replaceAll("_", "-").toLowerCase();
+  const prefix = `/${country.toLowerCase()}/${normalizedLocale}`;
   const matchedPrefix = pathname?.match(LOCALIZED_PREFIX)?.[0];
   const suffix = matchedPrefix ? pathname?.slice(matchedPrefix.length) : "";
   const normalizedSearch = search?.startsWith("?") ? search : "";

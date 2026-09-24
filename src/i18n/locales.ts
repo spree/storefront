@@ -9,6 +9,7 @@ import { canonicalizeLocale, matchLocale } from "@/i18n/normalize";
 const MESSAGE_LOADERS = {
   de: () => import("../../messages/de.json"),
   en: () => import("../../messages/en.json"),
+  "en-gb": () => import("../../messages/en.json"),
   es: () => import("../../messages/es.json"),
   fr: () => import("../../messages/fr.json"),
   pl: () => import("../../messages/pl.json"),

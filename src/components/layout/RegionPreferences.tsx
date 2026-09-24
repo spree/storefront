@@ -25,6 +25,8 @@ import {
 } from "@/components/ui/native-select";
 import { type CountryWithMarket, useStore } from "@/contexts/StoreContext";
 import { useCountrySwitch } from "@/hooks/useCountrySwitch";
+import { resolveSupportedLocale, type SupportedLocale } from "@/i18n/locales";
+import { toRouteLocale } from "@/i18n/normalize";
 import { cn } from "@/lib/utils";
 
 interface RegionPreferencesProps {
@@ -65,9 +67,15 @@ function getCountry(
 }
 
 function getSupportedLocales(entry: CountryWithMarket): string[] {
-  return entry.supported_locales.length > 0
-    ? entry.supported_locales
-    : [entry.default_locale];
+  const locales = [entry.default_locale, ...entry.supported_locales];
+
+  return Array.from(
+    new Set(
+      locales
+        .map((locale) => resolveSupportedLocale(locale))
+        .filter((locale): locale is SupportedLocale => locale !== undefined),
+    ),
+  );
 }
 
 export function RegionPreferences({ variant }: RegionPreferencesProps) {
@@ -88,7 +96,7 @@ export function RegionPreferences({ variant }: RegionPreferencesProps) {
     getCountry(countries, draftCountry) ?? getCountry(countries, country);
   const localeOptions = selectedCountry
     ? getSupportedLocales(selectedCountry)
-    : [locale];
+    : [toRouteLocale(locale) ?? locale];
   const languageDisplayNames = useMemo(() => {
     try {
       return new Intl.DisplayNames([locale], { type: "language" });
@@ -111,11 +119,14 @@ export function RegionPreferences({ variant }: RegionPreferencesProps) {
     if (!entry) return;
 
     const supportedLocales = getSupportedLocales(entry);
+
     setDraftCountry(nextCountry);
     setDraftLocale((currentLocale) =>
-      supportedLocales.includes(currentLocale)
-        ? currentLocale
-        : entry.default_locale || supportedLocales[0],
+      supportedLocales.includes(
+        toRouteLocale(currentLocale) ?? currentLocale.toLowerCase(),
+      )
+        ? (toRouteLocale(currentLocale) ?? currentLocale.toLowerCase())
+        : (supportedLocales[0] ?? ""),
     );
     setSwitchError(false);
   }
@@ -124,7 +135,13 @@ export function RegionPreferences({ variant }: RegionPreferencesProps) {
     event: FormEvent<HTMLFormElement>,
   ): Promise<void> {
     event.preventDefault();
-    if (!selectedCountry) return;
+    if (
+      !selectedCountry ||
+      localeOptions.length === 0 ||
+      !localeOptions.includes(draftLocale)
+    ) {
+      return;
+    }
 
     setSwitchError(false);
     const switched = await handleCountrySelect(selectedCountry, draftLocale);
@@ -139,6 +156,8 @@ export function RegionPreferences({ variant }: RegionPreferencesProps) {
   }
 
   const isHeaderVariant = variant === "header";
+  const hasRenderableLocale =
+    localeOptions.length > 0 && localeOptions.includes(draftLocale);
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
@@ -213,17 +232,24 @@ export function RegionPreferences({ variant }: RegionPreferencesProps) {
                 id="region-preferences-language"
                 className="w-full"
                 value={draftLocale}
+                disabled={!hasRenderableLocale}
                 onChange={(event) => {
                   setDraftLocale(event.target.value);
                   setSwitchError(false);
                 }}
               >
-                {localeOptions.map((localeCode) => (
-                  <NativeSelectOption key={localeCode} value={localeCode}>
-                    {languageDisplayNames?.of(localeCode) ?? localeCode} (
-                    {localeCode.toUpperCase()})
+                {hasRenderableLocale ? (
+                  localeOptions.map((localeCode) => (
+                    <NativeSelectOption key={localeCode} value={localeCode}>
+                      {languageDisplayNames?.of(localeCode) ?? localeCode} (
+                      {localeCode.toUpperCase()})
+                    </NativeSelectOption>
+                  ))
+                ) : (
+                  <NativeSelectOption value="" disabled>
+                    {t("noSupportedLanguage")}
                   </NativeSelectOption>
-                ))}
+                )}
               </NativeSelect>
             </Field>
 
@@ -237,7 +263,10 @@ export function RegionPreferences({ variant }: RegionPreferencesProps) {
               type="submit"
               className="w-full"
               disabled={
-                !selectedCountry || isCartLoading || isCountryNavigating
+                !selectedCountry ||
+                !hasRenderableLocale ||
+                isCartLoading ||
+                isCountryNavigating
               }
             >
               {isCountryNavigating

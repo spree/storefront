@@ -4,6 +4,7 @@ import { usePathname } from "next/navigation";
 import { useState } from "react";
 import { useCart } from "@/contexts/CartContext";
 import type { CountryWithMarket } from "@/contexts/StoreContext";
+import { toRouteLocale } from "@/i18n/normalize";
 import { updateCartMarket } from "@/lib/data/checkout";
 import { rebaseAccountRedirectSearch } from "@/lib/utils/account-redirect";
 import { setStoreCookies } from "@/lib/utils/cookies";
@@ -39,13 +40,22 @@ export function useCountrySwitch({
   ): Promise<boolean> => {
     const nextCountry = entry.iso.toLowerCase();
     const activeCountry = currentCountry.toLowerCase();
-    const newLocale = locale || entry.default_locale || "en";
+    const newLocale =
+      toRouteLocale(locale || entry.default_locale || "en") ?? "en";
+    const activeLocale = toRouteLocale(currentLocale) ?? currentLocale;
+    const newCurrency = entry.currency;
+    const cartMatchesTarget =
+      !cart || (cart.currency === newCurrency && cart.locale === newLocale);
 
     if (isCountryNavigating) {
       return false;
     }
 
-    if (nextCountry === activeCountry && newLocale === currentLocale) {
+    if (
+      nextCountry === activeCountry &&
+      newLocale === activeLocale &&
+      cartMatchesTarget
+    ) {
       return true;
     }
 
@@ -55,10 +65,9 @@ export function useCountrySwitch({
 
     setIsCountryNavigating(true);
 
-    const newCurrency = entry.currency;
     const pathRest = getPathWithoutPrefix(pathname);
     const newPath = `/${nextCountry}/${newLocale}${pathRest}`;
-    const currentBasePath = `/${activeCountry}/${currentLocale}`;
+    const currentBasePath = `/${activeCountry}/${activeLocale}`;
     const nextBasePath = `/${nextCountry}/${newLocale}`;
 
     try {

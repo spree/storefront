@@ -11,6 +11,11 @@ export function canonicalizeLocale(
   }
 }
 
+/** Convert a locale to the lowercase form used in storefront URL segments. */
+export function toRouteLocale(value: string | undefined): string | undefined {
+  return canonicalizeLocale(value)?.toLowerCase();
+}
+
 /** Match a locale case-insensitively while preserving the configured spelling. */
 export function matchLocale(
   value: string | undefined,
