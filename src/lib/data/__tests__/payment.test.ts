@@ -333,11 +333,23 @@ describe("payment server actions", () => {
       expect(result).toEqual({ success: true, order: mockOrderGroup });
     });
 
-    it("returns success without an order when neither lookup finds it", async () => {
+    it("returns an error when neither lookup nor the replay finds it", async () => {
       mockClient.carts.get.mockRejectedValue(new Error("Not found"));
       mockClient.orders.get.mockRejectedValue(new Error("Not found"));
       mockClient.carts.complete.mockRejectedValue(
         Object.assign(new Error("Not found"), { status: 404 }),
+      );
+
+      const result = await confirmPaymentAndCompleteCart("cart-1", "session-1");
+
+      expect(result).toEqual({ success: false, error: "Not found" });
+    });
+
+    it("returns success without an order when the replay says it's already completed", async () => {
+      mockClient.carts.get.mockRejectedValue(new Error("Not found"));
+      mockClient.orders.get.mockRejectedValue(new Error("Not found"));
+      mockClient.carts.complete.mockRejectedValue(
+        Object.assign(new Error("Already completed"), { status: 422 }),
       );
 
       const result = await confirmPaymentAndCompleteCart("cart-1", "session-1");

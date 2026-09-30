@@ -199,8 +199,11 @@ export async function confirmPaymentAndCompleteCart(
       // A split marketplace checkout completed into an order group, which
       // `orders.get(cartId)` can't resolve. Completing is idempotent — the
       // API replays a completed cart's result — so ask for it again.
+      // If the replay fails too, report it rather than sending the customer
+      // to a thank-you page for a checkout we couldn't confirm.
       const replay = await completeCheckoutOrder(cartId, surface);
-      return { success: true, order: replay.success ? replay.order : null };
+      if (!replay.success) return { success: false, error: replay.error };
+      return { success: true, order: replay.order };
     }
 
     if (cart.current_step === "complete") {
