@@ -615,3 +615,13 @@ const handleClick = (_event: MouseEvent) => {
 // ❌ Bad - unused import
 import { useState, useEffect } from "react"; // useEffect not used
 ```
+
+## Dependency Security
+
+Fix `pnpm audit` findings by refreshing the lockfile, not by adding overrides:
+
+1. Run `pnpm update` (or `pnpm update <pkg>`) first. Transitive dependencies only move when the lockfile is refreshed — Dependabot's grouped PRs bump direct dependencies and leave them behind.
+2. Add a `pnpm.overrides` entry only when a parent's version range actually excludes the patched release. Scope it to that parent (`"@sentry/bundler-plugin-core>glob": "^x.y.z"`), never a blanket `"glob": "..."`, which forces one major version on every consumer.
+3. Remove the override once the parent ships a fixed range.
+
+Don't use `pnpm audit --fix` — it writes blanket, unscoped overrides.
