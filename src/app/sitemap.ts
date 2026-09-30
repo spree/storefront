@@ -1,4 +1,5 @@
 import type { MetadataRoute } from "next";
+import { connection } from "next/server";
 import { DEFAULT_LOCALE, resolveSupportedLocale } from "@/i18n/locales";
 import {
   getMarketLocaleTargets,
@@ -13,8 +14,6 @@ import {
   type SitemapProduct,
 } from "@/lib/data/sitemap";
 import { getDefaultCountry, getDefaultLocale, getStoreUrl } from "@/lib/store";
-
-export const dynamic = "force-dynamic";
 
 type CountryLocale = MarketLocaleTarget;
 
@@ -121,6 +120,7 @@ export async function generateSitemaps(): Promise<Array<{ id: number }>> {
 export default async function sitemap(props: {
   id: Promise<string>;
 }): Promise<MetadataRoute.Sitemap> {
+  await connection();
   const id = Number(await props.id);
   if (!Number.isSafeInteger(id) || id < 0) return [];
 
