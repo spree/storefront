@@ -52,17 +52,18 @@
     "minimatch": "^10.2.1",
     "postcss": "^8.5.10",
     "mute-stream": "^3.0.0",
-    "sharp": "^0.35.3",
+    "sharp": "^0.35.4",
     "@hono/node-server": "^2.0.5"
   },
   "pnpm": {
     "overrides": {
       "@hono/node-server": "^2.0.5",
-      "brace-expansion": "^5.0.9",
+      "brace-expansion": "^5.0.12",
       "browserslist": "^4.28.9",
-      "fast-uri": "^3.1.7",
+      "engine.io": "^6.6.10",
+      "fast-uri": "^3.1.8",
       "hono": "^4.13.7",
-      "ip-address": "^10.7.0",
+      "ip-address": "^10.7.1",
       "js-yaml": "^4.3.2",
       "minimatch": "^10.2.1",
       "mute-stream": "^3.0.0",
@@ -70,7 +71,7 @@
       "postcss": "^8.5.28",
       "qs": "^6.16.0",
       "shadcn>postcss-selector-parser": "^7.1.6",
-      "sharp": "^0.35.3",
+      "sharp": "^0.35.4",
       "socket.io-parser": "^4.2.7",
       "undici": "^7.29.1"
     },
@@ -100,6 +101,6 @@
     "tailwindcss": "^4",
     "tsx": "^4.19.0",
     "typescript": "^5",
-    "vitest": "^4.0.18"
+    "vitest": "^4.1.11"
   }
 }
