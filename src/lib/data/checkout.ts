@@ -1,6 +1,6 @@
 "use server";
 
-import type { AddressParams, Cart } from "@spree/sdk";
+import type { AddressParams, Cart, Order } from "@spree/sdk";
 import { SpreeError } from "@spree/sdk";
 import { updateTag } from "next/cache";
 import {
@@ -110,6 +110,24 @@ export async function getCompletedOrder(cartId: string): Promise<Cart | null> {
     async () => (await getOrder(cartId, undefined, surface)) as unknown as Cart,
     null,
   );
+}
+
+/**
+ * Fetch the orders a split marketplace checkout produced — used by the
+ * order-placed page after a refresh. The group they belong to can't be looked
+ * up through the Store API (and `orders.get(cartId)` no longer resolves once
+ * the cart completed into a group), but every child order carries the cart
+ * token, so each resolves by its own id.
+ */
+export async function getCompletedOrders(
+  cartId: string,
+  orderIds: string[],
+): Promise<Order[]> {
+  const surface = await resolveSurfaceForCart(cartId);
+  const orders = await Promise.all(
+    orderIds.map((id) => getOrder(id, undefined, surface)),
+  );
+  return orders.filter((order): order is Order => order !== null);
 }
 
 export async function updateOrderAddresses(

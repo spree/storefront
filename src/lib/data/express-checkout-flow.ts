@@ -1,6 +1,6 @@
 "use server";
 
-import type { AddressParams, Cart } from "@spree/sdk";
+import type { AddressParams, Cart, Order, OrderGroup } from "@spree/sdk";
 import {
   getCheckoutOrder,
   selectDeliveryRate,
@@ -115,7 +115,8 @@ export async function expressCheckoutFinalize(
   cartId: string,
   sessionId: string,
 ): Promise<
-  { success: true; order: unknown } | { success: false; error: string }
+  | { success: true; order: Order | OrderGroup | null }
+  | { success: false; error: string }
 > {
   return actionResult(async () => {
     const sessionResult = await completeCheckoutPaymentSession(

@@ -418,7 +418,8 @@
     "standardShipping": "Wysyłka standardowa",
     "payment": "Płatność",
     "giftCard": "Karta podarunkowa",
-    "confirmationSentTo": "Potwierdzenie wysłane do"
+    "confirmationSentTo": "Potwierdzenie wysłane do",
+    "splitIntoOrders": "Twoje produkty pochodzą od {count} sprzedawców, dlatego zakup został złożony jako {count, plural, few {# osobne zamówienia} many {# osobnych zamówień} other {# osobnego zamówienia}}."
   },
   "coupon": {
     "placeholder": "Karta podarunkowa lub kod rabatowy",

@@ -1,6 +1,6 @@
 "use client";
 
-import type { Cart } from "@spree/sdk";
+import type { Cart, Order, OrderGroup } from "@spree/sdk";
 import {
   Elements,
   ExpressCheckoutElement,
@@ -31,6 +31,7 @@ import {
   hasPayableTotal,
   parseName,
 } from "@/lib/utils/express-checkout";
+import { orderPlacedPath } from "@/lib/utils/order-placed";
 import { isStripeConfigured, stripePromise } from "@/lib/utils/stripe";
 
 export interface ExpressCheckoutButtonProps {
@@ -339,6 +340,8 @@ function ExpressCheckoutInner({
         }
         stripePaymentConfirmed = true;
 
+        let completed: Order | OrderGroup | null = null;
+
         try {
           const finalizeResult = await expressCheckoutFinalize(
             orderId,
@@ -350,6 +353,7 @@ function ExpressCheckoutInner({
               finalizeResult.error,
             );
           } else if (finalizeResult.order) {
+            completed = finalizeResult.order;
             const { cacheCompletedOrder } = await import(
               "@/lib/utils/completed-order-cache"
             );
@@ -359,7 +363,7 @@ function ExpressCheckoutInner({
           /* non-blocking — backend will reconcile */
         }
 
-        router.push(`${basePath}/order-placed/${orderId}`);
+        router.push(orderPlacedPath(basePath, orderId, completed));
         try {
           await onComplete();
         } catch (_onCompleteErr) {

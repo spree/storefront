@@ -418,7 +418,8 @@
     "standardShipping": "Envio estandar",
     "payment": "Pago",
     "giftCard": "Tarjeta regalo",
-    "confirmationSentTo": "Confirmacion enviada a"
+    "confirmationSentTo": "Confirmacion enviada a",
+    "splitIntoOrders": "Tus artículos provienen de {count} vendedores, por lo que tu compra se realizó como {count} pedidos independientes."
   },
   "coupon": {
     "placeholder": "Tarjeta regalo o codigo de descuento",
