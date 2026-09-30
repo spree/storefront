@@ -72,6 +72,7 @@ interface PaymentSectionProps {
     use_shipping?: boolean;
   }) => Promise<boolean>;
   onPaymentComplete: (result: PaymentCompleteResult) => Promise<void>;
+  onCartChange?: (cart: Cart) => void;
   processing: boolean;
   setProcessing: (processing: boolean) => void;
   onSessionMethodChange?: (isSessionBased: boolean) => void;
@@ -86,6 +87,7 @@ export function PaymentSection({
   fetchStates,
   onUpdateBillingAddress,
   onPaymentComplete,
+  onCartChange,
   processing,
   setProcessing,
   onSessionMethodChange,
@@ -152,6 +154,7 @@ export function PaymentSection({
   const [savedCards, setSavedCards] = useState<SpreeCreditCard[]>([]);
   // null = "add new payment method", string = gateway_payment_profile_id
   const [selectedCardId, setSelectedCardId] = useState<string | null>(null);
+  const feeTotal = (cart as unknown as { fee_total?: string }).fee_total;
 
   // ── Payment gateway state (session-based) ───────────────────────────
   // Stores the raw external_data from the Spree PaymentSession.
@@ -220,6 +223,9 @@ export function PaymentSection({
         if (requestId !== sessionRequestIdRef.current) return;
 
         if (result.success && result.session) {
+          if (result.cart) {
+            onCartChange?.(result.cart);
+          }
           const extData = result.session.external_data;
           if (extData && Object.keys(extData).length > 0) {
             // Include external_id so gateway forms can access the
@@ -244,7 +250,7 @@ export function PaymentSection({
         }
       }
     },
-    [cart.id, t],
+    [cart.id, onCartChange, t],
   );
 
   // Track the cart total so we can recreate the session when it changes
@@ -256,7 +262,23 @@ export function PaymentSection({
     if (initRef.current) return;
     if (!selectedMethod) return;
     if (isZeroAmount) return;
-    if (!isSessionBased) return;
+    if (!isSessionBased) {
+      initRef.current = true;
+      if (
+        selectedMethod.type === "Spree::PaymentMethod::DelhiveryCod" &&
+        parseFloat(feeTotal ?? "0") === 0
+      ) {
+        setLoading(true);
+        createDirectPayment(cart.id, selectedMethod.id)
+          .then((result) => {
+            if (result.success && result.cart) {
+              onCartChange?.(result.cart);
+            }
+          })
+          .finally(() => setLoading(false));
+      }
+      return;
+    }
 
     initRef.current = true;
 
@@ -297,7 +319,10 @@ export function PaymentSection({
     isAuthenticated,
     createSession,
     cart.total,
+    cart.id,
+    feeTotal,
     isZeroAmount,
+    onCartChange,
   ]);
 
   // When the cart total changes, sync the live payment session with the
@@ -328,6 +353,9 @@ export function PaymentSection({
         if (!result.success || !result.session) {
           throw new Error("session update rejected");
         }
+        if (result.cart) {
+          onCartChange?.(result.cart);
+        }
         // Providers that can't update in place hand back fresh identifiers;
         // adopting them remounts the form (the `key` changes), which is the
         // unavoidable case. Identical data keeps the mounted form untouched.
@@ -354,6 +382,7 @@ export function PaymentSection({
     cart.total,
     createSession,
     isSessionBased,
+    onCartChange,
     paymentSessionId,
     selectedMethod,
   ]);
@@ -429,7 +458,14 @@ export function PaymentSection({
       setPaymentSessionId(null);
       setGatewayError(null);
       gatewayHandleRef.current = null;
-      setLoading(false);
+      setLoading(true);
+      createDirectPayment(cart.id, newMethod.id)
+        .then((result) => {
+          if (result.success && result.cart) {
+            onCartChange?.(result.cart);
+          }
+        })
+        .finally(() => setLoading(false));
     }
   };
 
@@ -627,6 +663,9 @@ export function PaymentSection({
               setProcessing(false);
               return { error: msg };
             }
+            if (paymentResult.cart) {
+              onCartChange?.(paymentResult.cart);
+            }
 
             await onPaymentComplete({ type: "direct" });
             return {};
@@ -651,6 +690,7 @@ export function PaymentSection({
       billAddress,
       onUpdateBillingAddress,
       onPaymentComplete,
+      onCartChange,
       cart.id,
       setProcessing,
       t,

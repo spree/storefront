@@ -237,6 +237,26 @@ function CheckoutPageContentInner({
     }
   }, [cartId, urlCountry, basePath, paymentError]);
 
+  // Sync state if server sends updated initialData (e.g. router.refresh)
+  useEffect(() => {
+    if (initialData?.cart) {
+      setCart((prev) => {
+        if (!prev) return initialData.cart;
+        if (
+          prev.total !== initialData.cart.total ||
+          prev.display_total !== initialData.cart.display_total ||
+          (prev as unknown as { fee_total?: string }).fee_total !==
+            (initialData.cart as unknown as { fee_total?: string }).fee_total ||
+          prev.discount_total !== initialData.cart.discount_total ||
+          prev.tax_total !== initialData.cart.tax_total
+        ) {
+          return initialData.cart;
+        }
+        return prev;
+      });
+    }
+  }, [initialData?.cart]);
+
   // Only fetch on mount if we don't have initial data (e.g. client-side navigation)
   useEffect(() => {
     if (initialData) {
@@ -740,6 +760,7 @@ function CheckoutPageContentInner({
             fetchStates={fetchStates}
             onUpdateBillingAddress={handleUpdateBillingAddress}
             onPaymentComplete={handlePaymentComplete}
+            onCartChange={setCart}
             processing={processing}
             setProcessing={setProcessing}
             onSessionMethodChange={setIsSessionPayment}

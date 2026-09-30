@@ -22,6 +22,13 @@ export function OrderTotals({ order }: OrderTotalsProps) {
         <span className="text-gray-900">{order.display_delivery_total}</span>
       </div>
 
+      {(order.fees ?? []).map((fee) => (
+        <div key={fee.id} className="flex justify-between text-sm">
+          <span className="text-gray-500">{fee.label}</span>
+          <span className="text-gray-900">{fee.display_amount}</span>
+        </div>
+      ))}
+
       {order.discount_total &&
         Number.parseFloat(order.discount_total) !== 0 && (
           <div className="flex justify-between text-sm">
