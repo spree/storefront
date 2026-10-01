@@ -69,7 +69,7 @@ export function formDataToAddress(data: AddressFormData): AddressParams {
     postal_code: data.postal_code,
     phone: data.phone || undefined,
     company: data.company || undefined,
-    country_iso: data.country_iso,
+    country_code: data.country_iso,
     state_abbr: data.state_abbr || undefined,
     state_name: data.state_name || undefined,
   };

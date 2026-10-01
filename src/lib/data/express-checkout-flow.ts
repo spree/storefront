@@ -16,7 +16,7 @@ import { actionResult } from "@/lib/data/utils";
 export interface ExpressCheckoutPartialAddress {
   city: string;
   postal_code: string;
-  country_iso: string;
+  country_code: string;
   state_name?: string;
 }
 

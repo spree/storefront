@@ -63,7 +63,7 @@ function market(overrides: Partial<Market> = {}): Market {
     default_locale: "en",
     tax_inclusive: false,
     default: true,
-    country_isos: ["US"],
+    country_codes: ["US"],
     supported_locales: ["en"],
     countries: [country("US")],
     ...overrides,
@@ -81,7 +81,7 @@ describe("CountryLocaleLayout Market fallback", () => {
         market({
           default_locale: "es",
           supported_locales: ["es"],
-          country_isos: ["AR"],
+          country_codes: ["AR"],
           countries: [country("AR")],
         }),
       ],
@@ -119,7 +119,7 @@ describe("CountryLocaleLayout Market fallback", () => {
           default: false,
           default_locale: "de",
           supported_locales: ["de", "es", "fr"],
-          country_isos: ["PL"],
+          country_codes: ["PL"],
           countries: [country("PL")],
         }),
       ],
@@ -163,7 +163,7 @@ describe("CountryLocaleLayout Market fallback", () => {
     ["an empty Markets response", []],
     [
       "a Market without countries",
-      [market({ countries: [], country_isos: [] })],
+      [market({ countries: [], country_codes: [] })],
     ],
   ])("does not redirect the default route to itself for %s", async (_, markets) => {
     mocks.getMarkets.mockResolvedValue({ data: markets });

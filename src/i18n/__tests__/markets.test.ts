@@ -16,7 +16,7 @@ function market(overrides: Partial<Market> = {}): Market {
     default_locale: "en",
     tax_inclusive: false,
     default: true,
-    country_isos: ["US"],
+    country_codes: ["US"],
     supported_locales: ["de", "en", "it"],
     countries: [country("US")],
     ...overrides,

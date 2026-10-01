@@ -10,6 +10,8 @@ A production-ready, headless ecommerce storefront for [Spree Commerce](https://s
 
 [Live Demo](https://demo.spreecommerce.org) | [Quickstart Docs](https://spreecommerce.org/docs/developer/storefront/nextjs/quickstart) | [TypeScript SDK](https://www.npmjs.com/package/@spree/sdk)
 
+> **You are on `6-0-dev`.** This branch tracks the unreleased Spree 6.0 Store API and SDK, so it can break as those change. For a stable storefront to fork or deploy, use `main`. This branch merges into `main` at the 6.0 release.
+
 ## Why This Storefront
 
 **TypeScript SDK.** [@spree/sdk](https://www.npmjs.com/package/@spree/sdk) is an official typed client for every Store API endpoint (OpenAPI 3.0 documented). Autocomplete and type safety in your editor, no codegen step to maintain.
@@ -133,6 +135,18 @@ pnpm run dev
 ```
 
 Open [http://localhost:3001](http://localhost:3001) in your browser.
+
+#### Working against a local SDK
+
+To develop against unreleased Store API features, point the storefront at a `@spree/sdk` build from a [Spree monorepo](https://github.com/spree/spree) checkout instead of the published package:
+
+```bash
+SPREE_SDK_PATH=/path/to/spree/packages/sdk pnpm install --no-frozen-lockfile
+```
+
+`.pnpmfile.cjs` redirects the dependency at the local path only when `SPREE_SDK_PATH` is set, so the default install is unaffected and nothing local ever reaches `package.json`. Two things follow from it copying the package rather than symlinking it (this project pins module resolution to its own directory, so a symlink outside it would not resolve): build the SDK first (`pnpm build` in the monorepo), and re-run the install above after each rebuild to pick the new build up. The install also rewrites `pnpm-lock.yaml` with the local path — do not commit that change.
+
+From a Spree monorepo worktree, `pnpm wt:storefront` does all of this for you, including the API URL and publishable key.
 
 #### HTTPS Development (Apple Pay / Google Pay)
 

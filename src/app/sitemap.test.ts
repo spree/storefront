@@ -1,5 +1,9 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
+vi.mock("next/server", () => ({
+  connection: vi.fn(),
+}));
+
 const api = vi.hoisted(() => ({
   marketsList: vi.fn(),
   productsList: vi.fn(),

@@ -1,0 +1,7 @@
+# This project is a single package, not a monorepo — the empty `packages` list
+# is deliberate. Its purpose is to mark this directory as a workspace root so
+# pnpm stops walking up the filesystem: checked out inside another pnpm
+# workspace (the Spree monorepo's worktree tooling clones it into `storefront/`),
+# pnpm would otherwise adopt that parent workspace and install it instead of
+# this project, applying its overrides and lockfile here.
+packages: []
