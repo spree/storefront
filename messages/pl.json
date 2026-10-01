@@ -268,8 +268,8 @@
     "iAgreeToThe": "Zgadzam się z",
     "policySeparatorComma": ", ",
     "policySeparatorAnd": " i ",
-    "failedToApplyStoreCredit": "Nie udało się użyć środków na koncie. Spróbuj ponownie.",
-    "storeCreditPartiallyCovers": "Środki na koncie pokrywają część tego zamówienia. Do zapłaty pozostaje {amount} — wybierz inną metodę płatności, aby zakończyć."
+    "payment": "Płatność",
+    "coveredByStoreCredit": "Środki na koncie pokrywają całe zamówienie — metoda płatności nie jest potrzebna."
   },
   "address": {
     "firstName": "Imię",
@@ -435,6 +435,19 @@
     "giftCardCode": "Karta podarunkowa {code}",
     "applying": "Stosowanie...",
     "removing": "Usuwanie..."
+  },
+  "storeCredit": {
+    "title": "Środki na koncie",
+    "availableBalance": "Masz {amount} środków na koncie.",
+    "apply": "Wykorzystaj",
+    "applying": "Wykorzystywanie...",
+    "appliedAmount": "Wykorzystano {amount} środków",
+    "coversOrder": "To pokrywa całe zamówienie — nie zostaje nic do zapłaty.",
+    "partiallyCovers": "Do zapłaty pozostaje {amount}. Wybierz poniżej metodę płatności, aby zakończyć.",
+    "remainingBalance": "Na przyszłe zamówienia zostaje {amount}.",
+    "remove": "Usuń środki z zamówienia",
+    "failedToApply": "Nie udało się wykorzystać środków. Spróbuj ponownie.",
+    "failedToRemove": "Nie udało się usunąć środków. Spróbuj ponownie."
   },
   "checkoutLayout": {
     "backToStore": "Wróć do sklepu",

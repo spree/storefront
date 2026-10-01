@@ -268,8 +268,8 @@
     "iAgreeToThe": "Acepto las",
     "policySeparatorComma": ", ",
     "policySeparatorAnd": " y ",
-    "failedToApplyStoreCredit": "No se pudo aplicar el crédito de la tienda. Inténtalo de nuevo.",
-    "storeCreditPartiallyCovers": "Tu crédito de la tienda cubre parte de este pedido. Aún quedan {amount} — elige otro método de pago para finalizar."
+    "payment": "Pago",
+    "coveredByStoreCredit": "Tu crédito de la tienda cubre este pedido por completo: no necesitas método de pago."
   },
   "address": {
     "firstName": "Nombre",
@@ -435,6 +435,19 @@
     "giftCardCode": "Tarjeta regalo {code}",
     "applying": "Aplicando...",
     "removing": "Eliminando..."
+  },
+  "storeCredit": {
+    "title": "Crédito de la tienda",
+    "availableBalance": "Tienes {amount} de crédito de la tienda.",
+    "apply": "Aplicar",
+    "applying": "Aplicando...",
+    "appliedAmount": "{amount} de crédito aplicado",
+    "coversOrder": "Esto cubre tu pedido por completo: no queda nada por pagar.",
+    "partiallyCovers": "Aún quedan {amount} por pagar. Elige un método de pago a continuación para finalizar.",
+    "remainingBalance": "Te quedan {amount} disponibles para futuros pedidos.",
+    "remove": "Quitar el crédito de la tienda",
+    "failedToApply": "No se pudo aplicar el crédito de la tienda. Inténtalo de nuevo.",
+    "failedToRemove": "No se pudo quitar el crédito de la tienda. Inténtalo de nuevo."
   },
   "checkoutLayout": {
     "backToStore": "Volver a la tienda",

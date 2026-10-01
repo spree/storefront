@@ -268,8 +268,8 @@
     "iAgreeToThe": "J'accepte les",
     "policySeparatorComma": ", ",
     "policySeparatorAnd": " et ",
-    "failedToApplyStoreCredit": "Impossible d'appliquer l'avoir. Veuillez réessayer.",
-    "storeCreditPartiallyCovers": "Votre avoir couvre une partie de cette commande. Il reste {amount} à payer — choisissez un autre moyen de paiement pour finaliser."
+    "payment": "Paiement",
+    "coveredByStoreCredit": "Votre avoir couvre entièrement cette commande — aucun moyen de paiement nécessaire."
   },
   "address": {
     "firstName": "Prenom",
@@ -435,6 +435,19 @@
     "giftCardCode": "Carte cadeau {code}",
     "applying": "Application...",
     "removing": "Suppression..."
+  },
+  "storeCredit": {
+    "title": "Avoir",
+    "availableBalance": "Vous disposez de {amount} d'avoir.",
+    "apply": "Utiliser",
+    "applying": "Application...",
+    "appliedAmount": "{amount} d'avoir utilisé",
+    "coversOrder": "Cela couvre entièrement votre commande — il ne reste rien à payer.",
+    "partiallyCovers": "Il reste {amount} à payer. Choisissez un moyen de paiement ci-dessous pour finaliser.",
+    "remainingBalance": "Il vous reste {amount} pour de prochaines commandes.",
+    "remove": "Retirer l'avoir",
+    "failedToApply": "Impossible d'utiliser l'avoir. Veuillez réessayer.",
+    "failedToRemove": "Impossible de retirer l'avoir. Veuillez réessayer."
   },
   "checkoutLayout": {
     "backToStore": "Retour a la boutique",

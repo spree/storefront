@@ -7,6 +7,10 @@ import { getCheckoutOrder } from "@/lib/data/checkout";
 import { isAuthenticated as checkAuth } from "@/lib/data/cookies";
 import { getCountry } from "@/lib/data/countries";
 import { getMarketCountries, resolveMarket } from "@/lib/data/markets";
+import {
+  getStoreCreditBalance,
+  type StoreCreditBalance,
+} from "@/lib/data/store-credits";
 
 import { CheckoutPageContent } from "./CheckoutPageContent";
 
@@ -15,6 +19,8 @@ export interface CheckoutInitialData {
   countries: Country[];
   savedAddresses: Address[];
   isAuthenticated: boolean;
+  /** null for guests and whenever the balance can't be read. */
+  storeCreditBalance: StoreCreditBalance | null;
 }
 
 interface CheckoutPageProps {
@@ -34,11 +40,15 @@ async function CheckoutDataLoader({ params }: CheckoutPageProps) {
   const authStatus = await checkAuth();
 
   // Fetch initial data in parallel during SSR
-  const [cartData, market, addressesData] = await Promise.all([
-    getCheckoutOrder(cartId),
-    resolveMarket(urlCountry).catch(() => null),
-    authStatus ? getAddresses() : Promise.resolve({ data: [] as Address[] }),
-  ]);
+  const [cartData, market, addressesData, storeCreditBalance] =
+    await Promise.all([
+      getCheckoutOrder(cartId),
+      resolveMarket(urlCountry).catch(() => null),
+      authStatus ? getAddresses() : Promise.resolve({ data: [] as Address[] }),
+      authStatus
+        ? getStoreCreditBalance().catch(() => null)
+        : Promise.resolve(null),
+    ]);
 
   // Redirect to order-placed if already complete
   if (cartData?.current_step === "complete") {
@@ -65,6 +75,7 @@ async function CheckoutDataLoader({ params }: CheckoutPageProps) {
         countries: countriesData.data,
         savedAddresses: addressesData.data,
         isAuthenticated: authStatus,
+        storeCreditBalance,
       }
     : null;
 
