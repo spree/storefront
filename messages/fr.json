@@ -217,6 +217,7 @@
     "shippingMethod": "Mode de livraison",
     "loadingShippingOptions": "Chargement des options de livraison...",
     "enterShippingAddressForMethods": "Entrez votre adresse de livraison pour voir les modes de livraison disponibles.",
+    "chooseDeliveryMethod": "Choisissez un mode de livraison, puis passez de nouveau votre commande.",
     "shipmentOf": "Expedition {current} sur {total}",
     "shipsFrom": "Expedie depuis {location}",
     "phone": "Telephone : {phone}",
