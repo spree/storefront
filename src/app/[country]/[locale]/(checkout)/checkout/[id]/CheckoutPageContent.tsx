@@ -27,6 +27,7 @@ import {
   PaymentSection,
   type PaymentSectionHandle,
 } from "@/components/checkout/PaymentSection";
+import { StoreCreditSection } from "@/components/checkout/StoreCreditSection";
 import { PolicyConsent } from "@/components/policy/PolicyConsent";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useAuth } from "@/contexts/AuthContext";
@@ -57,6 +58,10 @@ import {
   completeCheckoutOrder,
   completeCheckoutPaymentSession,
 } from "@/lib/data/payment";
+import {
+  getStoreCreditBalance,
+  type StoreCreditBalance,
+} from "@/lib/data/store-credits";
 import { extractBasePath } from "@/lib/utils/path";
 import { CheckoutSidebar } from "./CheckoutSidebar";
 import type { CheckoutInitialData } from "./page";
@@ -121,6 +126,10 @@ function CheckoutPageContentInner({
   const [isAuthenticated, setIsAuthenticated] = useState(
     initialData?.isAuthenticated ?? false,
   );
+  const [storeCreditBalance, setStoreCreditBalance] =
+    useState<StoreCreditBalance | null>(
+      initialData?.storeCreditBalance ?? null,
+    );
   const [loading, setLoading] = useState(!initialData);
   const [error, setError] = useState<string | null>(paymentError);
   const [processing, setProcessing] = useState(false);
@@ -210,11 +219,14 @@ function CheckoutPageContentInner({
     if (!paymentError) setError(null);
 
     try {
-      const [loadedCart, market, authStatus] = await Promise.all([
-        getCheckoutOrder(cartId),
-        resolveMarket(urlCountry).catch(() => null),
-        checkAuth(),
-      ]);
+      const [loadedCart, market, authStatus, creditBalance] = await Promise.all(
+        [
+          getCheckoutOrder(cartId),
+          resolveMarket(urlCountry).catch(() => null),
+          checkAuth(),
+          getStoreCreditBalance().catch(() => null),
+        ],
+      );
 
       // A buyer with one membership never picked a company, so checkout names
       // it for them — before the addresses are read, since that is what puts
@@ -252,6 +264,7 @@ function CheckoutPageContentInner({
       setCountries(countriesData.data);
       setSelectableAddresses(addresses);
       setIsAuthenticated(authStatus);
+      setStoreCreditBalance(creditBalance);
 
       return cartData;
     } catch {
@@ -759,6 +772,17 @@ function CheckoutPageContentInner({
           />
         </div>
 
+        {/* Store credit — its own widget, never a payment method. When it
+            covers the order in full, PaymentSection drops the selector. */}
+        <div id="checkout-section-store-credit" className="mt-6 empty:mt-0">
+          <StoreCreditSection
+            cart={cart}
+            initialBalance={storeCreditBalance}
+            onCartUpdate={setCart}
+            processing={processing}
+          />
+        </div>
+
         {/* Payment */}
         <div id="checkout-section-payment" className="mt-6">
           <PaymentSection
@@ -769,7 +793,6 @@ function CheckoutPageContentInner({
             fetchStates={fetchStates}
             onUpdateBillingAddress={handleUpdateBillingAddress}
             onPaymentComplete={handlePaymentComplete}
-            onCartUpdate={setCart}
             processing={processing}
             setProcessing={setProcessing}
             onSessionMethodChange={setIsSessionPayment}

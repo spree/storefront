@@ -10,6 +10,10 @@ import {
 import { isAuthenticated as checkAuth } from "@/lib/data/cookies";
 import { getCountry } from "@/lib/data/countries";
 import { getMarketCountries, resolveMarket } from "@/lib/data/markets";
+import {
+  getStoreCreditBalance,
+  type StoreCreditBalance,
+} from "@/lib/data/store-credits";
 
 import { CheckoutPageContent } from "./CheckoutPageContent";
 
@@ -20,6 +24,8 @@ export interface CheckoutInitialData {
   /** Everything the cart accepts — the buyer's own book plus the sites of the
    * company the purchase is for, each naming the book it came out of. */
   selectableAddresses: Address[];
+  /** null for guests and whenever the balance can't be read. */
+  storeCreditBalance: StoreCreditBalance | null;
 }
 
 interface CheckoutPageProps {
@@ -39,9 +45,12 @@ async function CheckoutDataLoader({ params }: CheckoutPageProps) {
   const authStatus = await checkAuth();
 
   // Fetch initial data in parallel during SSR
-  const [loadedCart, market] = await Promise.all([
+  const [loadedCart, market, storeCreditBalance] = await Promise.all([
     getCheckoutOrder(cartId),
     resolveMarket(urlCountry).catch(() => null),
+    authStatus
+      ? getStoreCreditBalance().catch(() => null)
+      : Promise.resolve(null),
   ]);
 
   // Redirect to order-placed if already complete
@@ -83,6 +92,7 @@ async function CheckoutDataLoader({ params }: CheckoutPageProps) {
         countries: countriesData.data,
         isAuthenticated: authStatus,
         selectableAddresses,
+        storeCreditBalance,
       }
     : null;
 
