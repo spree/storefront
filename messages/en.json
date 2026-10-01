@@ -217,6 +217,7 @@
     "shippingMethod": "Shipping Method",
     "loadingShippingOptions": "Loading shipping options...",
     "enterShippingAddressForMethods": "Enter your shipping address to view available shipping methods.",
+    "chooseDeliveryMethod": "Choose a delivery method, then place your order again.",
     "shipmentOf": "Shipment {current} of {total}",
     "shipsFrom": "Ships from {location}",
     "phone": "Phone: {phone}",

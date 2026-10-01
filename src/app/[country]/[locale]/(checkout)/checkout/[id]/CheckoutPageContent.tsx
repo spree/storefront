@@ -75,6 +75,19 @@ function cartItemsFingerprint(cart: Cart | null): string {
   return (cart.items ?? []).map((i) => `${i.id}:${i.quantity}`).join(",");
 }
 
+// The delivery the buyer is looking at: each shipment's selected option, as
+// named and priced on screen. Ids are left out because a rebuild that keeps
+// the choice (after a corrected phone number) issues new ones.
+function deliveryFingerprint(cart: Cart | null): string {
+  if (!cart) return "";
+  return (cart.fulfillments ?? [])
+    .map((f) => {
+      const rate = f.delivery_rates.find((r) => r.selected);
+      return `${rate?.name ?? ""}:${rate?.display_cost ?? ""}`;
+    })
+    .join(",");
+}
+
 interface CheckoutPageContentProps {
   cartId: string;
   urlCountry: string;
@@ -121,8 +134,21 @@ function CheckoutPageContentInner({
   const [policyConsent, setPolicyConsent] = useState(false);
   const [policyError, setPolicyError] = useState(false);
   const [isSessionPayment, setIsSessionPayment] = useState(true);
+  const [errorSection, setErrorSection] = useState<string | null>(null);
 
   const fulfillments = cart?.fulfillments ?? [];
+
+  // Runs after the render that shows the section's errors, so delivery
+  // options that the same update brought in already exist to be focused.
+  useEffect(() => {
+    if (!errorSection) return;
+    const el = document.getElementById(`checkout-section-${errorSection}`);
+    el?.scrollIntoView({ behavior: "smooth", block: "start" });
+    el?.querySelector<HTMLElement>(
+      '[role="radio"][aria-checked="true"]',
+    )?.focus({ preventScroll: true });
+    setErrorSection(null);
+  }, [errorSection]);
 
   const cartRef = useRef(cart);
   cartRef.current = cart;
@@ -132,6 +158,13 @@ function CheckoutPageContentInner({
   tRef.current = t;
   const beginCheckoutFiredRef = useRef(false);
   const paymentRef = useRef<PaymentSectionHandle>(null);
+  // What was on screen when Place Order was pressed. Taken on pointerdown,
+  // which fires before the address block's blur save can re-render the cart.
+  const shownCartRef = useRef<Cart | null>(null);
+  // The latest address save, resolving to its error or null. Kept until the
+  // next save replaces it, so a failure that settles before the buyer
+  // releases Place Order still stops the order.
+  const lastAddressSaveRef = useRef<Promise<string | null> | null>(null);
 
   // Handle code application (discount code or gift card — single input field)
   const handleApplyCode = useCallback(async (code: string) => {
@@ -331,33 +364,46 @@ function CheckoutPageContentInner({
       const currentOrder = cartRef.current;
       if (!currentOrder) return;
 
-      setSaving(true);
-      setError(null);
+      const save = (async () => {
+        setSaving(true);
+        setError(null);
 
-      try {
-        const updateResult = await updateOrderAddresses(currentOrder.id, {
-          email: addressData.email,
-          ...(addressData.shipping_address && {
-            shipping_address: addressData.shipping_address,
-          }),
-          ...(addressData.shipping_address_id && {
-            shipping_address_id: addressData.shipping_address_id,
-          }),
-        });
+        try {
+          const updateResult = await updateOrderAddresses(currentOrder.id, {
+            email: addressData.email,
+            ...(addressData.shipping_address && {
+              shipping_address: addressData.shipping_address,
+            }),
+            ...(addressData.shipping_address_id && {
+              shipping_address_id: addressData.shipping_address_id,
+            }),
+          });
 
-        if (!updateResult.success) {
-          setError(updateResult.error || tRef.current("failedToSaveAddress"));
-          return;
+          if (!updateResult.success) {
+            const message =
+              updateResult.error || tRef.current("failedToSaveAddress");
+            setError(message);
+            return message;
+          }
+
+          if (updateResult.cart) {
+            setCart(updateResult.cart);
+          }
+          return null;
+        } catch {
+          const message = tRef.current("generalError");
+          setError(message);
+          return message;
+        } finally {
+          setSaving(false);
         }
+      })();
 
-        if (updateResult.cart) {
-          setCart(updateResult.cart);
-        }
-      } catch {
-        setError(tRef.current("generalError"));
-      } finally {
-        setSaving(false);
-      }
+      lastAddressSaveRef.current = save;
+      const saveError = await save;
+      // Rejecting tells the address block the save did not happen, so its
+      // next blur tries the same address again.
+      if (saveError) throw new Error(saveError);
     },
     [],
   );
@@ -536,6 +582,8 @@ function CheckoutPageContentInner({
   // Validate and pay — single "Pay now" action
   const validateAndPay = async () => {
     if (!cart) return;
+    const shownCart = shownCartRef.current ?? cart;
+    shownCartRef.current = null;
 
     setSectionErrors({});
     setError(null);
@@ -547,6 +595,17 @@ function CheckoutPageContentInner({
         .getElementById("policy-consent")
         ?.scrollIntoView({ behavior: "smooth", block: "center" });
       document.getElementById("policy-consent")?.focus();
+      return;
+    }
+
+    // The press may have started an address save by moving focus out of the
+    // address block. Wait for it rather than count on Next.js running server
+    // actions one at a time, and stop if it failed: the cart still holds the
+    // old address. The error is shown again because it may have settled
+    // before this handler cleared the banner.
+    const saveError = await lastAddressSaveRef.current;
+    if (saveError) {
+      setError(saveError);
       return;
     }
 
@@ -582,14 +641,15 @@ function CheckoutPageContentInner({
       }
 
       setSectionErrors(errorsBySection);
+      setErrorSection(Object.keys(errorsBySection)[0]);
+      return;
+    }
 
-      // Scroll to first error section
-      const firstSection = Object.keys(errorsBySection)[0];
-      const el = document.getElementById(`checkout-section-${firstSection}`);
-      if (el) {
-        el.scrollIntoView({ behavior: "smooth", block: "start" });
-      }
-
+    // Pressing Place Order moves focus out of the address block, which saves
+    // the address and has the server pick a delivery the buyer has not seen.
+    if (deliveryFingerprint(freshOrder) !== deliveryFingerprint(shownCart)) {
+      setSectionErrors({ shipping: [t("chooseDeliveryMethod")] });
+      setErrorSection("shipping");
       return;
     }
 
@@ -764,6 +824,15 @@ function CheckoutPageContentInner({
         {/* Pay now button */}
         <button
           type="button"
+          onPointerDown={(e) => {
+            if (e.button === 0) shownCartRef.current = cart;
+          }}
+          onPointerLeave={() => {
+            shownCartRef.current = null;
+          }}
+          onPointerCancel={() => {
+            shownCartRef.current = null;
+          }}
           onClick={validateAndPay}
           disabled={processing}
           className="w-full mt-8 h-[54px] bg-black text-white text-sm font-bold rounded-sm hover:bg-gray-900 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2"
