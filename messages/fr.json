@@ -48,6 +48,7 @@
     "description": "Choisissez votre région et votre langue. La devise dépend de la région sélectionnée.",
     "region": "Région",
     "language": "Langue",
+    "noSupportedLanguage": "Langue indisponible",
     "updatePreferences": "Mettre à jour les préférences",
     "updatingPreferences": "Mise à jour des préférences...",
     "updatePreferencesFailed": "Impossible de mettre à jour vos préférences régionales. Veuillez réessayer."

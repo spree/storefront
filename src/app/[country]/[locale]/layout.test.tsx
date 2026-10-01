@@ -143,6 +143,27 @@ describe("CountryLocaleLayout Market fallback", () => {
     });
   });
 
+  it("renders a Market configured with en-GB at the lowercase route", async () => {
+    mocks.getMarkets.mockResolvedValue({
+      data: [
+        market({
+          default_locale: "en-GB",
+          supported_locales: [],
+          country_isos: ["GB"],
+          countries: [country("GB")],
+        }),
+      ],
+    });
+
+    await expect(
+      CountryLocaleLayoutContent({
+        children: <main />,
+        params: Promise.resolve({ country: "gb", locale: "en-gb" }),
+      }),
+    ).resolves.toBeDefined();
+    expect(mocks.redirect).not.toHaveBeenCalled();
+  });
+
   it("redirects an unknown country to the default Market and keeps the page", async () => {
     mocks.getMarkets.mockResolvedValue({ data: [market()] });
     mocks.headers.mockResolvedValue(

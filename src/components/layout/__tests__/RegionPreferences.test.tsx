@@ -17,6 +17,7 @@ vi.mock("next-intl", () => ({
       updatePreferences: "Update preferences",
       updatingPreferences: "Updating preferences...",
       updatePreferencesFailed: "Could not update preferences.",
+      noSupportedLanguage: "Language unavailable",
     })[key] ?? key,
 }));
 
@@ -45,8 +46,24 @@ const countries = [
     name: "Canada",
     currency: "USD",
     default_locale: "en",
-    supported_locales: ["en", "fr"],
+    supported_locales: ["en", "fr", "it"],
     marketId: "market-ca",
+  },
+  {
+    iso: "GB",
+    name: "United Kingdom",
+    currency: "GBP",
+    default_locale: "en-GB",
+    supported_locales: [],
+    marketId: "market-gb",
+  },
+  {
+    iso: "JP",
+    name: "Japan",
+    currency: "JPY",
+    default_locale: "ja",
+    supported_locales: [],
+    marketId: "market-jp",
   },
 ] as CountryWithMarket[];
 
@@ -89,12 +106,67 @@ describe("RegionPreferences", () => {
     await user.selectOptions(screen.getByLabelText("Region"), "ca");
     expect(screen.getByLabelText("Region")).toHaveValue("ca");
     expect(screen.getByLabelText("Language")).toHaveValue("en");
+    expect(
+      screen.getByLabelText("Language").querySelector('option[value="it"]'),
+    ).toBeNull();
 
     await user.click(
       screen.getByRole("button", { name: "Update preferences" }),
     );
 
     expect(handleCountrySelect).toHaveBeenCalledWith(countries[1], "en");
+  });
+
+  it("uses a lowercase regional locale in the language selector", async () => {
+    const user = userEvent.setup();
+    const handleCountrySelect = vi.fn().mockResolvedValue(true);
+    mockUseCountrySwitch.mockReturnValue({
+      handleCountrySelect,
+      isCartLoading: false,
+      isCountryNavigating: false,
+    });
+
+    render(<RegionPreferences variant="header" />);
+    await user.click(
+      screen.getByRole("button", { name: "Region and language" }),
+    );
+    await user.selectOptions(screen.getByLabelText("Region"), "gb");
+
+    expect(screen.getByLabelText("Language")).toHaveValue("en-gb");
+
+    await user.click(
+      screen.getByRole("button", { name: "Update preferences" }),
+    );
+
+    expect(handleCountrySelect).toHaveBeenCalledWith(countries[2], "en-gb");
+  });
+
+  it("allows selecting a country without a renderable language but disables updating", async () => {
+    const user = userEvent.setup();
+    mockUseCountrySwitch.mockReturnValue({
+      handleCountrySelect: vi.fn(),
+      isCartLoading: false,
+      isCountryNavigating: false,
+    });
+
+    render(<RegionPreferences variant="header" />);
+    await user.click(
+      screen.getByRole("button", { name: "Region and language" }),
+    );
+
+    const region = screen.getByLabelText("Region");
+    expect(
+      screen.getByRole("option", { name: "Japan (JPY)" }),
+    ).not.toBeDisabled();
+
+    await user.selectOptions(region, "jp");
+
+    expect(region).toHaveValue("jp");
+    expect(screen.getByLabelText("Language")).toBeDisabled();
+    expect(screen.getByText("Language unavailable")).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "Update preferences" }),
+    ).toBeDisabled();
   });
 
   it("disables submission while the cart is loading", async () => {

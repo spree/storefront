@@ -19,6 +19,22 @@ describe("Spree locale middleware", () => {
     );
   });
 
+  it("keeps regional default locales in lowercase route segments", () => {
+    const regionalMiddleware = createSpreeMiddleware({
+      defaultCountry: "gb",
+      defaultLocale: "en-GB",
+      supportedLocales: ["en", "en-gb"],
+    });
+
+    const response = regionalMiddleware(
+      new NextRequest("https://store.example/"),
+    );
+
+    expect(response.headers.get("location")).toBe(
+      "https://store.example/gb/en-gb",
+    );
+  });
+
   it("redirects an unsupported storefront locale without dropping the path", () => {
     const response = middleware(
       new NextRequest("https://store.example/ar/it/products/coffee"),

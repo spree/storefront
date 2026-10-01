@@ -48,6 +48,7 @@
     "description": "Choose your region and language. Currency is set by the selected region.",
     "region": "Region",
     "language": "Language",
+    "noSupportedLanguage": "Language unavailable",
     "updatePreferences": "Update preferences",
     "updatingPreferences": "Updating preferences...",
     "updatePreferencesFailed": "We couldn't update your region preferences. Please try again."
