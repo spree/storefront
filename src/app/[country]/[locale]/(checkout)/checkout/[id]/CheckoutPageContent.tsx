@@ -161,7 +161,10 @@ function CheckoutPageContentInner({
   // What was on screen when Place Order was pressed. Taken on pointerdown,
   // which fires before the address block's blur save can re-render the cart.
   const shownCartRef = useRef<Cart | null>(null);
-  const pendingAddressSaveRef = useRef<Promise<boolean> | null>(null);
+  // The latest address save, resolving to its error or null. Kept until the
+  // next save replaces it, so a failure that settles before the buyer
+  // releases Place Order still stops the order.
+  const lastAddressSaveRef = useRef<Promise<string | null> | null>(null);
 
   // Handle code application (discount code or gift card — single input field)
   const handleApplyCode = useCallback(async (code: string) => {
@@ -377,27 +380,30 @@ function CheckoutPageContentInner({
           });
 
           if (!updateResult.success) {
-            setError(updateResult.error || tRef.current("failedToSaveAddress"));
-            return false;
+            const message =
+              updateResult.error || tRef.current("failedToSaveAddress");
+            setError(message);
+            return message;
           }
 
           if (updateResult.cart) {
             setCart(updateResult.cart);
           }
-          return true;
+          return null;
         } catch {
-          setError(tRef.current("generalError"));
-          return false;
+          const message = tRef.current("generalError");
+          setError(message);
+          return message;
         } finally {
           setSaving(false);
         }
       })();
 
-      pendingAddressSaveRef.current = save;
-      await save;
-      if (pendingAddressSaveRef.current === save) {
-        pendingAddressSaveRef.current = null;
-      }
+      lastAddressSaveRef.current = save;
+      const saveError = await save;
+      // Rejecting tells the address block the save did not happen, so its
+      // next blur tries the same address again.
+      if (saveError) throw new Error(saveError);
     },
     [],
   );
@@ -595,9 +601,13 @@ function CheckoutPageContentInner({
     // The press may have started an address save by moving focus out of the
     // address block. Wait for it rather than count on Next.js running server
     // actions one at a time, and stop if it failed: the cart still holds the
-    // old address, and its error is already on screen.
-    const addressSave = pendingAddressSaveRef.current;
-    if (addressSave && !(await addressSave)) return;
+    // old address. The error is shown again because it may have settled
+    // before this handler cleared the banner.
+    const saveError = await lastAddressSaveRef.current;
+    if (saveError) {
+      setError(saveError);
+      return;
+    }
 
     // Refresh cart to get latest requirements
     const freshOrder = await getCheckoutOrder(cart.id);

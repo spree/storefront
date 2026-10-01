@@ -4,6 +4,7 @@ import { useImperativeHandle } from "react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const mockSubmit = vi.fn();
+const mockAutoSaves: Promise<void>[] = [];
 
 vi.mock("next-intl", async () => {
   const actual = await vi.importActual("next-intl");
@@ -25,7 +26,8 @@ vi.mock("@/contexts/AuthContext", () => ({
   useAuth: () => ({ user: null, loading: false }),
 }));
 
-// Saves on blur, as the real address block does when focus leaves it.
+// Saves on blur, as the real address block does when focus leaves it, and
+// swallows a failed save the way its retry-on-next-blur catch does.
 vi.mock("@/components/checkout/AddressSection", () => ({
   AddressSection: ({
     onAutoSave,
@@ -35,7 +37,9 @@ vi.mock("@/components/checkout/AddressSection", () => ({
     <input
       aria-label="address"
       onBlur={() => {
-        void onAutoSave({ email: "buyer@example.com" });
+        const save = onAutoSave({ email: "buyer@example.com" });
+        save.catch(() => {});
+        mockAutoSaves.push(save);
       }}
     />
   ),
@@ -143,6 +147,7 @@ async function pressPlaceOrder({ leavingAddress = false } = {}) {
 describe("CheckoutPageContent Place Order", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mockAutoSaves.length = 0;
     Element.prototype.scrollIntoView = vi.fn();
   });
 
@@ -195,6 +200,29 @@ describe("CheckoutPageContent Place Order", () => {
     } as Awaited<ReturnType<typeof updateOrderAddresses>>);
 
     await pressPlaceOrder({ leavingAddress: true });
+
+    expect(mockSubmit).not.toHaveBeenCalled();
+    expect(mockGetCheckoutOrder).not.toHaveBeenCalled();
+    expect(screen.getByText("Postal code is invalid")).toBeInTheDocument();
+  });
+
+  it("stops when the address save fails before the button is released", async () => {
+    renderCheckout(buildCart([standard]));
+    mockUpdateOrderAddresses.mockResolvedValue({
+      success: false,
+      error: "Postal code is invalid",
+    } as Awaited<ReturnType<typeof updateOrderAddresses>>);
+    mockGetCheckoutOrder.mockResolvedValue(buildCart([standard]));
+    const button = screen.getByRole("button", { name: "payNow" });
+
+    await act(async () => {
+      fireEvent.pointerDown(button, { button: 0 });
+      fireEvent.blur(screen.getByLabelText("address"));
+    });
+    await expect(mockAutoSaves[0]).rejects.toThrow("Postal code is invalid");
+    await act(async () => {
+      fireEvent.click(button);
+    });
 
     expect(mockSubmit).not.toHaveBeenCalled();
     expect(mockGetCheckoutOrder).not.toHaveBeenCalled();
