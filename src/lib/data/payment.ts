@@ -74,6 +74,11 @@ export async function updateCheckoutPaymentSession(
 /**
  * Creates a direct payment for non-session payment methods
  * (e.g. Check, Cash on Delivery, Bank Transfer).
+ *
+ * Store credit is not one of them — it is drawn through its own endpoint
+ * (`applyStoreCredit` in `@/lib/data/store-credits`) and never offered as a
+ * payment method. Passing it here is refused with a
+ * `store_credits_endpoint_required` error.
  */
 export async function createDirectPayment(
   cartId: string,

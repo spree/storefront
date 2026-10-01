@@ -267,7 +267,9 @@
     "policyConsentRequired": "Sie müssen den Geschäftsrichtlinien zustimmen, bevor Sie Ihre Bestellung aufgeben",
     "iAgreeToThe": "Ich stimme zu",
     "policySeparatorComma": ", ",
-    "policySeparatorAnd": " und "
+    "policySeparatorAnd": " und ",
+    "payment": "Zahlung",
+    "coveredByStoreCredit": "Ihr Guthaben deckt diese Bestellung vollständig ab — keine Zahlungsart erforderlich."
   },
   "address": {
     "firstName": "Vorname",
@@ -433,6 +435,19 @@
     "giftCardCode": "Geschenkkarte {code}",
     "applying": "Wird angewendet...",
     "removing": "Wird entfernt..."
+  },
+  "storeCredit": {
+    "title": "Guthaben",
+    "availableBalance": "Sie haben {amount} Guthaben.",
+    "apply": "Einlösen",
+    "applying": "Wird eingelöst...",
+    "appliedAmount": "{amount} Guthaben eingelöst",
+    "coversOrder": "Das deckt Ihre Bestellung vollständig ab — es bleibt nichts zu zahlen.",
+    "partiallyCovers": "{amount} sind noch offen. Wählen Sie unten eine Zahlungsart, um abzuschließen.",
+    "remainingBalance": "{amount} bleiben für künftige Bestellungen verfügbar.",
+    "remove": "Guthaben entfernen",
+    "failedToApply": "Guthaben konnte nicht eingelöst werden. Bitte versuchen Sie es erneut.",
+    "failedToRemove": "Guthaben konnte nicht entfernt werden. Bitte versuchen Sie es erneut."
   },
   "checkoutLayout": {
     "backToStore": "Zurück zum Shop",

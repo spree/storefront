@@ -53,6 +53,15 @@ import { getCardIconType, getCardLabel } from "@/lib/utils/credit-card";
 import { extractBasePath } from "@/lib/utils/path";
 import { resolveGatewayId } from "@/lib/utils/payment-gateway";
 
+/**
+ * Store credit is a balance, not a way to pay: the API hands it back among the
+ * cart's payment methods, but it has to be drawn through the store-credits
+ * endpoint and only lowers `amount_due`. Keep it out of the selector.
+ */
+function isSelectablePaymentMethod(method: PaymentMethod): boolean {
+  return method.type !== "store_credit";
+}
+
 export type PaymentCompleteResult =
   | { type: "session"; sessionId: string; sessionResult?: string }
   | { type: "direct" };
@@ -94,7 +103,13 @@ export function PaymentSection({
   const t = useTranslations("checkout");
 
   // ── Payment methods from Spree ──────────────────────────────────────
-  const paymentMethods = cart.payment_methods ?? [];
+  // Store credit is never selectable here. Spree returns it among the cart's
+  // payment methods, but it reduces `amount_due` instead of settling the order
+  // and is drawn through its own endpoint — StoreCreditSection owns it.
+  const paymentMethods = useMemo(
+    () => (cart.payment_methods ?? []).filter(isSelectablePaymentMethod),
+    [cart.payment_methods],
+  );
   const hasMultipleMethods = paymentMethods.length > 1;
 
   // Default to the first method; fall back if the stored ID becomes stale
@@ -106,16 +121,24 @@ export function PaymentSection({
     paymentMethods.find((pm) => pm.id === selectedMethodId) ??
     paymentMethods[0];
   const effectiveSelectedMethodId = selectedMethod?.id ?? "";
-  // Zero-amount check. A null amount (money fields are nullable for
-  // prices-hidden guests) must NOT read as zero — that would complete
-  // checkout with no payment. Only a real numeric 0 is a free order;
-  // an unknown amount falls through to the normal payment path.
-  const rawAmountDue = cart.amount_due ?? cart.total;
+  // What is actually left to collect — the cart total less anything already
+  // settled by store credit or a gift card. A null amount (money fields are
+  // nullable for prices-hidden guests) must NOT read as zero — that would
+  // complete checkout with no payment. Only a real numeric 0 is nothing to
+  // collect; an unknown amount falls through to the normal payment path.
+  //
+  // `amount_due` is the authority here, not `covered_by_store_credit`: the
+  // latter answers "does the customer hold enough credit", which is true
+  // before any of it is drawn and would hide the selector on an unpaid order.
+  const payableAmount = cart.amount_due ?? cart.total;
   const amountDue =
-    rawAmountDue == null ? Number.NaN : parseFloat(rawAmountDue);
+    payableAmount == null ? Number.NaN : parseFloat(payableAmount);
+  // Free orders and orders whose balance store credit (or a gift card) already
+  // wiped out alike: nothing to pay, so no payment method is offered at all.
   const isZeroAmount = Number.isFinite(amountDue) && amountDue === 0;
+  const hasStoreCredit = parseFloat(cart.store_credit_total ?? "0") > 0;
 
-  // Free orders are always treated as non-session (no payment needed)
+  // Nothing-to-pay orders are always treated as non-session (no payment needed)
   const isSessionBased =
     !isZeroAmount && (selectedMethod?.session_required ?? false);
 
@@ -247,8 +270,10 @@ export function PaymentSection({
     [cart.id, t],
   );
 
-  // Track the cart total so we can recreate the session when it changes
-  const lastTotalRef = useRef<string | null>(null);
+  // Track the amount left to collect so we can resync the session when it
+  // changes — shipping and store credit both move it, the latter without
+  // touching the cart total.
+  const lastAmountRef = useRef<string | null>(null);
   const selectedCardRef = useRef<string | null>(null);
 
   // On mount: load saved cards (if authenticated + session method), then create initial session
@@ -285,7 +310,7 @@ export function PaymentSection({
       }
 
       selectedCardRef.current = initialCardId;
-      lastTotalRef.current = cart.total;
+      lastAmountRef.current = payableAmount;
 
       await createSession(initialCardId, selectedMethod);
     };
@@ -296,11 +321,11 @@ export function PaymentSection({
     isSessionBased,
     isAuthenticated,
     createSession,
-    cart.total,
+    payableAmount,
     isZeroAmount,
   ]);
 
-  // When the cart total changes, sync the live payment session with the
+  // When the amount due changes, sync the live payment session with the
   // provider in place. Recreating it instead would unmount the gateway form
   // (fresh session ⇒ new client secret ⇒ new `key`) and silently wipe
   // whatever the customer already typed — e.g. when a shipping-rate save
@@ -308,9 +333,9 @@ export function PaymentSection({
   useEffect(() => {
     if (!initRef.current) return;
     if (!isSessionBased || !selectedMethod) return;
-    if (lastTotalRef.current === cart.total) return;
+    if (lastAmountRef.current === payableAmount) return;
 
-    lastTotalRef.current = cart.total;
+    lastAmountRef.current = payableAmount;
 
     if (!paymentSessionId) {
       createSession(selectedCardRef.current, selectedMethod);
@@ -323,7 +348,7 @@ export function PaymentSection({
         const result = await updateCheckoutPaymentSession(
           cart.id,
           paymentSessionId,
-          { amount: cart.total ?? undefined },
+          { amount: payableAmount ?? undefined },
         );
         if (!result.success || !result.session) {
           throw new Error("session update rejected");
@@ -351,7 +376,7 @@ export function PaymentSection({
     sync();
   }, [
     cart.id,
-    cart.total,
+    payableAmount,
     createSession,
     isSessionBased,
     paymentSessionId,
@@ -414,7 +439,7 @@ export function PaymentSection({
           }
 
           selectedCardRef.current = cardId;
-          lastTotalRef.current = cart.total;
+          lastAmountRef.current = payableAmount;
           await createSession(cardId, newMethod);
         };
         init();
@@ -659,19 +684,23 @@ export function PaymentSection({
 
   const isAddingNew = selectedCardId === null;
 
-  // ── Zero amount: no payment required ────────────────────────────────
+  // ── Nothing left to collect: no method selector at all ──────────────
+  // Free orders, and orders whose amount due was wiped out by store credit or
+  // a gift card.
   if (isZeroAmount) {
     return (
       <div>
-        <h2 className="text-lg font-bold text-gray-900">
-          {t("paymentMethod")}
-        </h2>
+        <h2 className="text-lg font-bold text-gray-900">{t("payment")}</h2>
         <div className="mt-2 rounded-sm border bg-gray-50 px-4 py-6 text-center">
           <Info
             className="w-8 h-8 text-gray-300 mx-auto mb-2"
             strokeWidth={1.5}
           />
-          <p className="text-sm text-gray-600">{t("noPaymentRequired")}</p>
+          <p className="text-sm text-gray-600">
+            {hasStoreCredit
+              ? t("coveredByStoreCredit")
+              : t("noPaymentRequired")}
+          </p>
         </div>
 
         {/* Billing address */}
@@ -881,18 +910,6 @@ export function PaymentSection({
                         </div>
                       )}
 
-                      {/* Shared: gateway error */}
-                      {gatewayError && !loading && (
-                        <div className="px-4 py-3">
-                          <div className="rounded-sm border border-red-300 bg-red-50 px-4 py-3">
-                            <p className="text-sm text-red-700 flex items-center gap-2">
-                              <CircleAlert className="h-4 w-4 flex-shrink-0" />
-                              {gatewayError}
-                            </p>
-                          </div>
-                        </div>
-                      )}
-
                       {/* Gateway-specific payment form */}
                       {!loading &&
                         sessionExternalData &&
@@ -983,6 +1000,17 @@ export function PaymentSection({
           );
         })}
       </RadioGroup>
+
+      {/* Payment error — outside the method list so it reaches every method,
+          not only the session-based ones that mount a gateway form. */}
+      {gatewayError && !loading && (
+        <div className="mt-3 rounded-sm border border-red-300 bg-red-50 px-4 py-3">
+          <p className="text-sm text-red-700 flex items-center gap-2">
+            <CircleAlert className="h-4 w-4 flex-shrink-0" />
+            {gatewayError}
+          </p>
+        </div>
+      )}
 
       {/* Billing address — below payment box */}
       <div className="mt-4">
