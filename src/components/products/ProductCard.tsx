@@ -6,6 +6,7 @@ import { useTranslations } from "next-intl";
 import { memo } from "react";
 import { HiddenPricePrompt } from "@/components/products/HiddenPricePrompt";
 import { ProductImage } from "@/components/ui/product-image";
+import { WishlistButton } from "@/components/wishlist/WishlistButton";
 import { trackSelectItem } from "@/lib/analytics/gtm";
 
 interface ProductCardProps {
@@ -116,6 +117,12 @@ export const ProductCard = memo(function ProductCard({
           <span className="mt-2 text-sm text-gray-500">{t("outOfStock")}</span>
         )}
       </div>
+      <WishlistButton
+        variantId={product.default_variant_id}
+        size="icon-sm"
+        showLabel={false}
+        className="absolute top-3 right-3 z-10 rounded-full bg-white/90 shadow-sm hover:bg-white"
+      />
     </div>
   );
 });

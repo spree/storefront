@@ -41,6 +41,7 @@
     "openSearch": "Suche öffnen",
     "closeSearch": "Suche schließen",
     "myAccount": "Mein Konto",
+    "wishlist": "Wunschliste",
     "wholesale": "Großhandel"
   },
   "regionPreferences": {
@@ -67,6 +68,7 @@
     "policies": "Richtlinien",
     "poweredBy": "Betrieben von",
     "copyright": "© {year} {storeName}. Unterstützt durch Spree Commerce.",
+    "wishlist": "Wunschliste",
     "wholesale": "Handel & Großhandel"
   },
   "home": {
@@ -332,7 +334,9 @@
     "showPassword": "Passwort anzeigen",
     "hidePassword": "Passwort verbergen",
     "forgotPassword": "Passwort vergessen?",
-    "policyConsentRequired": "Sie müssen den Geschäftsrichtlinien zustimmen, um ein Konto zu erstellen"
+    "policyConsentRequired": "Sie müssen den Geschäftsrichtlinien zustimmen, um ein Konto zu erstellen",
+    "wishlist": "Wunschliste",
+    "wishlistDescription": "Verwalten Sie Ihre gemerkten Produkte"
   },
   "register": {
     "createAccount": "Konto erstellen",
@@ -545,6 +549,26 @@
     "shipping": "Versand",
     "finalizingPayment": "Zahlung wird abgeschlossen...",
     "or": "oder"
+  },
+  "wishlist": {
+    "myWishlist": "Meine Wunschliste",
+    "addToWishlist": "Zur Wunschliste hinzufügen",
+    "addedToWishlist": "Zur Wunschliste hinzugefügt",
+    "removeFromWishlist": "Von der Wunschliste entfernen",
+    "emptyTitle": "Ihre Wunschliste ist leer",
+    "emptyDescription": "Speichern Sie Produkte, die Ihnen gefallen, und finden Sie sie später hier wieder.",
+    "signInRequired": "Melden Sie sich an, um Ihre Wunschliste anzusehen und zu verwalten.",
+    "signInToView": "Anmelden, um die Wunschliste zu sehen",
+    "failedToLoad": "Ihre Wunschliste konnte nicht geladen werden. Bitte versuchen Sie es erneut.",
+    "failedToAdd": "Dieser Artikel konnte nicht zur Wunschliste hinzugefügt werden. Bitte versuchen Sie es erneut.",
+    "failedToRemove": "Dieser Artikel konnte nicht von der Wunschliste entfernt werden. Bitte versuchen Sie es erneut.",
+    "addToCart": "In den Warenkorb",
+    "addingToCart": "Wird hinzugefügt...",
+    "remove": "Entfernen",
+    "quantity": "Menge: {quantity}",
+    "refresh": "Aktualisieren",
+    "outlineHeart": "♡",
+    "filledHeart": "♥"
   },
   "wholesale": {
     "portalTitle": "Großhandelsportal",

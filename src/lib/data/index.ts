@@ -10,3 +10,4 @@ export * from "./customer";
 export * from "./orders";
 export * from "./policies";
 export * from "./products";
+export * from "./wishlist";

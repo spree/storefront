@@ -11,6 +11,7 @@ import { MediaGallery } from "@/components/products/MediaGallery";
 import { ProductCustomFields } from "@/components/products/ProductCustomFields";
 import { VariantPicker } from "@/components/products/VariantPicker";
 import { Button } from "@/components/ui/button";
+import { WishlistButton } from "@/components/wishlist/WishlistButton";
 import { useCart } from "@/contexts/CartContext";
 import { useHiddenPricing } from "@/contexts/HiddenPricingContext";
 import { useStore } from "@/contexts/StoreContext";
@@ -120,6 +121,11 @@ export function ProductDetails({ product, basePath }: ProductDetailsProps) {
     trackAddToCart(product, selectedVariant, quantity, currency);
   };
 
+  const selectedVariantId =
+    selectedVariant?.id ||
+    product.default_variant?.id ||
+    product.default_variant_id;
+
   return (
     <div className="container mx-auto px-4 sm:px-6 lg:px-8  py-8">
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
@@ -187,13 +193,22 @@ export function ProductDetails({ product, basePath }: ProductDetailsProps) {
           {/* Quantity & Add to Cart */}
           <div className="mt-8">
             {pricesHidden ? (
-              // Guest on a prices-hidden channel: no pricing, no ordering —
-              // route them through the wholesale sign-in first.
-              <Button asChild size="lg">
-                <Link href={hiddenPricing.signInHref}>
-                  {tw("hiddenPrice.signInToOrder")}
-                </Link>
-              </Button>
+              <div className="flex gap-4">
+                {/* // Guest on a prices-hidden channel: no pricing, no ordering — */}
+                {/* // route them through the wholesale sign-in first. */}
+                <Button asChild size="lg">
+                  <Link href={hiddenPricing.signInHref}>
+                    {tw("hiddenPrice.signInToOrder")}
+                  </Link>
+                </Button>
+                {selectedVariantId && (
+                  <WishlistButton
+                    variantId={selectedVariantId}
+                    size="lg"
+                    className="min-w-55"
+                  />
+                )}
+              </div>
             ) : (
               <div className="flex gap-4">
                 <QuantityPickerField
@@ -222,6 +237,14 @@ export function ProductDetails({ product, basePath }: ProductDetailsProps) {
                     t("outOfStock")
                   )}
                 </Button>
+
+                {selectedVariantId && (
+                  <WishlistButton
+                    variantId={selectedVariantId}
+                    size="lg"
+                    className="min-w-55"
+                  />
+                )}
               </div>
             )}
           </div>

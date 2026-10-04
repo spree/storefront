@@ -16,6 +16,10 @@ vi.mock("@/components/products/ProductCustomFields", () => ({
   ProductCustomFields: () => null,
 }));
 
+vi.mock("@/components/wishlist/WishlistButton", () => ({
+  WishlistButton: () => null,
+}));
+
 vi.mock("@/contexts/CartContext", () => ({
   useCart: () => ({ addItem: vi.fn() }),
 }));
