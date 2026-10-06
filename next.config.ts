@@ -37,7 +37,13 @@ function spreeImagePatterns(): RemotePattern[] {
 
 const nextConfig: NextConfig = {
   output: "standalone",
-  allowedDevOrigins: ["shop.lvh.me", "*.trycloudflare.com", "192.168.33.13"],
+  allowedDevOrigins: [
+    "shop.lvh.me",
+    "*.trycloudflare.com",
+    "192.168.33.13",
+    // Spree monorepo worktrees: store.<branch>.spree.localhost
+    "**.spree.localhost",
+  ],
   env: {
     NEXT_PUBLIC_SENTRY_DSN: process.env.SENTRY_DSN || "",
   },
