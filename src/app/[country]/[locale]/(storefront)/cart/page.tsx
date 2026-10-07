@@ -12,6 +12,7 @@ import { Button } from "@/components/ui/button";
 import { ProductImage } from "@/components/ui/product-image";
 import { useCart } from "@/contexts/CartContext";
 import { trackRemoveFromCart, trackViewCart } from "@/lib/analytics/gtm";
+import { deductionAmount } from "@/lib/utils/format";
 import { extractBasePath } from "@/lib/utils/path";
 
 const ExpressCheckoutButton = dynamic(
@@ -202,7 +203,7 @@ export default function CartPage() {
                 parseFloat(cart.store_credit_total) > 0 ? (
                 <div className="flex justify-between text-green-600">
                   <dt>{t("storeCredit")}</dt>
-                  <dd>-{cart.display_store_credit_total}</dd>
+                  <dd>{deductionAmount(cart.display_store_credit_total)}</dd>
                 </div>
               ) : null}
 

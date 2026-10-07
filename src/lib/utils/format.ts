@@ -25,6 +25,28 @@ export function formatDateTime(
   });
 }
 
+/**
+ * Strips the sign off a display money string. Spree signs the deduction totals
+ * (`display_store_credit_total` comes back as "-$19.69"), which is wrong
+ * wherever the amount is stated rather than subtracted.
+ */
+export function unsignedAmount(
+  displayAmount: string | null | undefined,
+): string {
+  return displayAmount?.replace(/^[-−]\s*/, "") ?? "";
+}
+
+/**
+ * Renders a display money string as a deduction — exactly one leading minus,
+ * whether or not the API already signed it.
+ */
+export function deductionAmount(
+  displayAmount: string | null | undefined,
+): string {
+  const amount = unsignedAmount(displayAmount);
+  return amount ? `-${amount}` : "";
+}
+
 export function getPaymentStatusColor(state: string | null): string {
   switch (state) {
     case "paid":

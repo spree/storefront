@@ -11,6 +11,7 @@ import {
   removeStoreCredit,
   type StoreCreditBalance,
 } from "@/lib/data/store-credits";
+import { unsignedAmount } from "@/lib/utils/format";
 
 interface StoreCreditSectionProps {
   cart: Cart;
@@ -91,7 +92,7 @@ export function StoreCreditSection({
               <div className="min-w-0 flex-1">
                 <p className="text-sm font-medium text-gray-900">
                   {t("appliedAmount", {
-                    amount: cart.display_store_credit_total ?? "",
+                    amount: unsignedAmount(cart.display_store_credit_total),
                   })}
                 </p>
                 <p className="mt-0.5 text-xs text-gray-500">
