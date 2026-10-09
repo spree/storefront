@@ -3,6 +3,7 @@
 import type { Cart } from "@spree/sdk";
 import { useTranslations } from "next-intl";
 import { ProductImage } from "@/components/ui/product-image";
+import { deductionAmount } from "@/lib/utils/format";
 
 interface SummaryProps {
   cart: Cart;
@@ -113,7 +114,7 @@ export function Summary({ cart }: SummaryProps) {
           <div className="flex justify-between text-sm">
             <span className="text-gray-700">{tc("storeCredit")}</span>
             <span className="text-green-700">
-              -{cart.display_store_credit_total}
+              {deductionAmount(cart.display_store_credit_total)}
             </span>
           </div>
         ) : null}

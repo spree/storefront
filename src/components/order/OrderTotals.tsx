@@ -1,5 +1,6 @@
 import type { Cart, Order } from "@spree/sdk";
 import { useTranslations } from "next-intl";
+import { deductionAmount } from "@/lib/utils/format";
 
 type OrderLike = Cart | Order;
 
@@ -59,7 +60,7 @@ export function OrderTotals({ order }: OrderTotalsProps) {
         <div className="flex justify-between text-sm">
           <span className="text-gray-500">{t("storeCredit")}</span>
           <span className="text-green-600">
-            -{order.display_store_credit_total}
+            {deductionAmount(order.display_store_credit_total)}
           </span>
         </div>
       ) : null}
