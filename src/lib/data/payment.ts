@@ -11,10 +11,10 @@ import {
 } from "@/lib/spree";
 import { getCart } from "./cart";
 import {
+  getCompletedOrder,
   resolveSurfaceForCart,
   resolveSurfaceForCartVerified,
 } from "./checkout";
-import { getOrder } from "./orders";
 import { actionResult } from "./utils";
 
 function checkoutTag(surface: Surface): string {
@@ -110,10 +110,6 @@ export async function completeCheckoutPaymentSession(
   }, "Failed to complete payment session");
 }
 
-function isOrderGroup(value: Order | OrderGroup): value is OrderGroup {
-  return "orders" in value;
-}
-
 /**
  * Completes the order. Treats 403 and 422 as success:
  * - 403 = cart already completed (e.g. webhook handler completed it)
@@ -121,6 +117,11 @@ function isOrderGroup(value: Order | OrderGroup): value is OrderGroup {
  *
  * When the order was already completed (403/422), fetch it from the API
  * so the caller always gets the order data for caching on the thank-you page.
+ *
+ * A marketplace cart splits across sellers, so completion answers with an
+ * OrderGroup rather than a single Order. Both come back untouched — the group
+ * is what the customer bought, and taking one order out of it would drop the
+ * other sellers' items from the confirmation.
  */
 export async function completeCheckoutOrder(
   cartId: string,
@@ -129,16 +130,9 @@ export async function completeCheckoutOrder(
   const surface = knownSurface ?? (await resolveSurfaceForCart(cartId));
   try {
     const options = await getCartOptions(surface);
-    // A marketplace cart splits across sellers, so completion returns an
-    // OrderGroup instead of a single Order. This storefront shows one order on
-    // the thank-you page, so take the first — a single-seller checkout has
-    // exactly one, and the group's own totals are not what that page renders.
-    const completed: Order | OrderGroup = await getClientForSurface(
+    const order: Order | OrderGroup = await getClientForSurface(
       surface,
     ).carts.complete(cartId, options);
-    const order: Order | null = isOrderGroup(completed)
-      ? (completed.orders[0] ?? null)
-      : completed;
     updateTag(checkoutTag(surface));
     updateTag(cartTag(surface));
     return { success: true as const, order };
@@ -148,7 +142,7 @@ export async function completeCheckoutOrder(
       if (status === 403 || status === 422) {
         // Order already completed — try to fetch it so the thank-you page
         // can cache and display it without a second round-trip.
-        const completedOrder = await getOrder(cartId, undefined, surface).catch(
+        const completedOrder = await getCompletedOrder(cartId, surface).catch(
           () => null,
         );
         updateTag(checkoutTag(surface));
@@ -197,7 +191,7 @@ export async function confirmPaymentAndCompleteCart(
     if (!cart) {
       // Cart not found — the order may already be completed (e.g. by webhook).
       // Try fetching it as a completed order before giving up.
-      const completedOrder = await getOrder(cartId, undefined, surface).catch(
+      const completedOrder = await getCompletedOrder(cartId, surface).catch(
         () => null,
       );
       return { success: true, order: completedOrder };
