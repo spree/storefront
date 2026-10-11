@@ -46,7 +46,7 @@ const REQUIRED_ADDRESS_FIELDS: (keyof AddressFormData)[] = [
   "address1",
   "city",
   "postal_code",
-  "country_iso",
+  "country_code",
 ];
 
 function isAddressComplete(address: AddressFormData): boolean {
@@ -108,8 +108,8 @@ export function AddressSection({
     if (initialSavedAddress) return addressToFormData(initialSavedAddress);
     const formData = addressToFormData(cart.shipping_address);
     // Pre-fill country from the market's first country when empty
-    if (!formData.country_iso && defaultCountryIso) {
-      formData.country_iso = defaultCountryIso;
+    if (!formData.country_code && defaultCountryIso) {
+      formData.country_code = defaultCountryIso;
     }
     // Pre-fill name from user profile when address has no name yet
     if (!formData.first_name && user?.first_name) {
@@ -127,7 +127,7 @@ export function AddressSection({
   >(initialSavedAddress?.id);
 
   const [shipStates, isPendingShip] = useCountryStates(
-    shipAddress.country_iso,
+    shipAddress.country_code,
     fetchStates,
   );
 

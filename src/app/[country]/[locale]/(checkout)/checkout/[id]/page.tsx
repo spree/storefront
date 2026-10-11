@@ -54,7 +54,7 @@ async function CheckoutDataLoader({ params }: CheckoutPageProps) {
 
   // Prefetch states for the default country (warms the server cache)
   const defaultIso =
-    cartData?.shipping_address?.country_iso ?? countriesData.data[0]?.iso;
+    cartData?.shipping_address?.country_code ?? countriesData.data[0]?.iso;
   if (defaultIso) {
     getCountry(defaultIso).catch(() => {});
   }

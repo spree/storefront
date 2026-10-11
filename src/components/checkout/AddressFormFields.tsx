@@ -38,8 +38,8 @@ export function AddressFormFields({
           id={`${idPrefix}-country`}
           aria-label={t("country")}
           className="w-full"
-          value={address.country_iso}
-          onChange={(e) => onChange("country_iso", e.target.value)}
+          value={address.country_code}
+          onChange={(e) => onChange("country_code", e.target.value)}
           required
         >
           <NativeSelectOption value="" disabled>
@@ -130,8 +130,8 @@ export function AddressFormFields({
             id={`${idPrefix}-state`}
             aria-label={t("stateProvince")}
             className="w-full"
-            value={address.state_abbr}
-            onChange={(e) => onChange("state_abbr", e.target.value)}
+            value={address.state_code}
+            onChange={(e) => onChange("state_code", e.target.value)}
             required
           >
             <NativeSelectOption value="" disabled>

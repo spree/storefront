@@ -359,7 +359,7 @@ export function PaymentSection({
   ]);
 
   const [billStates, isPendingBill] = useCountryStates(
-    billAddress.country_iso,
+    billAddress.country_code,
     fetchStates,
     !useShippingForBilling,
   );
