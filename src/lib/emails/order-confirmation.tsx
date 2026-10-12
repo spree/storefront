@@ -38,16 +38,31 @@ interface Address {
   phone?: string | null;
 }
 
+/**
+ * One order of a split checkout. A marketplace cart that spans several sellers
+ * is placed as an order group with one order per seller; the confirmation then
+ * lists each order with its own items and totals.
+ */
+export interface OrderConfirmationGroupOrder {
+  number: string;
+  items: LineItem[];
+  displayTotal: string;
+  deliveryMethodName?: string;
+}
+
 interface OrderConfirmationEmailProps {
   orderNumber: string;
   customerName: string;
   storeName?: string;
   storeUrl?: string;
+  /** Line items of a single order. Ignored when `orders` is given. */
   items: LineItem[];
+  /** The orders of a split checkout, rendered as one section each. */
+  orders?: OrderConfirmationGroupOrder[];
   displayItemTotal: string;
-  displayDeliveryTotal: string;
+  displayDeliveryTotal?: string;
   displayDiscountTotal?: string;
-  displayTaxTotal: string;
+  displayTaxTotal?: string;
   displayTotal: string;
   shippingAddress?: Address;
   billingAddress?: Address;
@@ -60,6 +75,7 @@ export function OrderConfirmationEmail({
   storeName = getStoreName(),
   storeUrl = getStoreUrl(),
   items,
+  orders,
   displayItemTotal,
   displayDeliveryTotal,
   displayDiscountTotal,
@@ -91,51 +107,35 @@ export function OrderConfirmationEmail({
           <Heading as="h2" style={subheading}>
             Order Summary
           </Heading>
-          <Section>
-            {items.map((item, index) => (
-              <Row
-                key={`${item.name}-${item.options_text ?? index}`}
-                style={itemRow}
-              >
-                <Column style={itemImageCol}>
-                  {item.thumbnail_url ? (
-                    <Img
-                      src={item.thumbnail_url}
-                      alt={item.name}
-                      width={64}
-                      height={64}
-                      style={itemImage}
-                    />
-                  ) : (
-                    <div style={imagePlaceholder} />
+          {orders && orders.length > 0 ? (
+            <>
+              <Text style={paragraph}>
+                Your purchase was placed as {orders.length} orders, which may
+                arrive separately.
+              </Text>
+              {orders.map((groupOrder) => (
+                <Section key={groupOrder.number} style={groupOrderSection}>
+                  <Text style={groupOrderHeading}>
+                    Order {groupOrder.number}
+                  </Text>
+                  <ItemRows items={groupOrder.items} storeUrl={storeUrl} />
+                  {groupOrder.deliveryMethodName && (
+                    <Text style={itemOptions}>
+                      Delivery: {groupOrder.deliveryMethodName}
+                    </Text>
                   )}
-                </Column>
-                <Column style={itemDetailsCol}>
-                  {storeUrl ? (
-                    <Link
-                      href={
-                        item.slug
-                          ? `${storeUrl}/products/${item.slug}`
-                          : storeUrl
-                      }
-                      style={itemName}
-                    >
-                      {item.name}
-                    </Link>
-                  ) : (
-                    <Text style={itemName}>{item.name}</Text>
-                  )}
-                  {item.options_text && (
-                    <Text style={itemOptions}>{item.options_text}</Text>
-                  )}
-                  <Text style={itemOptions}>Qty: {item.quantity}</Text>
-                </Column>
-                <Column style={itemPriceCol}>
-                  <Text style={itemPrice}>{item.display_total}</Text>
-                </Column>
-              </Row>
-            ))}
-          </Section>
+                  <Row>
+                    <Column style={totalsLabel}>Order total</Column>
+                    <Column style={totalsValue}>
+                      {groupOrder.displayTotal}
+                    </Column>
+                  </Row>
+                </Section>
+              ))}
+            </>
+          ) : (
+            <ItemRows items={items} storeUrl={storeUrl} />
+          )}
 
           <Hr style={hr} />
 
@@ -145,10 +145,12 @@ export function OrderConfirmationEmail({
               <Column style={totalsLabel}>Subtotal</Column>
               <Column style={totalsValue}>{displayItemTotal}</Column>
             </Row>
-            <Row>
-              <Column style={totalsLabel}>Shipping</Column>
-              <Column style={totalsValue}>{displayDeliveryTotal}</Column>
-            </Row>
+            {displayDeliveryTotal && (
+              <Row>
+                <Column style={totalsLabel}>Shipping</Column>
+                <Column style={totalsValue}>{displayDeliveryTotal}</Column>
+              </Row>
+            )}
             {displayDiscountTotal &&
               Number.parseFloat(
                 displayDiscountTotal.replace(/[^0-9.-]/g, ""),
@@ -160,13 +162,14 @@ export function OrderConfirmationEmail({
                   </Column>
                 </Row>
               )}
-            {Number.parseFloat(displayTaxTotal.replace(/[^0-9.-]/g, "")) >
-              0 && (
-              <Row>
-                <Column style={totalsLabel}>Tax</Column>
-                <Column style={totalsValue}>{displayTaxTotal}</Column>
-              </Row>
-            )}
+            {displayTaxTotal &&
+              Number.parseFloat(displayTaxTotal.replace(/[^0-9.-]/g, "")) >
+                0 && (
+                <Row>
+                  <Column style={totalsLabel}>Tax</Column>
+                  <Column style={totalsValue}>{displayTaxTotal}</Column>
+                </Row>
+              )}
             <Row style={totalRow}>
               <Column style={totalLabel}>Total</Column>
               <Column style={totalValue}>{displayTotal}</Column>
@@ -216,6 +219,57 @@ export function OrderConfirmationEmail({
         </Container>
       </Body>
     </Html>
+  );
+}
+
+function ItemRows({
+  items,
+  storeUrl,
+}: {
+  items: LineItem[];
+  storeUrl?: string;
+}) {
+  return (
+    <Section>
+      {items.map((item, index) => (
+        <Row key={`${item.name}-${item.options_text ?? index}`} style={itemRow}>
+          <Column style={itemImageCol}>
+            {item.thumbnail_url ? (
+              <Img
+                src={item.thumbnail_url}
+                alt={item.name}
+                width={64}
+                height={64}
+                style={itemImage}
+              />
+            ) : (
+              <div style={imagePlaceholder} />
+            )}
+          </Column>
+          <Column style={itemDetailsCol}>
+            {storeUrl ? (
+              <Link
+                href={
+                  item.slug ? `${storeUrl}/products/${item.slug}` : storeUrl
+                }
+                style={itemName}
+              >
+                {item.name}
+              </Link>
+            ) : (
+              <Text style={itemName}>{item.name}</Text>
+            )}
+            {item.options_text && (
+              <Text style={itemOptions}>{item.options_text}</Text>
+            )}
+            <Text style={itemOptions}>Qty: {item.quantity}</Text>
+          </Column>
+          <Column style={itemPriceCol}>
+            <Text style={itemPrice}>{item.display_total}</Text>
+          </Column>
+        </Row>
+      ))}
+    </Section>
   );
 }
 
@@ -280,6 +334,17 @@ const paragraph: React.CSSProperties = {
 const hr: React.CSSProperties = {
   borderColor: "#e5e7eb",
   margin: "24px 0",
+};
+
+const groupOrderSection: React.CSSProperties = {
+  marginBottom: "16px",
+};
+
+const groupOrderHeading: React.CSSProperties = {
+  fontSize: "14px",
+  fontWeight: "600",
+  color: "#111827",
+  marginBottom: "8px",
 };
 
 const itemRow: React.CSSProperties = {

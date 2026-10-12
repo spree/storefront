@@ -418,7 +418,8 @@
     "standardShipping": "Standardversand",
     "payment": "Zahlung",
     "giftCard": "Geschenkkarte",
-    "confirmationSentTo": "Bestätigung gesendet an"
+    "confirmationSentTo": "Bestätigung gesendet an",
+    "splitIntoOrders": "Ihre Artikel stammen von {count} Verkäufern, daher wurde Ihr Einkauf als {count} separate Bestellungen aufgegeben."
   },
   "coupon": {
     "placeholder": "Geschenkkarte oder Rabattcode",

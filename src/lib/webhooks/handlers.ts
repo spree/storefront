@@ -1,4 +1,4 @@
-import type { Order } from "@spree/sdk";
+import type { Order, OrderGroup } from "@spree/sdk";
 import type { WebhookEvent } from "@spree/sdk/webhooks";
 import { createElement } from "react";
 import { OrderCanceledEmail } from "@/lib/emails/order-canceled";
@@ -41,25 +41,57 @@ function markProcessed(eventId: string): void {
 }
 
 /**
- * Handle order.completed webhook — send order confirmation email.
+ * `order.placed` and `order.canceled` carry `notify_customer` in the payload.
+ * It is `false` when whoever placed or canceled the order asked for the
+ * customer not to be emailed — e.g. an admin placing a draft silently, or the
+ * extra orders a split marketplace checkout places beside the first one.
  */
-export async function handleOrderCompleted(event: WebhookEvent<Order>) {
+type OrderEventData = Order & { notify_customer?: boolean | null };
+
+/**
+ * `order_group.completed` carries the group's `notify_customer` — what the
+ * checkout asked for the purchase as a whole, since every child order of a
+ * split checkout is placed silently (`order.placed` with
+ * `notify_customer: false`).
+ */
+type OrderGroupEventData = OrderGroup & { notify_customer?: boolean | null };
+
+function confirmationItems(order: Order) {
+  return (order.items || []).map((item) => ({
+    name: item.name,
+    slug: item.slug,
+    quantity: item.quantity,
+    options_text: item.options_text,
+    display_price: item.display_price ?? "",
+    display_total: item.display_total ?? "",
+    thumbnail_url: item.thumbnail_url,
+  }));
+}
+
+/** The delivery method's name when every fulfillment uses the same one. */
+function singleDeliveryMethodName(order: Order): string | undefined {
+  const names = [
+    ...new Set(
+      (order.fulfillments ?? [])
+        .map((f) => f.delivery_method?.name)
+        .filter((name): name is string => Boolean(name)),
+    ),
+  ];
+  return names.length === 1 ? names[0] : undefined;
+}
+
+/**
+ * Handle order.placed webhook — send order confirmation email.
+ */
+export async function handleOrderPlaced(event: WebhookEvent<OrderEventData>) {
   if (isAlreadyProcessed(event.id)) return;
   const order = event.data;
-  if (!order.email) return;
+  if (!order.email || order.notify_customer === false) return;
 
   const customerName =
     order.shipping_address?.full_name || order.billing_address?.full_name || "";
 
-  const deliveryMethodNames = [
-    ...new Set(
-      (order.fulfillments ?? [])
-        .map((f) => f.delivery_method?.name)
-        .filter(Boolean),
-    ),
-  ];
-  const deliveryMethodName =
-    deliveryMethodNames.length === 1 ? deliveryMethodNames[0] : undefined;
+  const deliveryMethodName = singleDeliveryMethodName(order);
 
   await sendEmail({
     to: order.email,
@@ -67,15 +99,7 @@ export async function handleOrderCompleted(event: WebhookEvent<Order>) {
     react: createElement(OrderConfirmationEmail, {
       orderNumber: order.number,
       customerName,
-      items: (order.items || []).map((item) => ({
-        name: item.name,
-        slug: item.slug,
-        quantity: item.quantity,
-        options_text: item.options_text,
-        display_price: item.display_price ?? "",
-        display_total: item.display_total ?? "",
-        thumbnail_url: item.thumbnail_url,
-      })),
+      items: confirmationItems(order),
       displayItemTotal: order.display_item_total ?? "",
       displayDeliveryTotal: order.display_delivery_total ?? "",
       displayDiscountTotal: order.display_discount_total ?? undefined,
@@ -91,12 +115,61 @@ export async function handleOrderCompleted(event: WebhookEvent<Order>) {
 }
 
 /**
+ * Handle order_group.completed webhook — send one confirmation email for a
+ * split checkout.
+ *
+ * A marketplace cart that spans several sellers is placed as an order group
+ * with one order per seller. Spree places every child order silently and
+ * announces the purchase once, with `order_group.completed`, after all of
+ * them are placed. The email lists each order with its own items and totals,
+ * under the group's number and grand total.
+ *
+ * Completing the cart again (an idempotent replay) re-publishes the event
+ * under a new event id, so the group id is remembered as well.
+ */
+export async function handleOrderGroupCompleted(
+  event: WebhookEvent<OrderGroupEventData>,
+) {
+  const group = event.data;
+  const groupKey = `order_group:${group.id}`;
+  if (isAlreadyProcessed(event.id) || isAlreadyProcessed(groupKey)) return;
+  if (!group.email || group.notify_customer === false) return;
+
+  const orders = group.orders ?? [];
+  const customerName =
+    group.shipping_address?.full_name || group.billing_address?.full_name || "";
+
+  await sendEmail({
+    to: group.email,
+    subject: `${STORE_NAME} Order Confirmation #${group.number}`,
+    react: createElement(OrderConfirmationEmail, {
+      orderNumber: group.number,
+      customerName,
+      items: [],
+      orders: orders.map((order) => ({
+        number: order.number,
+        items: confirmationItems(order),
+        displayTotal: order.display_total ?? "",
+        deliveryMethodName: singleDeliveryMethodName(order),
+      })),
+      displayItemTotal: group.display_item_total ?? "",
+      displayTotal: group.display_total ?? "",
+      shippingAddress: group.shipping_address ?? undefined,
+      billingAddress: group.billing_address ?? undefined,
+    }),
+  });
+
+  markProcessed(event.id);
+  markProcessed(groupKey);
+}
+
+/**
  * Handle order.canceled webhook — send cancellation email.
  */
-export async function handleOrderCanceled(event: WebhookEvent<Order>) {
+export async function handleOrderCanceled(event: WebhookEvent<OrderEventData>) {
   if (isAlreadyProcessed(event.id)) return;
   const order = event.data;
-  if (!order.email) return;
+  if (!order.email || order.notify_customer === false) return;
 
   const customerName =
     order.shipping_address?.full_name || order.billing_address?.full_name || "";
@@ -123,12 +196,13 @@ export async function handleOrderCanceled(event: WebhookEvent<Order>) {
 }
 
 /**
- * Handle order.shipped webhook — send shipment notification email.
+ * Handle order.fulfilled webhook — send shipment notification email.
  *
- * We subscribe to order.shipped (not shipment.shipped) because the order
- * payload includes the email, customer name, and all shipment details.
+ * Fires once every fulfillment on the order was handed over. We subscribe to
+ * order.fulfilled (not fulfillment.fulfilled) because the order payload
+ * includes the email, customer name, and all fulfillment details.
  */
-export async function handleOrderShipped(event: WebhookEvent<Order>) {
+export async function handleOrderFulfilled(event: WebhookEvent<Order>) {
   if (isAlreadyProcessed(event.id)) return;
   const order = event.data;
   if (!order.email) return;
@@ -136,9 +210,10 @@ export async function handleOrderShipped(event: WebhookEvent<Order>) {
   const customerName =
     order.shipping_address?.full_name || order.billing_address?.full_name || "";
 
-  // Build shipment data from the order's fulfillments
+  // Build shipment data from the order's handed-over fulfillments. Spree 6.0
+  // fulfillment statuses: unfulfilled → fulfilled → delivered (no "shipped").
   const shipments = (order.fulfillments || [])
-    .filter((f) => f.status === "shipped")
+    .filter((f) => f.status === "fulfilled" || f.status === "delivered")
     .map((fulfillment) => {
       // Map fulfillment items back to line items for display data
       const shippedItems = (fulfillment.items || []).map((fi) => {

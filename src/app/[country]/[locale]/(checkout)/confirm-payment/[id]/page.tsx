@@ -5,6 +5,7 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { use, useEffect, useRef } from "react";
 import { confirmPaymentAndCompleteCart } from "@/lib/data/payment";
+import { orderPlacedPath } from "@/lib/utils/order-placed";
 import { extractBasePath } from "@/lib/utils/path";
 
 interface ConfirmPaymentPageProps {
@@ -64,7 +65,7 @@ export default function ConfirmPaymentPage({
           cacheCompletedOrder(cartId, result.order);
         }
 
-        router.replace(`${basePath}/order-placed/${cartId}`);
+        router.replace(orderPlacedPath(basePath, cartId, result.order));
       } else {
         const errorMessage = encodeURIComponent(
           result.error || t("paymentError"),
