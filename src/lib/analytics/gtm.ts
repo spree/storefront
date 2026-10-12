@@ -1,5 +1,12 @@
 import { sendGTMEvent } from "@next/third-parties/google";
-import type { Cart, LineItem, Order, Product, Variant } from "@spree/sdk";
+import type {
+  Cart,
+  LineItem,
+  Order,
+  OrderGroup,
+  Product,
+  Variant,
+} from "@spree/sdk";
 
 interface GA4Item {
   item_id: string;
@@ -215,8 +222,16 @@ export function trackViewCart(order: Cart | Order): void {
   });
 }
 
+/** The slice of an order the ecommerce payload is built from. */
+interface OrderEcommerceSource {
+  currency: string;
+  total: string | null;
+  discounts?: Cart["discounts"] | Order["discounts"];
+  items?: LineItem[];
+}
+
 function buildOrderEcommercePayload(
-  order: Cart | Order,
+  order: OrderEcommerceSource,
   extras?: Record<string, unknown>,
 ): Record<string, unknown> {
   const coupon = order.discounts?.find((d) => d.code)?.code;
@@ -260,8 +275,15 @@ export function trackAddPaymentInfo(
   );
 }
 
-export function trackPurchase(order: Cart | Order): void {
-  const key = `gtm_purchase_${order.number}`;
+/**
+ * One purchase event per checkout, however many orders it produced.
+ *
+ * A basket spanning several sellers completes into an order group, so the
+ * items, tax and shipping are collected across its orders — GA4 would
+ * otherwise record a transaction missing every seller but the first.
+ */
+export function trackPurchase(result: Cart | Order | OrderGroup): void {
+  const key = `gtm_purchase_${result.number}`;
   try {
     if (typeof window !== "undefined" && localStorage.getItem(key)) {
       return;
@@ -270,13 +292,30 @@ export function trackPurchase(order: Cart | Order): void {
     // Storage unavailable (private browsing, quota exceeded) — proceed without dedup
   }
 
+  const grouped = "orders" in result;
+  const orders: Array<Cart | Order> = grouped ? result.orders : [result];
+
   pushEcommerceEvent(
     "purchase",
-    buildOrderEcommercePayload(order, {
-      transaction_id: order.number,
-      tax: safeParseFloat(order.tax_total),
-      shipping: safeParseFloat(order.delivery_total),
-    }),
+    buildOrderEcommercePayload(
+      {
+        currency: result.currency,
+        total: result.total,
+        discounts: grouped ? orders[0]?.discounts : result.discounts,
+        items: orders.flatMap((child) => child.items ?? []),
+      },
+      {
+        transaction_id: result.number,
+        tax: orders.reduce(
+          (running, child) => running + safeParseFloat(child.tax_total),
+          0,
+        ),
+        shipping: orders.reduce(
+          (running, child) => running + safeParseFloat(child.delivery_total),
+          0,
+        ),
+      },
+    ),
   );
 
   try {
