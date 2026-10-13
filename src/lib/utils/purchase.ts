@@ -61,8 +61,15 @@ export interface PurchaseSegment {
 export interface Purchase {
   /** The number the customer was given — the group's when the checkout split. */
   number: string;
+  /** When the checkout was placed. */
+  completed_at: string | null;
   email: string | null;
   currency: string;
+  /**
+   * What the customer asked for at checkout. A group holds none of its own —
+   * the split copies the note onto every child, so one of them carries it.
+   */
+  customer_note: string | null;
   billing_address: Address | null;
   shipping_address: Address | null;
   payments: Payment[];
@@ -120,8 +127,10 @@ export function toPurchase(
   if (!isOrderGroup(result)) {
     return {
       number: result.number,
+      completed_at: result.completed_at,
       email: result.email,
       currency: result.currency,
+      customer_note: result.customer_note,
       billing_address: result.billing_address,
       shipping_address: result.shipping_address,
       payments: result.payments ?? [],
@@ -168,8 +177,11 @@ export function toPurchase(
 
   return {
     number: result.number,
+    completed_at: result.completed_at,
     email: result.email,
     currency: result.currency,
+    customer_note:
+      orders.find((order) => order.customer_note)?.customer_note ?? null,
     billing_address: result.billing_address,
     shipping_address: result.shipping_address,
     // The payment is made once, against the group — a child serializes an

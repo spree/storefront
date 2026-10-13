@@ -1,4 +1,4 @@
-import type { Order } from "@spree/sdk";
+import type { Order, OrderGroup } from "@spree/sdk";
 import Link from "next/link";
 import { getTranslations } from "next-intl/server";
 import { Button } from "@/components/ui/button";
@@ -8,22 +8,29 @@ import {
   getPaymentStatusColor,
 } from "@/lib/utils/format";
 
-function getStatusLabel(
-  status: string | null,
-  t: (key: string) => string,
-): string {
+/** The translator `getTranslations("orders")` returns, as this file uses it. */
+type OrdersTranslator = {
+  (key: string): string;
+  has: (key: string) => boolean;
+};
+
+function getStatusLabel(status: string | null, t: OrdersTranslator): string {
   if (!status) return t("notAvailable");
   // Map API statuses like "balance_due" to translation keys like "balanceDue"
   const key = status.replace(/_([a-z])/g, (_, c: string) => c.toUpperCase());
-  try {
-    return t(key);
-  } catch {
-    return status.replace(/_/g, " ");
-  }
+  // Asked rather than attempted: the backend may add a status before the
+  // catalog has a word for it, and resolving a missing one logs a server error
+  // even when the throw is caught. The humanized status is a fair fallback.
+  return t.has(key) ? t(key) : status.replace(/_/g, " ");
 }
 
 interface OrderListProps {
-  orders: Order[];
+  /**
+   * One row per checkout. A basket that reached several sellers divided into
+   * one order per seller, but the customer made a single purchase — so that
+   * row is the group, and every column below reads the same off either shape.
+   */
+  orders: Array<Order | OrderGroup>;
   basePath: string;
   locale: string;
 }
