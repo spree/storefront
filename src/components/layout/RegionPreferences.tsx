@@ -26,6 +26,7 @@ import {
 import { type CountryWithMarket, useStore } from "@/contexts/StoreContext";
 import { useCountrySwitch } from "@/hooks/useCountrySwitch";
 import { cn } from "@/lib/utils";
+import { countryName } from "@/lib/utils/format";
 
 interface RegionPreferencesProps {
   variant: "menu" | "header";
@@ -199,7 +200,7 @@ export function RegionPreferences({ variant }: RegionPreferencesProps) {
                     key={entry.iso}
                     value={entry.iso.toLowerCase()}
                   >
-                    {entry.name} ({entry.currency})
+                    {countryName(entry.iso, locale)} ({entry.currency})
                   </NativeSelectOption>
                 ))}
               </NativeSelect>

@@ -1,6 +1,10 @@
 "use server";
 
-import type { Address, AddressParams } from "@spree/sdk";
+import type {
+  Address,
+  AddressCreateParams,
+  AddressUpdateParams,
+} from "@spree/sdk";
 import { updateTag } from "next/cache";
 import { getClient, withAuthRefresh } from "@/lib/spree";
 import { actionResult, withFallback } from "./utils";
@@ -24,7 +28,7 @@ export async function getAddress(id: string) {
   }, null);
 }
 
-export async function createAddress(address: AddressParams) {
+export async function createAddress(address: AddressCreateParams) {
   return actionResult(async () => {
     const result = await withAuthRefresh(async (options) => {
       return getClient().customer.addresses.create(address, options);
@@ -34,10 +38,7 @@ export async function createAddress(address: AddressParams) {
   }, "Failed to create address");
 }
 
-export async function updateAddress(
-  id: string,
-  address: Partial<AddressParams>,
-) {
+export async function updateAddress(id: string, address: AddressUpdateParams) {
   return actionResult(async () => {
     const result = await withAuthRefresh(async (options) => {
       return getClient().customer.addresses.update(id, address, options);

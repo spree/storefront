@@ -4,6 +4,7 @@ import type { Order } from "@spree/sdk";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
 import { ProductImage } from "@/components/ui/product-image";
+import { useFormatMoney } from "@/hooks/useFormatMoney";
 
 interface LineItemCardProps {
   item: Order["items"][number];
@@ -12,6 +13,7 @@ interface LineItemCardProps {
 
 export function LineItemCard({ item, basePath }: LineItemCardProps) {
   const t = useTranslations("orders");
+  const formatMoney = useFormatMoney();
   return (
     <div className="flex gap-4">
       <Link
@@ -34,7 +36,9 @@ export function LineItemCard({ item, basePath }: LineItemCardProps) {
         >
           {item.name}
         </Link>
-        <div className="mt-1 text-sm text-gray-900">{item.display_price}</div>
+        <div className="mt-1 text-sm text-gray-900">
+          {formatMoney(item.price, item.currency, { unitPrice: true })}
+        </div>
         {item.options_text && (
           <p className="mt-1 text-xs text-gray-500">{item.options_text}</p>
         )}
@@ -50,7 +54,7 @@ export function LineItemCard({ item, basePath }: LineItemCardProps) {
       </div>
 
       <div className="text-sm font-medium text-gray-900">
-        {item.display_total}
+        {formatMoney(item.total, item.currency)}
       </div>
     </div>
   );

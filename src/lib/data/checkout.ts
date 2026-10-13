@@ -1,6 +1,13 @@
 "use server";
 
-import type { AddressParams, Cart } from "@spree/sdk";
+import type {
+  Cart,
+  CartAddressParams,
+  CurrencyCode,
+  LocaleCode,
+  Order,
+  OrderGroup,
+} from "@spree/sdk";
 import { SpreeError } from "@spree/sdk";
 import { updateTag } from "next/cache";
 import {
@@ -99,24 +106,23 @@ export async function getCheckoutOrder(cartId: string): Promise<Cart | null> {
   );
 }
 
-export async function getCompletedOrder(cartId: string): Promise<Cart | null> {
+export async function getCompletedOrder(
+  cartId: string,
+): Promise<Order | OrderGroup | null> {
   const surface = await resolveSurfaceForCart(cartId);
 
   // Fetch order directly — used by the order-placed page.
   // Does not call getCart() first because getCart() auto-clears
   // the cart token cookie on failure, which breaks getOrder()
   // for guest users.
-  return withFallback(
-    async () => (await getOrder(cartId, undefined, surface)) as unknown as Cart,
-    null,
-  );
+  return withFallback(async () => getOrder(cartId, undefined, surface), null);
 }
 
 export async function updateOrderAddresses(
   cartId: string,
   addresses: {
-    shipping_address?: AddressParams;
-    billing_address?: AddressParams;
+    shipping_address?: CartAddressParams;
+    billing_address?: CartAddressParams;
     shipping_address_id?: string;
     billing_address_id?: string;
     use_shipping?: boolean;
@@ -139,7 +145,7 @@ export async function updateOrderAddresses(
 
 export async function updateCartMarket(
   cartId: string,
-  params: { currency: string; locale: string },
+  params: { currency: CurrencyCode; locale: LocaleCode },
 ) {
   return actionResult(async () => {
     const surface = await resolveSurfaceForCart(cartId);

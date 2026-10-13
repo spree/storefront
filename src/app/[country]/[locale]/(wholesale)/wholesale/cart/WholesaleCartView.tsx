@@ -9,6 +9,7 @@ import { QuantityPickerField } from "@/components/cart/QuantityPickerField";
 import { Button } from "@/components/ui/button";
 import { ProductImage } from "@/components/ui/product-image";
 import { useCart } from "@/contexts/CartContext";
+import { useFormatMoney } from "@/hooks/useFormatMoney";
 import { extractBasePath } from "@/lib/utils/path";
 import { WHOLESALE_MIN_QUANTITY } from "@/lib/wholesale";
 
@@ -27,6 +28,7 @@ export function WholesaleCartView() {
   const t = useTranslations("cart");
   const tc = useTranslations("common");
   const tw = useTranslations("wholesale");
+  const formatMoney = useFormatMoney();
 
   const handleRemove = async (item: LineItem) => {
     await removeItem(item.id);
@@ -104,7 +106,9 @@ export function WholesaleCartView() {
                     </p>
                   )}
                   <p className="mt-2 text-lg font-semibold text-slate-900">
-                    {item.display_price ?? "—"}
+                    {formatMoney(item.price, item.currency, {
+                      unitPrice: true,
+                    }) || "—"}
                   </p>
                   {item.quantity < WHOLESALE_MIN_QUANTITY ? (
                     <p className="mt-2 text-sm font-medium text-amber-700">
@@ -152,19 +156,21 @@ export function WholesaleCartView() {
               <div className="flex justify-between">
                 <dt className="text-slate-500">{tc("subtotal")}</dt>
                 <dd className="text-slate-900">
-                  {cart.display_item_total ?? "—"}
+                  {formatMoney(cart.item_total, cart.currency) || "—"}
                 </dd>
               </div>
               {cart.discount_total && parseFloat(cart.discount_total) < 0 && (
                 <div className="flex justify-between text-green-600">
                   <dt>{tc("discount")}</dt>
-                  <dd>{cart.display_discount_total}</dd>
+                  <dd>{formatMoney(cart.discount_total, cart.currency)}</dd>
                 </div>
               )}
               {cart.tax_total && parseFloat(cart.tax_total) > 0 && (
                 <div className="flex justify-between">
                   <dt className="text-slate-500">{tc("tax")}</dt>
-                  <dd className="text-slate-900">{cart.display_tax_total}</dd>
+                  <dd className="text-slate-900">
+                    {formatMoney(cart.tax_total, cart.currency)}
+                  </dd>
                 </div>
               )}
               <div className="flex justify-between border-t pt-4">
@@ -172,7 +178,7 @@ export function WholesaleCartView() {
                   {tc("total")}
                 </dt>
                 <dd className="text-lg font-bold text-slate-900">
-                  {cart.display_total ?? "—"}
+                  {formatMoney(cart.total, cart.currency) || "—"}
                 </dd>
               </div>
             </dl>

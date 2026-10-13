@@ -46,7 +46,7 @@ export function AddressSelector({
         addr.address1 === currentAddress.address1 &&
         addr.city === currentAddress.city &&
         addr.postal_code === currentAddress.postal_code &&
-        addr.country_iso === currentAddress.country_iso,
+        addr.country_code === currentAddress.country_code,
     );
     if (match) return match.id;
     return "new";
@@ -55,7 +55,7 @@ export function AddressSelector({
     currentAddress.address1,
     currentAddress.city,
     currentAddress.postal_code,
-    currentAddress.country_iso,
+    currentAddress.country_code,
   ]);
 
   const handleSelectAddress = (addressId: string) => {
@@ -69,8 +69,8 @@ export function AddressSelector({
       onChange("postal_code", "");
       onChange("phone", "");
       onChange("company", "");
-      onChange("country_iso", "");
-      onChange("state_abbr", "");
+      onChange("country_code", "");
+      onChange("state_code", "");
       onChange("state_name", "");
     } else {
       const selectedAddress = savedAddresses.find((a) => a.id === addressId);

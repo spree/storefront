@@ -1,4 +1,4 @@
-import type { Order } from "@spree/sdk";
+import { formatMoney, type Order } from "@spree/sdk";
 import type { WebhookEvent } from "@spree/sdk/webhooks";
 import { createElement } from "react";
 import { OrderCanceledEmail } from "@/lib/emails/order-canceled";
@@ -40,10 +40,15 @@ function markProcessed(eventId: string): void {
   PROCESSED_EVENTS.add(eventId);
 }
 
+/** Formats an order amount in the order's currency and language. */
+function orderMoney(order: Order, amount: string | null | undefined): string {
+  return formatMoney(amount, order.currency, order.locale);
+}
+
 /**
- * Handle order.completed webhook — send order confirmation email.
+ * Handle order.placed webhook — send order confirmation email.
  */
-export async function handleOrderCompleted(event: WebhookEvent<Order>) {
+export async function handleOrderPlaced(event: WebhookEvent<"order.placed">) {
   if (isAlreadyProcessed(event.id)) return;
   const order = event.data;
   if (!order.email) return;
@@ -72,15 +77,19 @@ export async function handleOrderCompleted(event: WebhookEvent<Order>) {
         slug: item.slug,
         quantity: item.quantity,
         options_text: item.options_text,
-        display_price: item.display_price ?? "",
-        display_total: item.display_total ?? "",
+        display_price: formatMoney(item.price, item.currency, order.locale, {
+          unitPrice: true,
+        }),
+        display_total: orderMoney(order, item.total),
         thumbnail_url: item.thumbnail_url,
       })),
-      displayItemTotal: order.display_item_total ?? "",
-      displayDeliveryTotal: order.display_delivery_total ?? "",
-      displayDiscountTotal: order.display_discount_total ?? undefined,
-      displayTaxTotal: order.display_tax_total ?? "",
-      displayTotal: order.display_total ?? "",
+      displayItemTotal: orderMoney(order, order.item_total),
+      displayDeliveryTotal: orderMoney(order, order.delivery_total),
+      displayDiscountTotal: order.discount_total
+        ? orderMoney(order, order.discount_total)
+        : undefined,
+      displayTaxTotal: orderMoney(order, order.tax_total),
+      displayTotal: orderMoney(order, order.total),
       shippingAddress: order.shipping_address ?? undefined,
       billingAddress: order.billing_address ?? undefined,
       deliveryMethodName,
@@ -93,7 +102,9 @@ export async function handleOrderCompleted(event: WebhookEvent<Order>) {
 /**
  * Handle order.canceled webhook — send cancellation email.
  */
-export async function handleOrderCanceled(event: WebhookEvent<Order>) {
+export async function handleOrderCanceled(
+  event: WebhookEvent<"order.canceled">,
+) {
   if (isAlreadyProcessed(event.id)) return;
   const order = event.data;
   if (!order.email) return;
@@ -112,10 +123,10 @@ export async function handleOrderCanceled(event: WebhookEvent<Order>) {
         slug: item.slug,
         quantity: item.quantity,
         options_text: item.options_text,
-        display_total: item.display_total ?? "",
+        display_total: orderMoney(order, item.total),
         thumbnail_url: item.thumbnail_url,
       })),
-      displayTotal: order.display_total ?? "",
+      displayTotal: orderMoney(order, order.total),
     }),
   });
 
@@ -123,12 +134,14 @@ export async function handleOrderCanceled(event: WebhookEvent<Order>) {
 }
 
 /**
- * Handle order.shipped webhook — send shipment notification email.
+ * Handle order.fulfilled webhook — send shipment notification email.
  *
- * We subscribe to order.shipped (not shipment.shipped) because the order
- * payload includes the email, customer name, and all shipment details.
+ * We subscribe to order.fulfilled (not fulfillment.fulfilled) because the
+ * order payload includes the email, customer name, and all fulfillment details.
  */
-export async function handleOrderShipped(event: WebhookEvent<Order>) {
+export async function handleOrderFulfilled(
+  event: WebhookEvent<"order.fulfilled">,
+) {
   if (isAlreadyProcessed(event.id)) return;
   const order = event.data;
   if (!order.email) return;
@@ -138,7 +151,7 @@ export async function handleOrderShipped(event: WebhookEvent<Order>) {
 
   // Build shipment data from the order's fulfillments
   const shipments = (order.fulfillments || [])
-    .filter((f) => f.status === "shipped")
+    .filter((f) => f.status === "fulfilled" || f.status === "delivered")
     .map((fulfillment) => {
       // Map fulfillment items back to line items for display data
       const shippedItems = (fulfillment.items || []).map((fi) => {
@@ -160,7 +173,7 @@ export async function handleOrderShipped(event: WebhookEvent<Order>) {
         tracking_url: fulfillment.tracking_url,
         delivery_method_name:
           fulfillment.delivery_method?.name || "Standard Shipping",
-        display_cost: fulfillment.display_cost ?? "",
+        display_cost: orderMoney(order, fulfillment.cost),
         items: shippedItems,
       };
     });
@@ -187,14 +200,8 @@ export async function handleOrderShipped(event: WebhookEvent<Order>) {
  * redirect_url is the storefront page where the customer enters their new password,
  * already validated against allowed origins by the Spree API.
  */
-interface PasswordResetData {
-  email: string;
-  reset_token: string;
-  redirect_url?: string;
-}
-
 export async function handlePasswordReset(
-  event: WebhookEvent<PasswordResetData>,
+  event: WebhookEvent<"customer.password_reset_requested">,
 ) {
   if (isAlreadyProcessed(event.id)) return;
   const { email, reset_token, redirect_url } = event.data;

@@ -14,7 +14,9 @@ import { Button } from "@/components/ui/button";
 import { useCart } from "@/contexts/CartContext";
 import { useHiddenPricing } from "@/contexts/HiddenPricingContext";
 import { useStore } from "@/contexts/StoreContext";
+import { useFormatMoney } from "@/hooks/useFormatMoney";
 import { trackAddToCart, trackViewItem } from "@/lib/analytics/gtm";
+import { strikethroughAmount } from "@/lib/utils/price";
 
 interface ProductDetailsProps {
   product: Product;
@@ -26,6 +28,7 @@ export function ProductDetails({ product, basePath }: ProductDetailsProps) {
   const { currency } = useStore();
   const t = useTranslations("products");
   const tw = useTranslations("wholesale");
+  const formatMoney = useFormatMoney();
   // Non-null inside a HiddenPricingProvider (wholesale `prices_hidden`, guest
   // view): prices are null on purpose, and ordering is gated behind sign-in.
   const hiddenPricing = useHiddenPricing();
@@ -74,25 +77,15 @@ export function ProductDetails({ product, basePath }: ProductDetailsProps) {
   const price = selectedVariant?.price ?? product.price;
   const originalPrice =
     selectedVariant?.original_price ?? product.original_price;
-  const displayPrice = price?.display_amount;
-
-  const currentAmountCents = price?.amount_in_cents;
-  const originalAmountCents = originalPrice?.amount_in_cents;
-  const compareAtAmountCents = price?.compare_at_amount_in_cents;
-  const onSale =
-    (currentAmountCents != null &&
-      originalAmountCents != null &&
-      currentAmountCents < originalAmountCents) ||
-    (compareAtAmountCents != null &&
-      currentAmountCents != null &&
-      currentAmountCents < compareAtAmountCents);
-
-  const strikethroughPrice = onSale
-    ? ((originalPrice?.display_amount &&
-      originalPrice.display_amount !== displayPrice
-        ? originalPrice.display_amount
-        : price?.display_compare_at_amount) ?? null)
+  const displayPrice = price
+    ? formatMoney(price.amount, price.currency, { unitPrice: true })
     : null;
+  const struckAmount = strikethroughAmount(price, originalPrice);
+  const onSale = struckAmount !== null;
+  const strikethroughPrice =
+    price && struckAmount
+      ? formatMoney(struckAmount, price.currency, { unitPrice: true })
+      : null;
 
   const sku = selectedVariant?.sku ?? product.default_variant?.sku;
 

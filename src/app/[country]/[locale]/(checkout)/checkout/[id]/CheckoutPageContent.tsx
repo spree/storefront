@@ -1,6 +1,12 @@
 "use client";
 
-import type { Address, AddressParams, Cart, Country } from "@spree/sdk";
+import type {
+  Address,
+  AddressUpdateParams,
+  Cart,
+  CartAddressParams,
+  Country,
+} from "@spree/sdk";
 import { CircleAlert, Loader2 } from "lucide-react";
 import dynamic from "next/dynamic";
 import Link from "next/link";
@@ -325,7 +331,7 @@ function CheckoutPageContentInner({
   const handleAutoSave = useCallback(
     async (addressData: {
       email: string;
-      shipping_address?: AddressParams;
+      shipping_address?: CartAddressParams;
       shipping_address_id?: string;
     }) => {
       const currentOrder = cartRef.current;
@@ -411,7 +417,7 @@ function CheckoutPageContentInner({
   // Handle billing address update (called by PaymentSection before gateway confirmation)
   const handleUpdateBillingAddress = useCallback(
     async (data: {
-      billing_address?: AddressParams;
+      billing_address?: CartAddressParams;
       use_shipping?: boolean;
     }): Promise<boolean> => {
       const currentOrder = cartRef.current;
@@ -517,7 +523,7 @@ function CheckoutPageContentInner({
 
   // Update a saved address
   const handleUpdateSavedAddress = useCallback(
-    async (id: string, data: AddressParams): Promise<Address> => {
+    async (id: string, data: AddressUpdateParams): Promise<Address> => {
       const result = await updateAddress(id, data);
 
       if (!result.success) {
@@ -724,6 +730,7 @@ function CheckoutPageContentInner({
         <div id="checkout-section-shipping" className="mt-6">
           <DeliveryMethodSection
             fulfillments={fulfillments}
+            currency={cart.currency}
             onDeliveryRateSelect={handleDeliveryRateSelect}
             processing={processing}
             errors={sectionErrors.shipping}

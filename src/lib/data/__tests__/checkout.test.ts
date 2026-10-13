@@ -178,7 +178,7 @@ describe("checkout server actions", () => {
       );
 
       const result = await updateCartMarket("order-1", {
-        currency: "XYZ",
+        currency: "JPY",
         locale: "en",
       });
 

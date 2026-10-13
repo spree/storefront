@@ -6,6 +6,7 @@ import { ProductDetails } from "./ProductDetails";
 
 vi.mock("next-intl", () => ({
   useTranslations: () => (key: string) => key,
+  useLocale: () => "en",
 }));
 
 vi.mock("@/components/products/MediaGallery", () => ({
@@ -46,10 +47,9 @@ const productWithoutCustomVariants = {
     purchasable: true,
     in_stock: true,
     price: {
-      display_amount: "$25.00",
-      amount_in_cents: 2500,
-      compare_at_amount_in_cents: null,
-      display_compare_at_amount: null,
+      amount: "25.00",
+      currency: "USD",
+      compare_at_amount: null,
     },
     original_price: null,
   },
@@ -59,10 +59,9 @@ const productWithoutCustomVariants = {
   purchasable: true,
   in_stock: true,
   price: {
-    display_amount: "$25.00",
-    amount_in_cents: 2500,
-    compare_at_amount_in_cents: null,
-    display_compare_at_amount: null,
+    amount: "25.00",
+    currency: "USD",
+    compare_at_amount: null,
   },
   original_price: null,
   description_html: null,

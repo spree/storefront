@@ -1,6 +1,6 @@
 "use client";
 
-import type { Cart } from "@spree/sdk";
+import { isOrderGroup, type Order, type OrderGroup } from "@spree/sdk";
 import { CircleCheckBig, Package } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -12,6 +12,7 @@ import { PaymentInfo } from "@/components/order/PaymentInfo";
 import { Button } from "@/components/ui/button";
 import { ProductImage } from "@/components/ui/product-image";
 import { useCheckout } from "@/contexts/CheckoutContext";
+import { useFormatMoney } from "@/hooks/useFormatMoney";
 import { trackPurchase } from "@/lib/analytics/gtm";
 import { getCompletedOrder } from "@/lib/data/checkout";
 import { getCachedCompletedOrder } from "@/lib/utils/completed-order-cache";
@@ -32,8 +33,9 @@ export default function OrderPlacedPage({ params }: OrderPlacedPageProps) {
   const { setSummaryContent } = useCheckout();
   const t = useTranslations("orderPlaced");
   const tc = useTranslations("common");
+  const formatMoney = useFormatMoney();
 
-  const [order, setOrder] = useState<Cart | null>(null);
+  const [order, setOrder] = useState<Order | OrderGroup | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<"orderNotFound" | "failedToLoad" | null>(
     null,
@@ -56,7 +58,10 @@ export default function OrderPlacedPage({ params }: OrderPlacedPageProps) {
       try {
         // Try cached order first (from the completion response),
         // fall back to API for page refreshes.
-        const cached = getCachedCompletedOrder(cartId) as Cart | null;
+        const cached = getCachedCompletedOrder(cartId) as
+          | Order
+          | OrderGroup
+          | null;
         const orderData = cached ?? (await getCompletedOrder(cartId));
         if (cancelled) return;
 
@@ -115,6 +120,11 @@ export default function OrderPlacedPage({ params }: OrderPlacedPageProps) {
 
   const customerName =
     order.billing_address?.full_name || order.shipping_address?.full_name || "";
+  // A marketplace checkout that reached several sellers returns an order
+  // group: one order per seller, with the totals and payments on the group.
+  const orders = isOrderGroup(order) ? order.orders : [order];
+  const items = orders.flatMap((o) => o.items ?? []);
+  const fulfillments = orders.flatMap((o) => o.fulfillments ?? []);
 
   return (
     <div className="py-8 max-w-2xl mx-auto">
@@ -140,7 +150,7 @@ export default function OrderPlacedPage({ params }: OrderPlacedPageProps) {
           </h2>
         </div>
         <ul className="divide-y divide-gray-200">
-          {order.items?.map((item) => (
+          {items.map((item) => (
             <li key={item.id} className="px-6 py-4 flex gap-4">
               <div className="relative w-14 h-14 bg-gray-100 rounded-xl flex-shrink-0 overflow-hidden">
                 <ProductImage
@@ -163,7 +173,7 @@ export default function OrderPlacedPage({ params }: OrderPlacedPageProps) {
                 </p>
               </div>
               <div className="text-sm font-medium text-gray-900">
-                {item.display_total}
+                {formatMoney(item.total, item.currency)}
               </div>
             </li>
           ))}
@@ -179,12 +189,12 @@ export default function OrderPlacedPage({ params }: OrderPlacedPageProps) {
       <div className="bg-white rounded-xl border border-gray-200 overflow-hidden mb-6">
         <div className="grid grid-cols-1 lg:grid-cols-2 divide-y lg:divide-y-0 lg:divide-x divide-gray-200">
           {/* Shipping Method */}
-          {order.fulfillments && order.fulfillments.length > 0 && (
+          {fulfillments.length > 0 && (
             <div className="px-6 py-4">
               <h3 className="text-sm font-semibold text-gray-900 mb-3">
                 {t("shippingMethod")}
               </h3>
-              {order.fulfillments.map((fulfillment) => (
+              {fulfillments.map((fulfillment) => (
                 <div
                   key={fulfillment.id}
                   className="flex items-start gap-3 mb-2 last:mb-0"
@@ -196,7 +206,7 @@ export default function OrderPlacedPage({ params }: OrderPlacedPageProps) {
                         t("standardShipping")}
                     </p>
                     <p className="text-xs text-gray-500">
-                      {fulfillment.display_cost}
+                      {formatMoney(fulfillment.cost, order.currency)}
                     </p>
                   </div>
                 </div>
@@ -216,9 +226,8 @@ export default function OrderPlacedPage({ params }: OrderPlacedPageProps) {
                   <div key={payment.id} className="mb-3 last:mb-0">
                     <PaymentInfo
                       payment={payment}
-                      storeCreditLabel={
-                        order.gift_card ? t("giftCard") : undefined
-                      }
+                      currency={order.currency}
+                      giftCardTotal={order.gift_card_total}
                     />
                   </div>
                 ))}

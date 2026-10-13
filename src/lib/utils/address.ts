@@ -1,4 +1,4 @@
-import type { AddressParams } from "@spree/sdk";
+import type { AddressCreateParams, CountryCode } from "@spree/sdk";
 
 export interface AddressFormData {
   first_name: string;
@@ -9,8 +9,8 @@ export interface AddressFormData {
   postal_code: string;
   phone: string;
   company: string;
-  country_iso: string;
-  state_abbr: string;
+  country_code: string;
+  state_code: string;
   state_name: string;
 }
 
@@ -23,8 +23,8 @@ export const emptyAddress: AddressFormData = {
   postal_code: "",
   phone: "",
   company: "",
-  country_iso: "",
-  state_abbr: "",
+  country_code: "",
+  state_code: "",
   state_name: "",
 };
 
@@ -38,8 +38,8 @@ export function addressToFormData(
     postal_code: string | null;
     phone: string | null;
     company: string | null;
-    country_iso: string;
-    state_abbr: string | null;
+    country_code: string;
+    state_code: string | null;
     state_name: string | null;
   } | null,
 ): AddressFormData {
@@ -53,13 +53,13 @@ export function addressToFormData(
     postal_code: address.postal_code || "",
     phone: address.phone || "",
     company: address.company || "",
-    country_iso: address.country_iso || "",
-    state_abbr: address.state_abbr || "",
+    country_code: address.country_code || "",
+    state_code: address.state_code || "",
     state_name: address.state_name || "",
   };
 }
 
-export function formDataToAddress(data: AddressFormData): AddressParams {
+export function formDataToAddress(data: AddressFormData): AddressCreateParams {
   return {
     first_name: data.first_name,
     last_name: data.last_name,
@@ -69,8 +69,9 @@ export function formDataToAddress(data: AddressFormData): AddressParams {
     postal_code: data.postal_code,
     phone: data.phone || undefined,
     company: data.company || undefined,
-    country_code: data.country_iso,
-    state_abbr: data.state_abbr || undefined,
+    // The country select only offers the store's own countries.
+    country_code: data.country_code as CountryCode,
+    state_code: data.state_code || undefined,
     state_name: data.state_name || undefined,
   };
 }
@@ -85,8 +86,8 @@ export function updateAddressField(
   value: string,
 ): AddressFormData {
   const updated = { ...address, [field]: value };
-  if (field === "country_iso") {
-    updated.state_abbr = "";
+  if (field === "country_code") {
+    updated.state_code = "";
     updated.state_name = "";
   }
   return updated;

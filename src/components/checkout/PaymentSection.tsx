@@ -1,8 +1,8 @@
 "use client";
 
 import type {
-  AddressParams,
   Cart,
+  CartAddressParams,
   Country,
   PaymentMethod,
   CreditCard as SpreeCreditCard,
@@ -68,7 +68,7 @@ interface PaymentSectionProps {
   isAuthenticated: boolean;
   fetchStates: (countryIso: string) => Promise<State[]>;
   onUpdateBillingAddress: (data: {
-    billing_address?: AddressParams;
+    billing_address?: CartAddressParams;
     use_shipping?: boolean;
   }) => Promise<boolean>;
   onPaymentComplete: (result: PaymentCompleteResult) => Promise<void>;
@@ -359,7 +359,7 @@ export function PaymentSection({
   ]);
 
   const [billStates, isPendingBill] = useCountryStates(
-    billAddress.country_iso,
+    billAddress.country_code,
     fetchStates,
     !useShippingForBilling,
   );

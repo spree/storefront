@@ -29,8 +29,8 @@ interface AddressEditModalProps {
     postal_code: string | null;
     phone: string | null;
     company: string | null;
-    country_iso: string;
-    state_abbr: string | null;
+    country_code: string;
+    state_code: string | null;
     state_name: string | null;
   } | null;
   countries: Country[];
@@ -64,7 +64,7 @@ export function AddressEditModal({
     };
   });
   const [states, loadingStates] = useCountryStates(
-    formData.country_iso,
+    formData.country_code,
     fetchStates,
   );
   const [saving, setSaving] = useState(false);

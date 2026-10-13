@@ -1,6 +1,14 @@
 "use client";
 
-import type { Address, AddressParams, Cart, Country, State } from "@spree/sdk";
+import type {
+  Address,
+  AddressCreateParams,
+  AddressUpdateParams,
+  Cart,
+  CartAddressParams,
+  Country,
+  State,
+} from "@spree/sdk";
 import { Loader2 } from "lucide-react";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
@@ -28,12 +36,12 @@ interface AddressSectionProps {
   onEmailBlur: (email: string) => Promise<void>;
   onAutoSave: (data: {
     email: string;
-    shipping_address?: AddressParams;
+    shipping_address?: CartAddressParams;
     shipping_address_id?: string;
   }) => Promise<void>;
   onUpdateSavedAddress?: (
     id: string,
-    data: AddressParams,
+    data: AddressUpdateParams,
   ) => Promise<Address | null>;
   errors?: string[];
   saving?: boolean;
@@ -46,7 +54,7 @@ const REQUIRED_ADDRESS_FIELDS: (keyof AddressFormData)[] = [
   "address1",
   "city",
   "postal_code",
-  "country_iso",
+  "country_code",
 ];
 
 function isAddressComplete(address: AddressFormData): boolean {
@@ -108,8 +116,8 @@ export function AddressSection({
     if (initialSavedAddress) return addressToFormData(initialSavedAddress);
     const formData = addressToFormData(cart.shipping_address);
     // Pre-fill country from the market's first country when empty
-    if (!formData.country_iso && defaultCountryIso) {
-      formData.country_iso = defaultCountryIso;
+    if (!formData.country_code && defaultCountryIso) {
+      formData.country_code = defaultCountryIso;
     }
     // Pre-fill name from user profile when address has no name yet
     if (!formData.first_name && user?.first_name) {
@@ -127,7 +135,7 @@ export function AddressSection({
   >(initialSavedAddress?.id);
 
   const [shipStates, isPendingShip] = useCountryStates(
-    shipAddress.country_iso,
+    shipAddress.country_code,
     fetchStates,
   );
 
@@ -229,7 +237,10 @@ export function AddressSection({
     tryAutoSave(email, addressToFormData(address), address.id);
   };
 
-  const handleSaveEditedAddress = async (data: AddressParams, id?: string) => {
+  const handleSaveEditedAddress = async (
+    data: AddressCreateParams,
+    id?: string,
+  ) => {
     if (!id || !onUpdateSavedAddress) {
       throw new Error("Cannot update address");
     }

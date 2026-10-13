@@ -6,6 +6,7 @@ import { useTranslations } from "next-intl";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { useFormatMoney } from "@/hooks/useFormatMoney";
 
 interface CouponCodeProps {
   cart: Cart;
@@ -25,6 +26,7 @@ export function CouponCode({
   onRemoveGiftCard,
 }: CouponCodeProps) {
   const t = useTranslations("coupon");
+  const formatMoney = useFormatMoney();
   const [code, setCode] = useState("");
   const [applying, setApplying] = useState(false);
   const [removing, setRemoving] = useState<string | null>(null);
@@ -109,7 +111,7 @@ export function CouponCode({
                   {promotion.code || promotion.name}
                 </span>
                 <span className="text-gray-500">
-                  {promotion.display_amount}
+                  {formatMoney(promotion.amount, cart.currency)}
                 </span>
               </div>
               {promotion.code && (
@@ -138,7 +140,7 @@ export function CouponCode({
                 {t("giftCardCode", { code: appliedGiftCard.code })}
               </span>
               <span className="text-gray-500">
-                -{cart.display_gift_card_total}
+                -{formatMoney(cart.gift_card_total, cart.currency)}
               </span>
             </div>
             <button
