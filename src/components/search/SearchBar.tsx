@@ -235,6 +235,7 @@ export function SearchBar({ basePath, autoFocus, onNavigate }: SearchBarProps) {
                             {formatMoney(
                               product.price.amount,
                               product.price.currency,
+                              { unitPrice: true },
                             )}
                           </p>
                         )}
