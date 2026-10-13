@@ -1,4 +1,4 @@
-import type { Order } from "@spree/sdk";
+import type { Order, OrderGroup } from "@spree/sdk";
 import { formatMoney } from "@spree/sdk";
 import Link from "next/link";
 import { getTranslations } from "next-intl/server";
@@ -11,7 +11,12 @@ import {
 } from "@/lib/utils/format";
 
 interface OrderListProps {
-  orders: Order[];
+  /**
+   * One row per checkout. A basket that reached several sellers divided into
+   * one order per seller, but the customer made a single purchase — so that
+   * row is the group, and every column below reads the same off either shape.
+   */
+  orders: Array<Order | OrderGroup>;
   basePath: string;
   locale: string;
 }
