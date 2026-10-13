@@ -75,6 +75,12 @@ services:
       # never run — fine here, since the checkout golden path doesn't depend on
       # any job output (see note above), and the tests never assert on images.
       SOLID_QUEUE_IN_PUMA: "false"
+      # Spree throttles sign-ups (3/min) and sign-ins (5/min) per client IP.
+      # Every test signs a fresh customer up from the same IP, so the
+      # defaults lock the suite out after its first few tests.
+      SPREE_RATE_LIMIT_REGISTER: "1000"
+      SPREE_RATE_LIMIT_LOGIN: "1000"
+      SPREE_RATE_LIMIT_REFRESH: "1000"
     ports:
       - "4000:3000"
     healthcheck:
