@@ -20,30 +20,6 @@ test.describe("product page", () => {
     ).toBeVisible();
   });
 
-  test("choosing another color switches the variant", async ({ page }) => {
-    await openFirstProduct(page, `${BASE_PATH}/products`);
-    // Color swatches are named by their title.
-    const swatches = page.getByRole("main").locator("button[title]:enabled");
-    test.skip(
-      (await swatches.count()) < 2,
-      "The first product has no second color to switch to",
-    );
-    const color = (await swatches.nth(1).getAttribute("title")) ?? "";
-    const sku = page
-      .getByRole("term")
-      .filter({ hasText: /^SKU$/ })
-      .locator("xpath=following-sibling::*[1]");
-    const initialSku = (await sku.textContent())?.trim();
-
-    await waitForHydration(swatches.nth(1));
-    await swatches.nth(1).click();
-
-    await expect(
-      page.getByRole("definition").filter({ hasText: `: ${color}` }),
-    ).toBeVisible({ timeout: 30_000 });
-    await expect(sku).not.toHaveText(initialSku ?? "");
-  });
-
   test("adds the chosen quantity to the cart", async ({ page }) => {
     const name = await openFirstProduct(page, `${BASE_PATH}/products`);
     const quantity = page.getByRole("textbox", { name: "Quantity" });
@@ -99,6 +75,7 @@ test.describe("product page with color and size options", () => {
     await expect(detail(page, "Options")).toHaveText("Color: Red, Size: S", {
       timeout: 30_000,
     });
+    await expect(detail(page, "SKU")).toHaveText("E2E-TEE-RED-S");
     // Red does not come in L.
     await expect(size(page, "L")).toBeDisabled();
 
