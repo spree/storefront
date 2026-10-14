@@ -40,7 +40,10 @@ test.describe("category page", () => {
     const breadcrumb = page.getByRole("navigation", { name: "Breadcrumb" });
     await expect(breadcrumb.getByRole("link", { name: "Home" })).toBeVisible();
     await expect(breadcrumb.getByText(name)).toBeVisible();
-    await expect(page.getByText(/\d+ products?/)).toBeVisible();
+    // The count briefly renders twice while the page streams in.
+    await expect(
+      page.getByText(/\d+ products?/).filter({ visible: true }),
+    ).toBeVisible();
     expect((await productNames(page)).length).toBeGreaterThan(0);
   });
 

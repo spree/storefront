@@ -64,11 +64,20 @@ test.describe("customer account", () => {
     await expect(dialog).toBeHidden({ timeout: 30_000 });
     await expect(page.getByText("42 Analytical Engine Way")).toBeVisible();
 
-    await page.getByRole("button", { name: "Delete" }).click();
-    await page
+    // The list refreshes once more after the save, and that closes a confirm
+    // dialog opened just before it.
+    const confirmDelete = page
       .getByRole("alertdialog")
-      .getByRole("button", { name: "Delete" })
-      .click();
+      .getByRole("button", { name: "Delete" });
+    await expect(async () => {
+      if (!(await confirmDelete.isVisible())) {
+        await page
+          .getByRole("button", { name: "Delete" })
+          .first()
+          .click({ timeout: 3_000 });
+      }
+      await confirmDelete.click({ timeout: 3_000 });
+    }).toPass({ timeout: 30_000 });
     await expect(
       page.getByRole("heading", { name: "No saved addresses" }),
     ).toBeVisible({ timeout: 30_000 });

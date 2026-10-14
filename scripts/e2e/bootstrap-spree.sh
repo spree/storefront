@@ -4,7 +4,8 @@
 # Steps:
 #   1. `spree seed` — seed the default store, roles, countries.
 #   2. `spree sample-data` — load sample products, categories, images.
-#   3. mint a publishable API key bound to a public channel, and capture
+#   3. add a product that has both color and size options.
+#   4. mint a publishable API key bound to a public channel, and capture
 #      its pk_… token.
 #
 # Idempotent: the CLI's seed/sample-data tasks are no-ops on already-seeded
@@ -105,6 +106,51 @@ gateway.assign_attributes(
 # when checkout creates a PaymentIntent.
 gateway.save!(validate: false)
 puts "OK: gateway #{gateway.id} (#{gateway.name})"
+RUBY
+
+# The sample catalog's products vary by color only and are all in stock at
+# full price, so the product page tests for picking a color and a size, a
+# discounted variant and a sold-out one need a product of their own.
+echo "==> Creating a product with color and size options"
+docker compose exec -T web bin/rails runner - <<'RUBY'
+store = Spree::Store.default
+color = Spree::OptionType.for_store(store).find_by!(name: 'color')
+size = Spree::OptionType.for_store(store).find_or_create_by!(name: 'size') do |option_type|
+  option_type.label = 'Size'
+  option_type.kind = 'buttons'
+end
+colors = { 'black' => ['Black', '#000000'], 'red' => ['Red', '#cc0000'] }.to_h do |name, (label, code)|
+  [name, color.option_values.find_or_create_by!(name: name) { |ov| ov.label = label; ov.color_code = code }]
+end
+sizes = %w[S M L].each_with_index.to_h do |label, index|
+  [label, size.option_values.find_or_create_by!(name: label.downcase) { |ov| ov.label = label; ov.position = index + 1 }]
+end
+
+product = store.products.find_or_initialize_by(slug: 'e2e-two-option-tee')
+product.assign_attributes(name: 'E2E Two-Option Tee', status: 'active', description: 'A product with color and size options.')
+product.save!
+product.option_types = [color, size]
+location = Spree::StockLocation.order_default.first
+
+# Black in S, M and L, red in S and M only. Red M is on sale and black L is
+# sold out.
+[
+  ['black', 'S'], ['black', 'M'], ['black', 'L', { stock: 0 }],
+  ['red', 'S'], ['red', 'M', { price: 15, compare_at: 25 }]
+].each do |color_name, size_label, overrides = {}|
+  sku = "E2E-TEE-#{color_name}-#{size_label}".upcase
+  variant = product.variants.find_or_initialize_by(sku: sku)
+  variant.option_values = [colors.fetch(color_name), sizes.fetch(size_label)]
+  variant.set_price('USD', overrides.fetch(:price, 20), overrides[:compare_at])
+  variant.save!
+  stock_item = variant.stock_items.find_or_create_by!(stock_location: location)
+  stock_item.update!(backorderable: false)
+  stock_item.set_count_on_hand(overrides.fetch(:stock, 100))
+end
+# Saving the product creates a variant without options; the page would open on it.
+product.variants.reject { |variant| variant.option_values.any? }.each(&:destroy!)
+store.channels.each { |channel| product.product_publications.find_or_create_by!(channel: channel) }
+puts "OK: #{product.slug} (#{product.variants.count} variants)"
 RUBY
 
 # Created via `bin/rails runner` rather than `spree api-key create`, because the
