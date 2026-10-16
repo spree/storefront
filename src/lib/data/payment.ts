@@ -44,8 +44,9 @@ export async function createCheckoutPaymentSession(
       },
       options,
     );
+    const cart = await getCart(cartId, surface);
     updateTag(checkoutTag(surface));
-    return { session };
+    return { session, cart };
   }, "Failed to create payment session");
 }
 
@@ -66,8 +67,9 @@ export async function updateCheckoutPaymentSession(
     const session = await getClientForSurface(
       surface,
     ).carts.paymentSessions.update(id, sessionId, params, options);
+    const cart = await getCart(cartId, surface);
     updateTag(checkoutTag(surface));
-    return { session };
+    return { session, cart };
   }, "Failed to update payment session");
 }
 
@@ -88,8 +90,9 @@ export async function createDirectPayment(
       { payment_method_id: paymentMethodId },
       options,
     );
+    const cart = await getCart(cartId, surface);
     updateTag(checkoutTag(surface));
-    return { payment };
+    return { payment, cart };
   }, "Failed to create payment");
 }
 
