@@ -29,7 +29,10 @@ import {
 interface AddressSectionProps {
   cart: Cart;
   countries: Country[];
+  /** The book the buyer may pick from — their own, or the company's when
+   * `company` is set. */
   savedAddresses: Address[];
+  company?: { id: string; name: string } | null;
   isAuthenticated: boolean;
   signInUrl: string;
   fetchStates: (countryIso: string) => Promise<State[]>;
@@ -79,6 +82,7 @@ export function AddressSection({
   cart,
   countries,
   savedAddresses: initialSavedAddresses,
+  company,
   isAuthenticated,
   signInUrl,
   fetchStates,
@@ -95,12 +99,15 @@ export function AddressSection({
   const ta = useTranslations("address");
 
   // Determine initial saved address: use the first saved address when the
-  // cart doesn't have a shipping address yet (authenticated users).
+  // cart doesn't have a shipping address yet (authenticated users). A company
+  // nominates where its deliveries go by default, so that site wins over
+  // whichever entry happens to come back first.
   const initialSavedAddress =
     !cart.shipping_address &&
     isAuthenticated &&
     initialSavedAddresses.length > 0
-      ? initialSavedAddresses[0]
+      ? (initialSavedAddresses.find((address) => address.is_default_shipping) ??
+        initialSavedAddresses[0])
       : undefined;
 
   const [email, setEmail] = useState(cart.email || user?.email || "");
@@ -314,6 +321,13 @@ export function AddressSection({
             </span>
           )}
         </div>
+        {/* Without this the buyer is shown a list of depots and loading bays
+            they have never typed, with nothing saying whose they are. */}
+        {company && savedAddresses.length > 0 && (
+          <p className="text-sm text-gray-500 mb-3">
+            {t("companyAddresses", { company: company.name })}
+          </p>
+        )}
         {isAuthenticated && savedAddresses.length > 0 ? (
           <AddressSelector
             savedAddresses={savedAddresses}

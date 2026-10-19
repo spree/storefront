@@ -267,7 +267,8 @@
     "policyConsentRequired": "Musisz zaakceptować regulamin sklepu przed złożeniem zamówienia",
     "iAgreeToThe": "Zgadzam się z",
     "policySeparatorComma": ", ",
-    "policySeparatorAnd": " i "
+    "policySeparatorAnd": " i ",
+    "companyAddresses": "Dostawa do lokalizacji zapisanej przez {company}."
   },
   "address": {
     "firstName": "Imię",

@@ -37,7 +37,7 @@ import {
   trackAddShippingInfo,
   trackBeginCheckout,
 } from "@/lib/analytics/gtm";
-import { getAddresses, updateAddress } from "@/lib/data/addresses";
+import { updateAddress } from "@/lib/data/addresses";
 import {
   applyCode,
   getCheckoutOrder,
@@ -46,6 +46,7 @@ import {
   selectDeliveryRate,
   updateOrderAddresses,
 } from "@/lib/data/checkout";
+import { getCheckoutAddressBook } from "@/lib/data/companies";
 import { isAuthenticated as checkAuth } from "@/lib/data/cookies";
 import { getCountry } from "@/lib/data/countries";
 import { getMarketCountries, resolveMarket } from "@/lib/data/markets";
@@ -113,6 +114,8 @@ function CheckoutPageContentInner({
   const [savedAddresses, setSavedAddresses] = useState<Address[]>(
     initialData?.savedAddresses ?? [],
   );
+  // When set, `savedAddresses` is this company's book rather than the buyer's.
+  const [company, setCompany] = useState(initialData?.company ?? null);
   const [isAuthenticated, setIsAuthenticated] = useState(
     initialData?.isAuthenticated ?? false,
   );
@@ -205,12 +208,15 @@ function CheckoutPageContentInner({
     if (!paymentError) setError(null);
 
     try {
-      const [cartData, market, addressesData, authStatus] = await Promise.all([
+      const [cartData, market, authStatus] = await Promise.all([
         getCheckoutOrder(cartId),
         resolveMarket(urlCountry).catch(() => null),
-        getAddresses(),
         checkAuth(),
       ]);
+
+      // The book follows the cart: a company named since the last load
+      // changes which addresses may be offered.
+      const addressBook = await getCheckoutAddressBook(cartData?.company_id);
 
       const countriesData = market
         ? await getMarketCountries(market.id).catch(() => ({
@@ -231,7 +237,8 @@ function CheckoutPageContentInner({
 
       setCart(cartData);
       setCountries(countriesData.data);
-      setSavedAddresses(addressesData.data);
+      setSavedAddresses(addressBook.addresses);
+      setCompany(addressBook.company);
       setIsAuthenticated(authStatus);
 
       return cartData;
@@ -711,13 +718,17 @@ function CheckoutPageContentInner({
             cart={cart}
             countries={countries}
             savedAddresses={savedAddresses}
+            company={company}
             isAuthenticated={isAuthenticated}
             signInUrl={`${basePath}/account?redirect=${encodeURIComponent(pathname)}`}
             fetchStates={fetchStates}
             onEmailBlur={handleEmailBlur}
             onAutoSave={handleAutoSave}
+            // A company site belongs to the organization's book, not to this
+            // buyer's — correcting one is the account area's job, and the
+            // customer address endpoint would refuse it anyway.
             onUpdateSavedAddress={
-              isAuthenticated ? handleUpdateSavedAddress : undefined
+              isAuthenticated && !company ? handleUpdateSavedAddress : undefined
             }
             errors={sectionErrors.address}
             saving={saving}

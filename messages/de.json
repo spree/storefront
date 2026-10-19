@@ -267,7 +267,8 @@
     "policyConsentRequired": "Sie müssen den Geschäftsrichtlinien zustimmen, bevor Sie Ihre Bestellung aufgeben",
     "iAgreeToThe": "Ich stimme zu",
     "policySeparatorComma": ", ",
-    "policySeparatorAnd": " und "
+    "policySeparatorAnd": " und ",
+    "companyAddresses": "Lieferung an einen von {company} gespeicherten Standort."
   },
   "address": {
     "firstName": "Vorname",

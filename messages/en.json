@@ -267,7 +267,8 @@
     "policyConsentRequired": "You must agree to the store policies before placing your order",
     "iAgreeToThe": "I agree to the",
     "policySeparatorComma": ", ",
-    "policySeparatorAnd": " and "
+    "policySeparatorAnd": " and ",
+    "companyAddresses": "Delivering to a site saved by {company}."
   },
   "address": {
     "firstName": "First name",

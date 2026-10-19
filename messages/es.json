@@ -267,7 +267,8 @@
     "policyConsentRequired": "Debes aceptar las politicas de la tienda antes de realizar tu pedido",
     "iAgreeToThe": "Acepto las",
     "policySeparatorComma": ", ",
-    "policySeparatorAnd": " y "
+    "policySeparatorAnd": " y ",
+    "companyAddresses": "Entrega en una sede guardada por {company}."
   },
   "address": {
     "firstName": "Nombre",

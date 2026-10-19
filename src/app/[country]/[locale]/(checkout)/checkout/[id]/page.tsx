@@ -2,8 +2,8 @@ import type { Address, Cart, Country } from "@spree/sdk";
 import { redirect } from "next/navigation";
 import { connection } from "next/server";
 import { Suspense } from "react";
-import { getAddresses } from "@/lib/data/addresses";
 import { getCheckoutOrder } from "@/lib/data/checkout";
+import { getCheckoutAddressBook } from "@/lib/data/companies";
 import { isAuthenticated as checkAuth } from "@/lib/data/cookies";
 import { getCountry } from "@/lib/data/countries";
 import { getMarketCountries, resolveMarket } from "@/lib/data/markets";
@@ -15,6 +15,9 @@ export interface CheckoutInitialData {
   countries: Country[];
   savedAddresses: Address[];
   isAuthenticated: boolean;
+  /** Set when the purchase is for a company — `savedAddresses` is then that
+   * company's book rather than the buyer's own. */
+  company: { id: string; name: string } | null;
 }
 
 interface CheckoutPageProps {
@@ -34,10 +37,9 @@ async function CheckoutDataLoader({ params }: CheckoutPageProps) {
   const authStatus = await checkAuth();
 
   // Fetch initial data in parallel during SSR
-  const [cartData, market, addressesData] = await Promise.all([
+  const [cartData, market] = await Promise.all([
     getCheckoutOrder(cartId),
     resolveMarket(urlCountry).catch(() => null),
-    authStatus ? getAddresses() : Promise.resolve({ data: [] as Address[] }),
   ]);
 
   // Redirect to order-placed if already complete
@@ -45,6 +47,13 @@ async function CheckoutDataLoader({ params }: CheckoutPageProps) {
     const basePath = `/${urlCountry}/en`;
     redirect(`${basePath}/order-placed/${cartId}`);
   }
+
+  // Which book checkout may offer depends on who the purchase is for, so it
+  // follows the cart rather than being fetched beside it.
+  const addressBook =
+    authStatus && cartData
+      ? await getCheckoutAddressBook(cartData.company_id)
+      : { company: null, addresses: [] as Address[] };
 
   const countriesData = market
     ? await getMarketCountries(market.id).catch(() => ({
@@ -63,8 +72,9 @@ async function CheckoutDataLoader({ params }: CheckoutPageProps) {
     ? {
         cart: cartData,
         countries: countriesData.data,
-        savedAddresses: addressesData.data,
+        savedAddresses: addressBook.addresses,
         isAuthenticated: authStatus,
+        company: addressBook.company,
       }
     : null;
 
