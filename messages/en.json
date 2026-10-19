@@ -552,18 +552,28 @@
     "ignore": "If you did not make this request, close this page and nothing will happen.",
     "genericError": "Something went wrong. Please try again.",
     "backToStore": "Back to the store",
+    "loadError": "We could not check your link",
+    "loadErrorDescription": "Something went wrong on our side. Please try again in a moment.",
+    "retry": "Try again",
+    "failed": "Request could not be completed",
+    "failedDescription": "We could not complete this request. Please make it again from your account, or contact us.",
     "access": {
       "title": "Confirm your data request",
       "description": "You asked for a copy of the personal data this store holds about you. Confirm the request and we will email you a download link when it is ready.",
       "confirm": "Confirm request",
-      "confirmedDescription": "We are preparing your data and will email you a download link when it is ready."
+      "confirmedDescription": "We are preparing your data and will email you a download link when it is ready.",
+      "readyTitle": "Your data is ready",
+      "readyDescription": "Download the file before the link expires.",
+      "download": "Download your data",
+      "expiredDescription": "The download link for this request has expired. Make the request again from your account."
     },
     "erasure": {
       "title": "Confirm your erasure request",
       "description": "You asked us to permanently erase the personal data this store holds about you, including the names and addresses on your past orders.",
       "warning": "This cannot be undone.",
       "confirm": "Erase my data",
-      "confirmedDescription": "Your personal data will be erased shortly."
+      "confirmedDescription": "Your personal data will be erased shortly.",
+      "completedDescription": "Your personal data has been erased."
     }
   },
   "policies": {

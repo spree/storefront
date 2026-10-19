@@ -1,6 +1,7 @@
 import { formatMoney, type Order } from "@spree/sdk";
 import type { WebhookEvent } from "@spree/sdk/webhooks";
 import { createElement } from "react";
+import { DataRequestConfirmationEmail } from "@/lib/emails/data-request-confirmation";
 import { OrderCanceledEmail } from "@/lib/emails/order-canceled";
 import { OrderConfirmationEmail } from "@/lib/emails/order-confirmation";
 import { PasswordResetEmail } from "@/lib/emails/password-reset";
@@ -224,6 +225,45 @@ export async function handlePasswordReset(
     subject: `${STORE_NAME} Password Reset`,
     react: createElement(PasswordResetEmail, {
       resetUrl,
+    }),
+  });
+
+  markProcessed(event.id);
+}
+
+/**
+ * Handle data_request.confirmation_requested webhook — ask the customer to
+ * confirm a data request they raised. Spree acts on it only once someone
+ * reading mail at this address confirms it.
+ *
+ * redirect_url is the storefront page that confirms the request, already
+ * validated against allowed origins by the Spree API.
+ */
+export async function handleDataRequestConfirmation(
+  event: WebhookEvent<"data_request.confirmation_requested">,
+) {
+  if (isAlreadyProcessed(event.id)) return;
+  const { email, confirmation_token, redirect_url, kind } = event.data;
+  if (!email || !confirmation_token) return;
+
+  if (!SITE_URL) {
+    throw new Error(
+      "Missing NEXT_PUBLIC_SITE_URL configuration — cannot build data request confirmation link",
+    );
+  }
+  const url = new URL(
+    redirect_url ?? "/account/data-requests/confirm",
+    SITE_URL,
+  );
+  url.searchParams.set("token", confirmation_token);
+  const erasure = kind === "erasure";
+
+  await sendEmail({
+    to: email,
+    subject: `${STORE_NAME} ${erasure ? "Confirm Your Erasure Request" : "Confirm Your Data Request"}`,
+    react: createElement(DataRequestConfirmationEmail, {
+      confirmUrl: url.toString(),
+      kind: erasure ? "erasure" : "access",
     }),
   });
 

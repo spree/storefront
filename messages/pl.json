@@ -552,18 +552,28 @@
     "ignore": "Jeśli to nie Ty złożyłeś ten wniosek, zamknij tę stronę. Nic się nie stanie.",
     "genericError": "Coś poszło nie tak. Spróbuj ponownie.",
     "backToStore": "Wróć do sklepu",
+    "loadError": "Nie udało się sprawdzić linku",
+    "loadErrorDescription": "Coś poszło nie tak po naszej stronie. Spróbuj ponownie za chwilę.",
+    "retry": "Spróbuj ponownie",
+    "failed": "Nie udało się zrealizować wniosku",
+    "failedDescription": "Nie udało się zrealizować tego wniosku. Złóż go ponownie na swoim koncie lub skontaktuj się z nami.",
     "access": {
       "title": "Potwierdź wniosek o dane",
       "description": "Poprosiłeś o kopię danych osobowych, które ten sklep przechowuje na Twój temat. Potwierdź wniosek, a wyślemy Ci e-mailem link do pobrania, gdy plik będzie gotowy.",
       "confirm": "Potwierdź wniosek",
-      "confirmedDescription": "Przygotowujemy Twoje dane i wyślemy Ci e-mailem link do pobrania, gdy będą gotowe."
+      "confirmedDescription": "Przygotowujemy Twoje dane i wyślemy Ci e-mailem link do pobrania, gdy będą gotowe.",
+      "readyTitle": "Twoje dane są gotowe",
+      "readyDescription": "Pobierz plik, zanim link wygaśnie.",
+      "download": "Pobierz moje dane",
+      "expiredDescription": "Link do pobrania dla tego wniosku wygasł. Złóż wniosek ponownie na swoim koncie."
     },
     "erasure": {
       "title": "Potwierdź wniosek o usunięcie danych",
       "description": "Poprosiłeś o trwałe usunięcie danych osobowych, które ten sklep przechowuje na Twój temat, w tym imion, nazwisk i adresów z Twoich wcześniejszych zamówień.",
       "warning": "Tej operacji nie można cofnąć.",
       "confirm": "Usuń moje dane",
-      "confirmedDescription": "Twoje dane osobowe zostaną wkrótce usunięte."
+      "confirmedDescription": "Twoje dane osobowe zostaną wkrótce usunięte.",
+      "completedDescription": "Twoje dane osobowe zostały usunięte."
     }
   },
   "policies": {

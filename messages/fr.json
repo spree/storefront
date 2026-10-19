@@ -552,18 +552,28 @@
     "ignore": "Si vous n'avez pas fait cette demande, fermez cette page et rien ne se passera.",
     "genericError": "Une erreur s'est produite. Veuillez réessayer.",
     "backToStore": "Retour à la boutique",
+    "loadError": "Impossible de vérifier votre lien",
+    "loadErrorDescription": "Une erreur s'est produite de notre côté. Veuillez réessayer dans un instant.",
+    "retry": "Réessayer",
+    "failed": "La demande n'a pas pu être traitée",
+    "failedDescription": "Nous n'avons pas pu traiter cette demande. Refaites-la depuis votre compte ou contactez-nous.",
     "access": {
       "title": "Confirmez votre demande de données",
       "description": "Vous avez demandé une copie des données personnelles que cette boutique détient à votre sujet. Confirmez la demande et nous vous enverrons par e-mail un lien de téléchargement dès qu'elle sera prête.",
       "confirm": "Confirmer la demande",
-      "confirmedDescription": "Nous préparons vos données et vous enverrons par e-mail un lien de téléchargement dès qu'elles seront prêtes."
+      "confirmedDescription": "Nous préparons vos données et vous enverrons par e-mail un lien de téléchargement dès qu'elles seront prêtes.",
+      "readyTitle": "Vos données sont prêtes",
+      "readyDescription": "Téléchargez le fichier avant l'expiration du lien.",
+      "download": "Télécharger mes données",
+      "expiredDescription": "Le lien de téléchargement de cette demande a expiré. Refaites la demande depuis votre compte."
     },
     "erasure": {
       "title": "Confirmez votre demande d'effacement",
       "description": "Vous nous avez demandé d'effacer définitivement les données personnelles que cette boutique détient à votre sujet, y compris les noms et adresses de vos commandes passées.",
       "warning": "Cette action est irréversible.",
       "confirm": "Effacer mes données",
-      "confirmedDescription": "Vos données personnelles seront effacées sous peu."
+      "confirmedDescription": "Vos données personnelles seront effacées sous peu.",
+      "completedDescription": "Vos données personnelles ont été effacées."
     }
   },
   "policies": {

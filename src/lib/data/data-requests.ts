@@ -4,17 +4,30 @@ import type { DataRequest } from "@spree/sdk";
 import { getClient } from "@/lib/spree";
 import { actionResult } from "./utils";
 
+export type DataRequestLookup =
+  | { found: true; dataRequest: DataRequest }
+  | { found: false; reason: "invalid" | "error" };
+
 /**
- * Look up the data request an emailed confirmation token belongs to.
- * Returns null for a token Spree does not recognise.
+ * Look up the data request an emailed confirmation token belongs to. A token
+ * Spree does not recognise is "invalid"; anything else that fails (network,
+ * server, rate limit) is "error", so the page can offer a retry rather than
+ * calling a good link broken.
  */
 export async function getDataRequest(
   token: string,
-): Promise<DataRequest | null> {
+): Promise<DataRequestLookup> {
   try {
-    return await getClient().dataRequests.get(token);
-  } catch {
-    return null;
+    return {
+      found: true,
+      dataRequest: await getClient().dataRequests.get(token),
+    };
+  } catch (error) {
+    const status =
+      error && typeof error === "object" && "status" in error
+        ? (error as { status?: number }).status
+        : undefined;
+    return { found: false, reason: status === 404 ? "invalid" : "error" };
   }
 }
 
