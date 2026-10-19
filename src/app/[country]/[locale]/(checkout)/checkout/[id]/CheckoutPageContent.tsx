@@ -218,8 +218,17 @@ function CheckoutPageContentInner({
       ]);
 
       // The book follows the cart: a company named since the last load
-      // changes which addresses may be offered.
-      const addressBook = await getCheckoutAddressBook(cartData?.company_id);
+      // changes which addresses may be offered. Guests keep no book and have
+      // no company, and both lookups need a customer JWT — so skip them
+      // rather than spend two failing round-trips on every refresh.
+      const addressBook =
+        authStatus && cartData
+          ? await getCheckoutAddressBook(cartData.company_id)
+          : {
+              company: null,
+              companyAddresses: [] as Address[],
+              personalAddresses: [] as Address[],
+            };
 
       const countriesData = market
         ? await getMarketCountries(market.id).catch(() => ({
