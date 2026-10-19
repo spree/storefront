@@ -31,19 +31,19 @@ export async function getCompany(id: string) {
  * A company node's sites, including the ones it inherits from the nodes above
  * it — a division ships to its headquarters' docks as readily as to its own.
  */
-export async function getCompanyAddresses(companyId: string) {
-  return withFallback(
-    async () => {
-      return withAuthRefresh(async (options) => {
-        return getClient().companies.addresses.list(
-          companyId,
-          undefined,
-          options,
-        );
-      });
-    },
-    { data: [] as Address[] },
-  );
+export async function getCompanyAddresses(
+  companyId: string,
+): Promise<Address[]> {
+  return withFallback(async () => {
+    const { data } = await withAuthRefresh(async (options) => {
+      return getClient().companies.addresses.list(
+        companyId,
+        undefined,
+        options,
+      );
+    });
+    return data;
+  }, []);
 }
 
 /**
@@ -81,7 +81,7 @@ export async function getCheckoutAddressBook(
     return { company: null, companyAddresses: [], personalAddresses };
   }
 
-  const { data: companyAddresses } = await getCompanyAddresses(company.id);
+  const companyAddresses = await getCompanyAddresses(company.id);
   return { company, companyAddresses, personalAddresses };
 }
 
