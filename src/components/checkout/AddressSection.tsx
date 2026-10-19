@@ -29,9 +29,11 @@ import {
 interface AddressSectionProps {
   cart: Cart;
   countries: Country[];
-  /** The book the buyer may pick from — their own, or the company's when
-   * `company` is set. */
+  /** The buyer's own book. */
   savedAddresses: Address[];
+  /** The company's sites, offered beside the buyer's own when the purchase is
+   * for a company. Empty otherwise. */
+  companyAddresses?: Address[];
   company?: { id: string; name: string } | null;
   isAuthenticated: boolean;
   signInUrl: string;
@@ -82,6 +84,7 @@ export function AddressSection({
   cart,
   countries,
   savedAddresses: initialSavedAddresses,
+  companyAddresses = [],
   company,
   isAuthenticated,
   signInUrl,
@@ -98,16 +101,18 @@ export function AddressSection({
   const tc = useTranslations("common");
   const ta = useTranslations("address");
 
+  // Both books are selectable; the company's sites come first because a
+  // purchase for the organization usually goes to one of them.
+  const offeredAddresses = [...companyAddresses, ...initialSavedAddresses];
+
   // Determine initial saved address: use the first saved address when the
   // cart doesn't have a shipping address yet (authenticated users). A company
   // nominates where its deliveries go by default, so that site wins over
   // whichever entry happens to come back first.
   const initialSavedAddress =
-    !cart.shipping_address &&
-    isAuthenticated &&
-    initialSavedAddresses.length > 0
-      ? (initialSavedAddresses.find((address) => address.is_default_shipping) ??
-        initialSavedAddresses[0])
+    !cart.shipping_address && isAuthenticated && offeredAddresses.length > 0
+      ? (offeredAddresses.find((address) => address.is_default_shipping) ??
+        offeredAddresses[0])
       : undefined;
 
   const [email, setEmail] = useState(cart.email || user?.email || "");
@@ -136,6 +141,8 @@ export function AddressSection({
     return formData;
   });
   const [savedAddresses, setSavedAddresses] = useState(initialSavedAddresses);
+  const addressGroupsHaveEntries =
+    savedAddresses.length > 0 || companyAddresses.length > 0;
   const [editingAddress, setEditingAddress] = useState<Address | null>(null);
   const [selectedSavedAddressId, setSelectedSavedAddressId] = useState<
     string | undefined
@@ -321,16 +328,24 @@ export function AddressSection({
             </span>
           )}
         </div>
-        {/* Without this the buyer is shown a list of depots and loading bays
-            they have never typed, with nothing saying whose they are. */}
-        {company && savedAddresses.length > 0 && (
-          <p className="text-sm text-gray-500 mb-3">
-            {t("companyAddresses", { company: company.name })}
-          </p>
-        )}
-        {isAuthenticated && savedAddresses.length > 0 ? (
+        {isAuthenticated && addressGroupsHaveEntries ? (
           <AddressSelector
-            savedAddresses={savedAddresses}
+            groups={[
+              {
+                key: "company",
+                heading: company?.name,
+                addresses: companyAddresses,
+                // The organization's book; the account area curates it, and
+                // the customer address endpoint would refuse the write.
+                editable: false,
+              },
+              {
+                key: "personal",
+                heading: ta("yourAddresses"),
+                addresses: savedAddresses,
+                editable: true,
+              },
+            ]}
             currentAddress={shipAddress}
             countries={countries}
             states={shipStates}

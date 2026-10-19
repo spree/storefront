@@ -50,16 +50,16 @@ describe("getCheckoutAddressBook", () => {
       expect.anything(),
     );
     expect(book.company).toEqual(COMPANY);
-    expect(book.addresses).toEqual([COMPANY_SITE]);
+    expect(book.companyAddresses).toEqual([COMPANY_SITE]);
   });
 
-  // The buyer never typed these addresses, so the organization has to be
-  // named beside them.
-  it("leaves the buyer's own book out of a company purchase", async () => {
+  // Both books are selectable — the cart accepts an id from either — so the
+  // picker offers both and tells them apart by heading rather than hiding one.
+  it("offers the buyer's own book beside the company's", async () => {
     const book = await getCheckoutAddressBook("comp_hq");
 
-    expect(book.addresses).not.toContainEqual(PERSONAL);
-    expect(mockClient.customer.addresses.list).not.toHaveBeenCalled();
+    expect(book.companyAddresses).toEqual([COMPANY_SITE]);
+    expect(book.personalAddresses).toEqual([PERSONAL]);
   });
 
   // The server resolves a sole membership silently, so a cart that never
@@ -72,7 +72,7 @@ describe("getCheckoutAddressBook", () => {
     const book = await getCheckoutAddressBook(null);
 
     expect(book.company).toEqual(COMPANY);
-    expect(book.addresses).toEqual([COMPANY_SITE]);
+    expect(book.companyAddresses).toEqual([COMPANY_SITE]);
   });
 
   // Refusing to guess, exactly as the server does — picking wrong would
@@ -88,14 +88,16 @@ describe("getCheckoutAddressBook", () => {
     const book = await getCheckoutAddressBook(null);
 
     expect(book.company).toBeNull();
-    expect(book.addresses).toEqual([PERSONAL]);
+    expect(book.companyAddresses).toEqual([]);
+    expect(book.personalAddresses).toEqual([PERSONAL]);
   });
 
   it("gives a buyer with no memberships their own book", async () => {
     const book = await getCheckoutAddressBook(null);
 
     expect(book.company).toBeNull();
-    expect(book.addresses).toEqual([PERSONAL]);
+    expect(book.companyAddresses).toEqual([]);
+    expect(book.personalAddresses).toEqual([PERSONAL]);
   });
 
   // Standing is the server's to judge: a node it refuses to read is one this
@@ -106,6 +108,7 @@ describe("getCheckoutAddressBook", () => {
     const book = await getCheckoutAddressBook("comp_gone");
 
     expect(book.company).toBeNull();
-    expect(book.addresses).toEqual([PERSONAL]);
+    expect(book.companyAddresses).toEqual([]);
+    expect(book.personalAddresses).toEqual([PERSONAL]);
   });
 });

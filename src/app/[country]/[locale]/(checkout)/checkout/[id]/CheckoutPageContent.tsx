@@ -114,7 +114,10 @@ function CheckoutPageContentInner({
   const [savedAddresses, setSavedAddresses] = useState<Address[]>(
     initialData?.savedAddresses ?? [],
   );
-  // When set, `savedAddresses` is this company's book rather than the buyer's.
+  const [companyAddresses, setCompanyAddresses] = useState<Address[]>(
+    initialData?.companyAddresses ?? [],
+  );
+  // The company the purchase is for; its sites are offered beside the buyer's.
   const [company, setCompany] = useState(initialData?.company ?? null);
   const [isAuthenticated, setIsAuthenticated] = useState(
     initialData?.isAuthenticated ?? false,
@@ -237,7 +240,8 @@ function CheckoutPageContentInner({
 
       setCart(cartData);
       setCountries(countriesData.data);
-      setSavedAddresses(addressBook.addresses);
+      setSavedAddresses(addressBook.personalAddresses);
+      setCompanyAddresses(addressBook.companyAddresses);
       setCompany(addressBook.company);
       setIsAuthenticated(authStatus);
 
@@ -718,17 +722,18 @@ function CheckoutPageContentInner({
             cart={cart}
             countries={countries}
             savedAddresses={savedAddresses}
+            companyAddresses={companyAddresses}
             company={company}
             isAuthenticated={isAuthenticated}
             signInUrl={`${basePath}/account?redirect=${encodeURIComponent(pathname)}`}
             fetchStates={fetchStates}
             onEmailBlur={handleEmailBlur}
             onAutoSave={handleAutoSave}
-            // A company site belongs to the organization's book, not to this
-            // buyer's — correcting one is the account area's job, and the
-            // customer address endpoint would refuse it anyway.
+            // Editing stays available for the buyer's own entries; the
+            // selector withholds it from the company group, whose rows the
+            // customer address endpoint would refuse to write.
             onUpdateSavedAddress={
-              isAuthenticated && !company ? handleUpdateSavedAddress : undefined
+              isAuthenticated ? handleUpdateSavedAddress : undefined
             }
             errors={sectionErrors.address}
             saving={saving}

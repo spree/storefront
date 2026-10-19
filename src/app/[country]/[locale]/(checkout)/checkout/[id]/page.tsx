@@ -15,8 +15,9 @@ export interface CheckoutInitialData {
   countries: Country[];
   savedAddresses: Address[];
   isAuthenticated: boolean;
-  /** Set when the purchase is for a company — `savedAddresses` is then that
-   * company's book rather than the buyer's own. */
+  /** The company's sites, offered beside the buyer's own book when the
+   * purchase is for a company. */
+  companyAddresses: Address[];
   company: { id: string; name: string } | null;
 }
 
@@ -53,7 +54,11 @@ async function CheckoutDataLoader({ params }: CheckoutPageProps) {
   const addressBook =
     authStatus && cartData
       ? await getCheckoutAddressBook(cartData.company_id)
-      : { company: null, addresses: [] as Address[] };
+      : {
+          company: null,
+          companyAddresses: [] as Address[],
+          personalAddresses: [] as Address[],
+        };
 
   const countriesData = market
     ? await getMarketCountries(market.id).catch(() => ({
@@ -72,8 +77,9 @@ async function CheckoutDataLoader({ params }: CheckoutPageProps) {
     ? {
         cart: cartData,
         countries: countriesData.data,
-        savedAddresses: addressBook.addresses,
+        savedAddresses: addressBook.personalAddresses,
         isAuthenticated: authStatus,
+        companyAddresses: addressBook.companyAddresses,
         company: addressBook.company,
       }
     : null;

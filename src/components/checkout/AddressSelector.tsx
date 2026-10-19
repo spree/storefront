@@ -9,8 +9,23 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import type { User } from "@/contexts/AuthContext";
 import type { AddressFormData } from "@/lib/utils/address";
 
+/**
+ * A set of saved addresses under the name of the book they came from. A B2B
+ * checkout offers the company's sites beside the buyer's own, and the heading
+ * is what keeps a warehouse and someone's flat tellable apart in one list.
+ */
+export interface AddressGroup {
+  key: string;
+  /** Omitted when there is only one book, which needs no label. */
+  heading?: string;
+  addresses: Address[];
+  /** Company sites belong to the organization's book — correcting one is the
+   * account area's job, and the customer endpoint would refuse it. */
+  editable: boolean;
+}
+
 interface AddressSelectorProps {
-  savedAddresses: Address[];
+  groups: AddressGroup[];
   currentAddress: AddressFormData;
   countries: Country[];
   states: State[];
@@ -24,7 +39,7 @@ interface AddressSelectorProps {
 }
 
 export function AddressSelector({
-  savedAddresses,
+  groups,
   currentAddress,
   countries,
   states,
@@ -38,6 +53,16 @@ export function AddressSelector({
 }: AddressSelectorProps) {
   const t = useTranslations("address");
   const tc = useTranslations("common");
+
+  const visibleGroups = useMemo(
+    () => groups.filter((group) => group.addresses.length > 0),
+    [groups],
+  );
+  const savedAddresses = useMemo(
+    () => visibleGroups.flatMap((group) => group.addresses),
+    [visibleGroups],
+  );
+
   // Derive selected address from current form data — no useEffect needed
   const selectedAddressId = useMemo((): string => {
     if (savedAddresses.length === 0) return "new";
@@ -102,43 +127,62 @@ export function AddressSelector({
           onValueChange={handleSelectAddress}
           className="rounded-sm border overflow-hidden gap-0"
         >
-          {savedAddresses.map((address, index) => (
-            <label
-              key={address.id}
-              className={`flex items-start gap-3 px-4 py-3.5 cursor-pointer transition-colors ${
-                selectedAddressId === address.id
-                  ? "bg-blue-50"
-                  : "bg-white hover:bg-gray-50"
-              } ${index > 0 ? "border-t" : ""}`}
-            >
-              <RadioGroupItem value={address.id} className="mt-0.5 shrink-0" />
-              <div className="flex-1 min-w-0">
-                <span className="text-sm text-gray-900">
-                  {address.full_name}
-                  {address.company && (
-                    <span className="text-gray-500">, {address.company}</span>
-                  )}
-                </span>
-                <p className="text-sm text-gray-500">
-                  {address.address1}
-                  {address.address2 && `, ${address.address2}`}, {address.city},{" "}
-                  {address.state_text || address.state_name}{" "}
-                  {address.postal_code}, {address.country_name}
-                </p>
-              </div>
-              {onEditAddress && (
-                <button
-                  type="button"
-                  onClick={(e) => {
-                    e.preventDefault();
-                    onEditAddress(address);
-                  }}
-                  className="text-xs text-gray-500 underline underline-offset-2 hover:text-gray-900 flex-shrink-0"
+          {visibleGroups.map((group, groupIndex) => (
+            <div key={group.key}>
+              {/* Labelled only when there is a second book to tell it from. */}
+              {group.heading && visibleGroups.length > 1 && (
+                <p
+                  className={`px-4 py-2 bg-gray-50 text-xs font-medium uppercase tracking-wide text-gray-500 ${
+                    groupIndex > 0 ? "border-t" : ""
+                  }`}
                 >
-                  {tc("edit")}
-                </button>
+                  {group.heading}
+                </p>
               )}
-            </label>
+              {group.addresses.map((address, index) => (
+                <label
+                  key={address.id}
+                  className={`flex items-start gap-3 px-4 py-3.5 cursor-pointer transition-colors ${
+                    selectedAddressId === address.id
+                      ? "bg-blue-50"
+                      : "bg-white hover:bg-gray-50"
+                  } ${groupIndex > 0 || index > 0 ? "border-t" : ""}`}
+                >
+                  <RadioGroupItem
+                    value={address.id}
+                    className="mt-0.5 shrink-0"
+                  />
+                  <div className="flex-1 min-w-0">
+                    <span className="text-sm text-gray-900">
+                      {address.full_name}
+                      {address.company && (
+                        <span className="text-gray-500">
+                          , {address.company}
+                        </span>
+                      )}
+                    </span>
+                    <p className="text-sm text-gray-500">
+                      {address.address1}
+                      {address.address2 && `, ${address.address2}`},{" "}
+                      {address.city}, {address.state_text || address.state_name}{" "}
+                      {address.postal_code}, {address.country_name}
+                    </p>
+                  </div>
+                  {onEditAddress && group.editable && (
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        onEditAddress(address);
+                      }}
+                      className="text-xs text-gray-500 underline underline-offset-2 hover:text-gray-900 flex-shrink-0"
+                    >
+                      {tc("edit")}
+                    </button>
+                  )}
+                </label>
+              ))}
+            </div>
           ))}
 
           {/* Use a different address option */}

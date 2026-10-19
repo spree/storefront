@@ -267,8 +267,7 @@
     "policyConsentRequired": "Vous devez accepter les politiques du magasin avant de passer votre commande",
     "iAgreeToThe": "J'accepte les",
     "policySeparatorComma": ", ",
-    "policySeparatorAnd": " et ",
-    "companyAddresses": "Livraison vers un site enregistré par {company}."
+    "policySeparatorAnd": " et "
   },
   "address": {
     "firstName": "Prenom",
@@ -299,7 +298,8 @@
     "edit": "Modifier",
     "failedToDeleteAddress": "Echec de la suppression de l'adresse. Veuillez reessayer.",
     "addFirstAddress": "Ajoutez votre premiere adresse",
-    "addAddress": "Ajouter une adresse"
+    "addAddress": "Ajouter une adresse",
+    "yourAddresses": "Vos adresses"
   },
   "account": {
     "myAccount": "Mon compte",

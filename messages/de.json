@@ -267,8 +267,7 @@
     "policyConsentRequired": "Sie müssen den Geschäftsrichtlinien zustimmen, bevor Sie Ihre Bestellung aufgeben",
     "iAgreeToThe": "Ich stimme zu",
     "policySeparatorComma": ", ",
-    "policySeparatorAnd": " und ",
-    "companyAddresses": "Lieferung an einen von {company} gespeicherten Standort."
+    "policySeparatorAnd": " und "
   },
   "address": {
     "firstName": "Vorname",
@@ -299,7 +298,8 @@
     "edit": "Bearbeiten",
     "failedToDeleteAddress": "Adresse konnte nicht gelöscht werden. Bitte versuchen Sie es erneut.",
     "addFirstAddress": "Erste Adresse hinzufügen",
-    "addAddress": "Adresse hinzufügen"
+    "addAddress": "Adresse hinzufügen",
+    "yourAddresses": "Ihre Adressen"
   },
   "account": {
     "myAccount": "Mein Konto",

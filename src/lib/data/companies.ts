@@ -47,11 +47,14 @@ export async function getCompanyAddresses(companyId: string) {
 }
 
 /**
- * Which addresses checkout may offer for this cart.
+ * Which addresses checkout may offer for this cart, split by the book they
+ * came out of so the picker can label them.
  *
- * A purchase for a company ships to the company's sites, and only to those:
- * offering someone's home address beside them is how a pallet ends up on a
- * driveway. A personal purchase gets the buyer's own book as before.
+ * A purchase for a company offers the company's sites *and* the buyer's own,
+ * which is exactly what the cart accepts as `shipping_address_id`. The two
+ * are kept apart rather than merged: a warehouse and someone's flat in one
+ * unlabelled list is how a pallet ends up on a driveway, so the guard against
+ * that mis-click is making the distinction visible, not hiding half the list.
  *
  * The company is the cart's own choice when it made one. Otherwise a buyer
  * with exactly one membership is unambiguous and resolves to it — which is
@@ -66,17 +69,20 @@ export async function getCheckoutAddressBook(
 ): Promise<{
   /** The company the purchase is for, or null for a personal one. */
   company: { id: string; name: string } | null;
-  /** What the cart will accept as `shipping_address_id`. */
-  addresses: Address[];
+  /** The company's sites, including the ones it inherits. Empty without one. */
+  companyAddresses: Address[];
+  /** The buyer's own book. */
+  personalAddresses: Address[];
 }> {
   const company = await resolveCompany(cartCompanyId);
+  const { data: personalAddresses } = await getAddresses();
+
   if (!company) {
-    const { data } = await getAddresses();
-    return { company: null, addresses: data };
+    return { company: null, companyAddresses: [], personalAddresses };
   }
 
-  const { data } = await getCompanyAddresses(company.id);
-  return { company, addresses: data };
+  const { data: companyAddresses } = await getCompanyAddresses(company.id);
+  return { company, companyAddresses, personalAddresses };
 }
 
 async function resolveCompany(cartCompanyId: string | null | undefined) {
