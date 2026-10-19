@@ -1,8 +1,7 @@
 "use server";
 
-import type { Address, Company } from "@spree/sdk";
+import type { Address, Company, SelectableAddress } from "@spree/sdk";
 import { getClient, withAuthRefresh } from "@/lib/spree";
-import { getAddresses } from "./addresses";
 import { withFallback } from "./utils";
 
 /** The buyer's company memberships in this store, each with its node. */
@@ -47,56 +46,26 @@ export async function getCompanyAddresses(
 }
 
 /**
- * Which addresses checkout may offer for this cart, split by the book they
- * came out of so the picker can label them.
+ * Which addresses checkout may offer for this cart — the buyer's own book
+ * plus the sites of the company the purchase is for, each carrying the book
+ * it came out of so the picker can label them.
  *
- * A purchase for a company offers the company's sites *and* the buyer's own,
- * which is exactly what the cart accepts as `shipping_address_id`. The two
- * are kept apart rather than merged: a warehouse and someone's flat in one
- * unlabelled list is how a pallet ends up on a driveway, so the guard against
- * that mis-click is making the distinction visible, not hiding half the list.
+ * The cart is asked rather than the two books separately, because the cart is
+ * the one place that knows which company the purchase is for. That is not
+ * always stated: a buyer with a single membership gets it resolved for them,
+ * and reproducing that rule here is how checkout ends up offering a book the
+ * cart would then refuse an id from.
  *
- * The company is the cart's own choice when it made one. Otherwise a buyer
- * with exactly one membership is unambiguous and resolves to it — which is
- * what the server does when the cart stays silent, so checkout has to offer
- * the same book the cart would accept an id from.
- *
- * @param cartCompanyId `company_id` from the cart, null until the buyer picks
- *   a node and when they are buying personally.
+ * Requires a signed-in customer. A guest has no book and no company, so
+ * callers skip it rather than spend a failing round-trip.
  */
-export async function getCheckoutAddressBook(
-  cartCompanyId: string | null | undefined,
-): Promise<{
-  /** The company the purchase is for, or null for a personal one. */
-  company: { id: string; name: string } | null;
-  /** The company's sites, including the ones it inherits. Empty without one. */
-  companyAddresses: Address[];
-  /** The buyer's own book. */
-  personalAddresses: Address[];
-}> {
-  const company = await resolveCompany(cartCompanyId);
-  const { data: personalAddresses } = await getAddresses();
-
-  if (!company) {
-    return { company: null, companyAddresses: [], personalAddresses };
-  }
-
-  const companyAddresses = await getCompanyAddresses(company.id);
-  return { company, companyAddresses, personalAddresses };
-}
-
-async function resolveCompany(cartCompanyId: string | null | undefined) {
-  // Read the named node rather than matching it against the membership rows:
-  // standing covers a node and everything beneath it, so a buyer may legitimately
-  // buy for a division they hold no membership row of their own on.
-  if (cartCompanyId) {
-    const company = await getCompany(cartCompanyId);
-    return company ? { id: company.id, name: company.name } : null;
-  }
-
-  const { data: memberships } = await getCompanyMemberships();
-  if (memberships.length !== 1) return null;
-
-  const sole = memberships[0]?.company;
-  return sole ? { id: sole.id, name: sole.name } : null;
+export async function getCartAddresses(
+  cartId: string,
+): Promise<SelectableAddress[]> {
+  return withFallback(async () => {
+    const { data } = await withAuthRefresh(async (options) => {
+      return getClient().carts.addresses.list(cartId, undefined, options);
+    });
+    return data;
+  }, []);
 }

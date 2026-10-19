@@ -1,6 +1,6 @@
 "use client";
 
-import type { Address, Country, State } from "@spree/sdk";
+import type { Address, Country, SelectableAddress, State } from "@spree/sdk";
 import { MapPin } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useCallback, useMemo } from "react";
@@ -22,6 +22,53 @@ export interface AddressGroup {
   /** Company sites belong to the organization's book — correcting one is the
    * account area's job, and the customer endpoint would refuse it. */
   editable: boolean;
+}
+
+/**
+ * Splits what the cart accepts into the books it came from: the company's
+ * sites first, then the buyer's own.
+ *
+ * Grouped by owner rather than by "company vs mine", so a division's own
+ * docks and the headquarters sites it inherits appear under the name of the
+ * node that actually holds them. Filing an inherited site under the division
+ * tells the buyer it is somewhere it is not.
+ *
+ * @param personalLabel what to call the buyer's own book, in their language
+ */
+export function groupByBook(
+  addresses: SelectableAddress[],
+  personalLabel: string,
+): AddressGroup[] {
+  const companyGroups = new Map<string, AddressGroup>();
+  const personal: Address[] = [];
+
+  for (const address of addresses) {
+    if (address.owner.type !== "company") {
+      personal.push(address);
+      continue;
+    }
+
+    const group = companyGroups.get(address.owner.id) ?? {
+      key: address.owner.id,
+      heading: address.owner.name ?? undefined,
+      addresses: [],
+      // The organization's book; the account area curates it, and the
+      // customer address endpoint would refuse the write.
+      editable: false,
+    };
+    group.addresses.push(address);
+    companyGroups.set(address.owner.id, group);
+  }
+
+  return [
+    ...companyGroups.values(),
+    {
+      key: "personal",
+      heading: personalLabel,
+      addresses: personal,
+      editable: true,
+    },
+  ];
 }
 
 interface AddressSelectorProps {

@@ -1,9 +1,9 @@
-import type { Address, Cart, Country } from "@spree/sdk";
+import type { Cart, Country, SelectableAddress } from "@spree/sdk";
 import { redirect } from "next/navigation";
 import { connection } from "next/server";
 import { Suspense } from "react";
 import { getCheckoutOrder } from "@/lib/data/checkout";
-import { getCheckoutAddressBook } from "@/lib/data/companies";
+import { getCartAddresses } from "@/lib/data/companies";
 import { isAuthenticated as checkAuth } from "@/lib/data/cookies";
 import { getCountry } from "@/lib/data/countries";
 import { getMarketCountries, resolveMarket } from "@/lib/data/markets";
@@ -13,12 +13,10 @@ import { CheckoutPageContent } from "./CheckoutPageContent";
 export interface CheckoutInitialData {
   cart: Cart;
   countries: Country[];
-  savedAddresses: Address[];
   isAuthenticated: boolean;
-  /** The company's sites, offered beside the buyer's own book when the
-   * purchase is for a company. */
-  companyAddresses: Address[];
-  company: { id: string; name: string } | null;
+  /** Everything the cart accepts — the buyer's own book plus the sites of the
+   * company the purchase is for, each naming the book it came out of. */
+  selectableAddresses: SelectableAddress[];
 }
 
 interface CheckoutPageProps {
@@ -49,16 +47,11 @@ async function CheckoutDataLoader({ params }: CheckoutPageProps) {
     redirect(`${basePath}/order-placed/${cartId}`);
   }
 
-  // Which book checkout may offer depends on who the purchase is for, so it
-  // follows the cart rather than being fetched beside it.
-  const addressBook =
-    authStatus && cartData
-      ? await getCheckoutAddressBook(cartData.company_id)
-      : {
-          company: null,
-          companyAddresses: [] as Address[],
-          personalAddresses: [] as Address[],
-        };
+  // Which addresses checkout may offer depends on who the purchase is for, so
+  // the cart is asked rather than the books fetched beside it. Guests keep no
+  // book and the call needs an account, so skip it for them.
+  const selectableAddresses =
+    authStatus && cartData ? await getCartAddresses(cartData.id) : [];
 
   const countriesData = market
     ? await getMarketCountries(market.id).catch(() => ({
@@ -77,10 +70,8 @@ async function CheckoutDataLoader({ params }: CheckoutPageProps) {
     ? {
         cart: cartData,
         countries: countriesData.data,
-        savedAddresses: addressBook.personalAddresses,
         isAuthenticated: authStatus,
-        companyAddresses: addressBook.companyAddresses,
-        company: addressBook.company,
+        selectableAddresses,
       }
     : null;
 

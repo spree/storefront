@@ -6,6 +6,7 @@ import type {
   Cart,
   CartAddressParams,
   Country,
+  SelectableAddress,
 } from "@spree/sdk";
 import { CircleAlert, Loader2 } from "lucide-react";
 import dynamic from "next/dynamic";
@@ -46,7 +47,7 @@ import {
   selectDeliveryRate,
   updateOrderAddresses,
 } from "@/lib/data/checkout";
-import { getCheckoutAddressBook } from "@/lib/data/companies";
+import { getCartAddresses } from "@/lib/data/companies";
 import { isAuthenticated as checkAuth } from "@/lib/data/cookies";
 import { getCountry } from "@/lib/data/countries";
 import { getMarketCountries, resolveMarket } from "@/lib/data/markets";
@@ -111,14 +112,10 @@ function CheckoutPageContentInner({
   const [countries, setCountries] = useState<Country[]>(
     initialData?.countries ?? [],
   );
-  const [savedAddresses, setSavedAddresses] = useState<Address[]>(
-    initialData?.savedAddresses ?? [],
-  );
-  const [companyAddresses, setCompanyAddresses] = useState<Address[]>(
-    initialData?.companyAddresses ?? [],
-  );
-  // The company the purchase is for; its sites are offered beside the buyer's.
-  const [company, setCompany] = useState(initialData?.company ?? null);
+  // Everything the cart accepts, each entry naming the book it came out of.
+  const [selectableAddresses, setSelectableAddresses] = useState<
+    SelectableAddress[]
+  >(initialData?.selectableAddresses ?? []);
   const [isAuthenticated, setIsAuthenticated] = useState(
     initialData?.isAuthenticated ?? false,
   );
@@ -217,18 +214,12 @@ function CheckoutPageContentInner({
         checkAuth(),
       ]);
 
-      // The book follows the cart: a company named since the last load
-      // changes which addresses may be offered. Guests keep no book and have
-      // no company, and both lookups need a customer JWT — so skip them
-      // rather than spend two failing round-trips on every refresh.
-      const addressBook =
-        authStatus && cartData
-          ? await getCheckoutAddressBook(cartData.company_id)
-          : {
-              company: null,
-              companyAddresses: [] as Address[],
-              personalAddresses: [] as Address[],
-            };
+      // The list follows the cart: a company named since the last load changes
+      // which addresses may be offered. Guests keep no book and the call needs
+      // a customer JWT, so skip it rather than spend a failing round-trip on
+      // every refresh.
+      const addresses =
+        authStatus && cartData ? await getCartAddresses(cartData.id) : [];
 
       const countriesData = market
         ? await getMarketCountries(market.id).catch(() => ({
@@ -249,9 +240,7 @@ function CheckoutPageContentInner({
 
       setCart(cartData);
       setCountries(countriesData.data);
-      setSavedAddresses(addressBook.personalAddresses);
-      setCompanyAddresses(addressBook.companyAddresses);
-      setCompany(addressBook.company);
+      setSelectableAddresses(addresses);
       setIsAuthenticated(authStatus);
 
       return cartData;
@@ -730,9 +719,7 @@ function CheckoutPageContentInner({
           <AddressSection
             cart={cart}
             countries={countries}
-            savedAddresses={savedAddresses}
-            companyAddresses={companyAddresses}
-            company={company}
+            selectableAddresses={selectableAddresses}
             isAuthenticated={isAuthenticated}
             signInUrl={`${basePath}/account?redirect=${encodeURIComponent(pathname)}`}
             fetchStates={fetchStates}

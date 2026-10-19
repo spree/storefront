@@ -1,16 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const mockClient = {
-  account: {
-    companies: vi.fn(),
-  },
-  companies: {
-    get: vi.fn(),
-    addresses: {
-      list: vi.fn(),
-    },
-  },
-  customer: {
+  carts: {
     addresses: {
       list: vi.fn(),
     },
@@ -24,91 +15,46 @@ vi.mock("@/lib/spree", () => ({
 
 vi.mock("next/cache", () => ({ updateTag: vi.fn() }));
 
-const COMPANY = { id: "comp_hq", name: "Acme Logistics" };
-const COMPANY_SITE = { id: "addr_dock", address1: "14 Dock Road" };
-const PERSONAL = { id: "addr_home", address1: "3 Laburnum Grove" };
+const COMPANY_SITE = {
+  id: "addr_dock",
+  address1: "14 Dock Road",
+  owner: { id: "comp_hq", type: "company", name: "Acme Logistics" },
+};
+const PERSONAL = {
+  id: "addr_home",
+  address1: "3 Laburnum Grove",
+  owner: { id: "cust_1", type: "customer", name: null },
+};
 
-import { getCheckoutAddressBook } from "../companies";
+import { getCartAddresses } from "../companies";
 
-describe("getCheckoutAddressBook", () => {
+describe("getCartAddresses", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    mockClient.companies.get.mockResolvedValue(COMPANY);
-    mockClient.companies.addresses.list.mockResolvedValue({
-      data: [COMPANY_SITE],
+    mockClient.carts.addresses.list.mockResolvedValue({
+      data: [COMPANY_SITE, PERSONAL],
     });
-    mockClient.customer.addresses.list.mockResolvedValue({ data: [PERSONAL] });
-    mockClient.account.companies.mockResolvedValue({ data: [] });
   });
 
-  it("offers the company's sites when the cart names one", async () => {
-    const book = await getCheckoutAddressBook("comp_hq");
+  // Both books come from the cart in one call: it is the only party that
+  // knows which company the purchase is for, including the one a buyer with
+  // a single membership never had to state.
+  it("asks the cart for both books at once", async () => {
+    const addresses = await getCartAddresses("cart_1");
 
-    expect(mockClient.companies.addresses.list).toHaveBeenCalledWith(
-      "comp_hq",
+    expect(mockClient.carts.addresses.list).toHaveBeenCalledWith(
+      "cart_1",
       undefined,
       expect.anything(),
     );
-    expect(book.company).toEqual(COMPANY);
-    expect(book.companyAddresses).toEqual([COMPANY_SITE]);
+    expect(addresses).toEqual([COMPANY_SITE, PERSONAL]);
   });
 
-  // Both books are selectable — the cart accepts an id from either — so the
-  // picker offers both and tells them apart by heading rather than hiding one.
-  it("offers the buyer's own book beside the company's", async () => {
-    const book = await getCheckoutAddressBook("comp_hq");
+  // Checkout has to render with whatever it has; an unreachable book means
+  // the buyer types an address rather than seeing an error page.
+  it("offers nothing when the call fails", async () => {
+    mockClient.carts.addresses.list.mockRejectedValue(new Error("boom"));
 
-    expect(book.companyAddresses).toEqual([COMPANY_SITE]);
-    expect(book.personalAddresses).toEqual([PERSONAL]);
-  });
-
-  // The server resolves a sole membership silently, so a cart that never
-  // named a company still accepts that company's sites.
-  it("resolves a sole membership when the cart named nothing", async () => {
-    mockClient.account.companies.mockResolvedValue({
-      data: [{ company: COMPANY }],
-    });
-
-    const book = await getCheckoutAddressBook(null);
-
-    expect(book.company).toEqual(COMPANY);
-    expect(book.companyAddresses).toEqual([COMPANY_SITE]);
-  });
-
-  // Refusing to guess, exactly as the server does — picking wrong would
-  // deliver one business's goods to another's dock.
-  it("falls back to the personal book when several memberships could apply", async () => {
-    mockClient.account.companies.mockResolvedValue({
-      data: [
-        { company: COMPANY },
-        { company: { id: "comp_other", name: "B" } },
-      ],
-    });
-
-    const book = await getCheckoutAddressBook(null);
-
-    expect(book.company).toBeNull();
-    expect(book.companyAddresses).toEqual([]);
-    expect(book.personalAddresses).toEqual([PERSONAL]);
-  });
-
-  it("gives a buyer with no memberships their own book", async () => {
-    const book = await getCheckoutAddressBook(null);
-
-    expect(book.company).toBeNull();
-    expect(book.companyAddresses).toEqual([]);
-    expect(book.personalAddresses).toEqual([PERSONAL]);
-  });
-
-  // Standing is the server's to judge: a node it refuses to read is one this
-  // buyer may not act for, and offering nothing is safer than guessing.
-  it("falls back to the personal book when the named node cannot be read", async () => {
-    mockClient.companies.get.mockRejectedValue(new Error("not found"));
-
-    const book = await getCheckoutAddressBook("comp_gone");
-
-    expect(book.company).toBeNull();
-    expect(book.companyAddresses).toEqual([]);
-    expect(book.personalAddresses).toEqual([PERSONAL]);
+    expect(await getCartAddresses("cart_1")).toEqual([]);
   });
 });
