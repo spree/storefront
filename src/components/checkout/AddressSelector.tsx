@@ -157,15 +157,30 @@ export function AddressSelector({
                       {address.full_name}
                       {address.company && (
                         <span className="text-gray-500">
-                          , {address.company}
+                          {address.full_name ? ", " : ""}
+                          {address.company}
                         </span>
                       )}
                     </span>
+                    {/* Joined from the parts that are actually present: a
+                        company site names no person, and plenty of countries
+                        have no subdivision, so interleaving separators by hand
+                        leaves stray commas and double spaces. */}
                     <p className="text-sm text-gray-500">
-                      {address.address1}
-                      {address.address2 && `, ${address.address2}`},{" "}
-                      {address.city}, {address.state_text || address.state_name}{" "}
-                      {address.postal_code}, {address.country_name}
+                      {[
+                        address.address1,
+                        address.address2,
+                        address.city,
+                        [
+                          address.state_text || address.state_name,
+                          address.postal_code,
+                        ]
+                          .filter(Boolean)
+                          .join(" "),
+                        address.country_name,
+                      ]
+                        .filter(Boolean)
+                        .join(", ")}
                     </p>
                   </div>
                   {onEditAddress && group.editable && (
