@@ -543,6 +543,29 @@
     "successDescription": "Ihr Passwort wurde aktualisiert. Sie können sich jetzt mit Ihrem neuen Passwort anmelden.",
     "signIn": "Anmelden"
   },
+  "dataRequestConfirmation": {
+    "loading": "Ihr Link wird geprüft...",
+    "invalidLink": "Ungültiger Link",
+    "invalidLinkDescription": "Dieser Bestätigungslink ist ungültig oder abgelaufen. Stellen Sie die Anfrage erneut in Ihrem Konto.",
+    "confirming": "Wird bestätigt...",
+    "confirmed": "Anfrage bestätigt",
+    "ignore": "Wenn Sie diese Anfrage nicht gestellt haben, schließen Sie diese Seite. Es passiert nichts.",
+    "genericError": "Etwas ist schiefgelaufen. Bitte versuchen Sie es erneut.",
+    "backToStore": "Zurück zum Shop",
+    "access": {
+      "title": "Datenanfrage bestätigen",
+      "description": "Sie haben eine Kopie der personenbezogenen Daten angefordert, die dieser Shop über Sie speichert. Bestätigen Sie die Anfrage, und wir senden Ihnen einen Download-Link per E-Mail, sobald die Datei bereit ist.",
+      "confirm": "Anfrage bestätigen",
+      "confirmedDescription": "Wir bereiten Ihre Daten vor und senden Ihnen einen Download-Link per E-Mail, sobald sie bereit sind."
+    },
+    "erasure": {
+      "title": "Löschanfrage bestätigen",
+      "description": "Sie haben uns gebeten, die personenbezogenen Daten, die dieser Shop über Sie speichert, dauerhaft zu löschen, einschließlich der Namen und Adressen auf Ihren früheren Bestellungen.",
+      "warning": "Dies kann nicht rückgängig gemacht werden.",
+      "confirm": "Meine Daten löschen",
+      "confirmedDescription": "Ihre personenbezogenen Daten werden in Kürze gelöscht."
+    }
+  },
   "policies": {
     "policyNotFound": "Richtlinie nicht gefunden",
     "noContent": "Für diese Richtlinie sind keine Inhalte verfügbar.",

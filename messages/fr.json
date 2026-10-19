@@ -543,6 +543,29 @@
     "successDescription": "Votre mot de passe a ete mis a jour. Vous pouvez maintenant vous connecter avec votre nouveau mot de passe.",
     "signIn": "Se connecter"
   },
+  "dataRequestConfirmation": {
+    "loading": "Vérification de votre lien...",
+    "invalidLink": "Lien invalide",
+    "invalidLinkDescription": "Ce lien de confirmation est invalide ou a expiré. Refaites la demande depuis votre compte.",
+    "confirming": "Confirmation...",
+    "confirmed": "Demande confirmée",
+    "ignore": "Si vous n'avez pas fait cette demande, fermez cette page et rien ne se passera.",
+    "genericError": "Une erreur s'est produite. Veuillez réessayer.",
+    "backToStore": "Retour à la boutique",
+    "access": {
+      "title": "Confirmez votre demande de données",
+      "description": "Vous avez demandé une copie des données personnelles que cette boutique détient à votre sujet. Confirmez la demande et nous vous enverrons par e-mail un lien de téléchargement dès qu'elle sera prête.",
+      "confirm": "Confirmer la demande",
+      "confirmedDescription": "Nous préparons vos données et vous enverrons par e-mail un lien de téléchargement dès qu'elles seront prêtes."
+    },
+    "erasure": {
+      "title": "Confirmez votre demande d'effacement",
+      "description": "Vous nous avez demandé d'effacer définitivement les données personnelles que cette boutique détient à votre sujet, y compris les noms et adresses de vos commandes passées.",
+      "warning": "Cette action est irréversible.",
+      "confirm": "Effacer mes données",
+      "confirmedDescription": "Vos données personnelles seront effacées sous peu."
+    }
+  },
   "policies": {
     "policyNotFound": "Politique introuvable",
     "noContent": "Aucun contenu disponible pour cette politique.",

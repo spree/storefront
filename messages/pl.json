@@ -543,6 +543,29 @@
     "successDescription": "Twoje hasło zostało zaktualizowane. Możesz się teraz zalogować nowym hasłem.",
     "signIn": "Zaloguj się"
   },
+  "dataRequestConfirmation": {
+    "loading": "Sprawdzamy Twój link...",
+    "invalidLink": "Nieprawidłowy link",
+    "invalidLinkDescription": "Ten link potwierdzający jest nieprawidłowy lub wygasł. Złóż wniosek ponownie na swoim koncie.",
+    "confirming": "Potwierdzanie...",
+    "confirmed": "Wniosek potwierdzony",
+    "ignore": "Jeśli to nie Ty złożyłeś ten wniosek, zamknij tę stronę. Nic się nie stanie.",
+    "genericError": "Coś poszło nie tak. Spróbuj ponownie.",
+    "backToStore": "Wróć do sklepu",
+    "access": {
+      "title": "Potwierdź wniosek o dane",
+      "description": "Poprosiłeś o kopię danych osobowych, które ten sklep przechowuje na Twój temat. Potwierdź wniosek, a wyślemy Ci e-mailem link do pobrania, gdy plik będzie gotowy.",
+      "confirm": "Potwierdź wniosek",
+      "confirmedDescription": "Przygotowujemy Twoje dane i wyślemy Ci e-mailem link do pobrania, gdy będą gotowe."
+    },
+    "erasure": {
+      "title": "Potwierdź wniosek o usunięcie danych",
+      "description": "Poprosiłeś o trwałe usunięcie danych osobowych, które ten sklep przechowuje na Twój temat, w tym imion, nazwisk i adresów z Twoich wcześniejszych zamówień.",
+      "warning": "Tej operacji nie można cofnąć.",
+      "confirm": "Usuń moje dane",
+      "confirmedDescription": "Twoje dane osobowe zostaną wkrótce usunięte."
+    }
+  },
   "policies": {
     "policyNotFound": "Nie znaleziono regulaminu",
     "noContent": "Brak treści dla tego regulaminu.",

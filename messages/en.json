@@ -543,6 +543,29 @@
     "successDescription": "Your password has been updated. You can now sign in with your new password.",
     "signIn": "Sign in"
   },
+  "dataRequestConfirmation": {
+    "loading": "Checking your link...",
+    "invalidLink": "Invalid link",
+    "invalidLinkDescription": "This confirmation link is invalid or has expired. Make the request again from your account.",
+    "confirming": "Confirming...",
+    "confirmed": "Request confirmed",
+    "ignore": "If you did not make this request, close this page and nothing will happen.",
+    "genericError": "Something went wrong. Please try again.",
+    "backToStore": "Back to the store",
+    "access": {
+      "title": "Confirm your data request",
+      "description": "You asked for a copy of the personal data this store holds about you. Confirm the request and we will email you a download link when it is ready.",
+      "confirm": "Confirm request",
+      "confirmedDescription": "We are preparing your data and will email you a download link when it is ready."
+    },
+    "erasure": {
+      "title": "Confirm your erasure request",
+      "description": "You asked us to permanently erase the personal data this store holds about you, including the names and addresses on your past orders.",
+      "warning": "This cannot be undone.",
+      "confirm": "Erase my data",
+      "confirmedDescription": "Your personal data will be erased shortly."
+    }
+  },
   "policies": {
     "policyNotFound": "Policy Not Found",
     "noContent": "No content available for this policy.",

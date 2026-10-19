@@ -543,6 +543,29 @@
     "successDescription": "Tu contrasena ha sido actualizada. Ahora puedes iniciar sesion con tu nueva contrasena.",
     "signIn": "Iniciar sesion"
   },
+  "dataRequestConfirmation": {
+    "loading": "Comprobando tu enlace...",
+    "invalidLink": "Enlace no válido",
+    "invalidLinkDescription": "Este enlace de confirmación no es válido o ha caducado. Vuelve a hacer la solicitud desde tu cuenta.",
+    "confirming": "Confirmando...",
+    "confirmed": "Solicitud confirmada",
+    "ignore": "Si no has hecho esta solicitud, cierra esta página y no ocurrirá nada.",
+    "genericError": "Algo salió mal. Inténtalo de nuevo.",
+    "backToStore": "Volver a la tienda",
+    "access": {
+      "title": "Confirma tu solicitud de datos",
+      "description": "Has pedido una copia de los datos personales que esta tienda guarda sobre ti. Confirma la solicitud y te enviaremos por correo un enlace de descarga cuando esté lista.",
+      "confirm": "Confirmar solicitud",
+      "confirmedDescription": "Estamos preparando tus datos y te enviaremos por correo un enlace de descarga cuando estén listos."
+    },
+    "erasure": {
+      "title": "Confirma tu solicitud de eliminación",
+      "description": "Nos has pedido eliminar de forma permanente los datos personales que esta tienda guarda sobre ti, incluidos los nombres y direcciones de tus pedidos anteriores.",
+      "warning": "Esta acción no se puede deshacer.",
+      "confirm": "Eliminar mis datos",
+      "confirmedDescription": "Tus datos personales se eliminarán en breve."
+    }
+  },
   "policies": {
     "policyNotFound": "Politica no encontrada",
     "noContent": "No hay contenido disponible para esta politica.",

@@ -102,6 +102,7 @@ describe("Spree locale middleware", () => {
     "/us/en/account/register",
     "/us/en/account/forgot-password",
     "/us/en/account/reset-password?token=reset-token",
+    "/us/en/account/data-requests/confirm?token=confirmation-token",
   ])("keeps the public account route accessible: %s", (pathname) => {
     const response = middleware(
       new NextRequest(`https://store.example${pathname}`),
