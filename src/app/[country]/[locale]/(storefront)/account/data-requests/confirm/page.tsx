@@ -41,7 +41,8 @@ export default function ConfirmDataRequestPage() {
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const basePath = extractBasePath(pathname);
-  const token = searchParams.get("token");
+  // Read once: the token is removed from the address bar right after.
+  const [token] = useState(() => searchParams.get("token"));
 
   const [state, setState] = useState<PageState>({ step: "loading" });
   const [submitting, setSubmitting] = useState(false);
@@ -62,6 +63,10 @@ export default function ConfirmDataRequestPage() {
     } else {
       setState({ step: "ready", dataRequest: lookup.dataRequest });
     }
+  }, [token]);
+
+  useEffect(() => {
+    if (token) window.history.replaceState(null, "", window.location.pathname);
   }, [token]);
 
   useEffect(() => {

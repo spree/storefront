@@ -65,8 +65,9 @@ export function DataRequestConfirmationEmail({
           <Hr style={hr} />
 
           <Text style={disclaimer}>
-            This link expires in 24 hours. If you didn't make this request, you
-            can ignore this email and nothing will happen.
+            Confirm the request within 24 hours of making it, or this link stops
+            working. If you didn't make this request, you can ignore this email
+            and nothing will happen.
           </Text>
 
           <Text style={footer}>
