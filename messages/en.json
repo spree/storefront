@@ -559,9 +559,9 @@
     "failedDescription": "We could not complete this request. Please make it again from your account, or contact us.",
     "access": {
       "title": "Confirm your data request",
-      "description": "You asked for a copy of the personal data this store holds about you. Confirm the request and we will email you a download link when it is ready.",
+      "description": "You asked for a copy of the personal data this store holds about you. Confirm the request, then come back to this page when the file is ready to download it.",
       "confirm": "Confirm request",
-      "confirmedDescription": "We are preparing your data and will email you a download link when it is ready.",
+      "confirmedDescription": "We are preparing your data. Open this page again later to download it.",
       "readyTitle": "Your data is ready",
       "readyDescription": "Download the file before the link expires.",
       "download": "Download your data",

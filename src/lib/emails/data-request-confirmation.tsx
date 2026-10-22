@@ -23,7 +23,7 @@ interface DataRequestConfirmationEmailProps {
 const COPY = {
   access: {
     heading: "Confirm your data request",
-    body: "We received a request for a copy of the personal data we hold about you. Once you confirm it, we will email you a link to download the file.",
+    body: "We received a request for a copy of the personal data we hold about you. Once you confirm it, open this link again when the file is ready to download it.",
   },
   erasure: {
     heading: "Confirm your erasure request",

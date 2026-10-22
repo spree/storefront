@@ -559,9 +559,9 @@
     "failedDescription": "Wir konnten diese Anfrage nicht abschließen. Bitte stellen Sie sie erneut in Ihrem Konto oder kontaktieren Sie uns.",
     "access": {
       "title": "Datenanfrage bestätigen",
-      "description": "Sie haben eine Kopie der personenbezogenen Daten angefordert, die dieser Shop über Sie speichert. Bestätigen Sie die Anfrage, und wir senden Ihnen einen Download-Link per E-Mail, sobald die Datei bereit ist.",
+      "description": "Sie haben eine Kopie der personenbezogenen Daten angefordert, die dieser Shop über Sie speichert. Bestätigen Sie die Anfrage und kehren Sie auf diese Seite zurück, sobald die Datei zum Herunterladen bereit ist.",
       "confirm": "Anfrage bestätigen",
-      "confirmedDescription": "Wir bereiten Ihre Daten vor und senden Ihnen einen Download-Link per E-Mail, sobald sie bereit sind.",
+      "confirmedDescription": "Wir bereiten Ihre Daten vor. Öffnen Sie diese Seite später erneut, um sie herunterzuladen.",
       "readyTitle": "Ihre Daten sind bereit",
       "readyDescription": "Laden Sie die Datei herunter, bevor der Link abläuft.",
       "download": "Meine Daten herunterladen",

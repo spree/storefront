@@ -559,9 +559,9 @@
     "failedDescription": "Nie udało się zrealizować tego wniosku. Złóż go ponownie na swoim koncie lub skontaktuj się z nami.",
     "access": {
       "title": "Potwierdź wniosek o dane",
-      "description": "Poprosiłeś o kopię danych osobowych, które ten sklep przechowuje na Twój temat. Potwierdź wniosek, a wyślemy Ci e-mailem link do pobrania, gdy plik będzie gotowy.",
+      "description": "Poprosiłeś o kopię danych osobowych, które ten sklep przechowuje na Twój temat. Potwierdź wniosek i wróć na tę stronę, gdy plik będzie gotowy do pobrania.",
       "confirm": "Potwierdź wniosek",
-      "confirmedDescription": "Przygotowujemy Twoje dane i wyślemy Ci e-mailem link do pobrania, gdy będą gotowe.",
+      "confirmedDescription": "Przygotowujemy Twoje dane. Otwórz tę stronę ponownie później, aby je pobrać.",
       "readyTitle": "Twoje dane są gotowe",
       "readyDescription": "Pobierz plik, zanim link wygaśnie.",
       "download": "Pobierz moje dane",

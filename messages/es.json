@@ -559,9 +559,9 @@
     "failedDescription": "No pudimos completar esta solicitud. Vuelve a hacerla desde tu cuenta o ponte en contacto con nosotros.",
     "access": {
       "title": "Confirma tu solicitud de datos",
-      "description": "Has pedido una copia de los datos personales que esta tienda guarda sobre ti. Confirma la solicitud y te enviaremos por correo un enlace de descarga cuando esté lista.",
+      "description": "Has pedido una copia de los datos personales que esta tienda guarda sobre ti. Confirma la solicitud y vuelve a esta página cuando el archivo esté listo para descargarlo.",
       "confirm": "Confirmar solicitud",
-      "confirmedDescription": "Estamos preparando tus datos y te enviaremos por correo un enlace de descarga cuando estén listos.",
+      "confirmedDescription": "Estamos preparando tus datos. Vuelve a abrir esta página más tarde para descargarlos.",
       "readyTitle": "Tus datos están listos",
       "readyDescription": "Descarga el archivo antes de que caduque el enlace.",
       "download": "Descargar mis datos",
