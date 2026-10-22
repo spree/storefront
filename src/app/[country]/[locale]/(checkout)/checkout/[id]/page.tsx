@@ -1,9 +1,12 @@
-import type { Cart, Country, SelectableAddress } from "@spree/sdk";
+import type { Address, Cart, Country } from "@spree/sdk";
 import { redirect } from "next/navigation";
 import { connection } from "next/server";
 import { Suspense } from "react";
 import { getCheckoutOrder } from "@/lib/data/checkout";
-import { getCartAddresses } from "@/lib/data/companies";
+import {
+  adoptSoleStandingCompany,
+  getCartAddresses,
+} from "@/lib/data/companies";
 import { isAuthenticated as checkAuth } from "@/lib/data/cookies";
 import { getCountry } from "@/lib/data/countries";
 import { getMarketCountries, resolveMarket } from "@/lib/data/markets";
@@ -16,7 +19,7 @@ export interface CheckoutInitialData {
   isAuthenticated: boolean;
   /** Everything the cart accepts — the buyer's own book plus the sites of the
    * company the purchase is for, each naming the book it came out of. */
-  selectableAddresses: SelectableAddress[];
+  selectableAddresses: Address[];
 }
 
 interface CheckoutPageProps {
@@ -36,16 +39,24 @@ async function CheckoutDataLoader({ params }: CheckoutPageProps) {
   const authStatus = await checkAuth();
 
   // Fetch initial data in parallel during SSR
-  const [cartData, market] = await Promise.all([
+  const [loadedCart, market] = await Promise.all([
     getCheckoutOrder(cartId),
     resolveMarket(urlCountry).catch(() => null),
   ]);
 
   // Redirect to order-placed if already complete
-  if (cartData?.current_step === "complete") {
+  if (loadedCart?.current_step === "complete") {
     const basePath = `/${urlCountry}/en`;
     redirect(`${basePath}/order-placed/${cartId}`);
   }
+
+  // Before the addresses are read, since the company decides which sites are
+  // on offer — and before the totals are rendered, since it also decides the
+  // catalog and the prices.
+  const cartData =
+    authStatus && loadedCart
+      ? ((await adoptSoleStandingCompany(loadedCart)) ?? loadedCart)
+      : loadedCart;
 
   // Which addresses checkout may offer depends on who the purchase is for, so
   // the cart is asked rather than the books fetched beside it. Guests keep no

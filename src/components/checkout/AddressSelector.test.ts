@@ -1,12 +1,9 @@
-import type { SelectableAddress } from "@spree/sdk";
+import type { Address } from "@spree/sdk";
 import { describe, expect, it } from "vitest";
 import { groupByBook } from "./AddressSelector";
 
-function address(
-  id: string,
-  owner: SelectableAddress["owner"],
-): SelectableAddress {
-  return { id, owner } as SelectableAddress;
+function address(id: string, owner: Address["owner"]): Address {
+  return { id, owner } as Address;
 }
 
 const HEADQUARTERS = { id: "comp_hq", type: "company", name: "Acme" } as const;

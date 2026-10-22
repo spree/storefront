@@ -1,6 +1,6 @@
 "use client";
 
-import type { Address, Country, SelectableAddress, State } from "@spree/sdk";
+import type { Address, Country, State } from "@spree/sdk";
 import { MapPin } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useCallback, useMemo } from "react";
@@ -36,28 +36,31 @@ export interface AddressGroup {
  * @param personalLabel what to call the buyer's own book, in their language
  */
 export function groupByBook(
-  addresses: SelectableAddress[],
+  addresses: Address[],
   personalLabel: string,
 ): AddressGroup[] {
   const companyGroups = new Map<string, AddressGroup>();
   const personal: Address[] = [];
 
   for (const address of addresses) {
-    if (address.owner.type !== "company") {
+    // An address filed in no book at all is nobody's site, so it sits with
+    // the buyer's own rather than inventing a group for it.
+    const owner = address.owner;
+    if (owner?.type !== "company") {
       personal.push(address);
       continue;
     }
 
-    const group = companyGroups.get(address.owner.id) ?? {
-      key: address.owner.id,
-      heading: address.owner.name ?? undefined,
+    const group = companyGroups.get(owner.id) ?? {
+      key: owner.id,
+      heading: owner.name ?? undefined,
       addresses: [],
       // The organization's book; the account area curates it, and the
       // customer address endpoint would refuse the write.
       editable: false,
     };
     group.addresses.push(address);
-    companyGroups.set(address.owner.id, group);
+    companyGroups.set(owner.id, group);
   }
 
   return [

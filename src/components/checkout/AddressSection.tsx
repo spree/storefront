@@ -7,7 +7,6 @@ import type {
   Cart,
   CartAddressParams,
   Country,
-  SelectableAddress,
   State,
 } from "@spree/sdk";
 import { Loader2 } from "lucide-react";
@@ -35,7 +34,7 @@ interface AddressSectionProps {
   countries: Country[];
   /** Everything the cart accepts, each entry naming the book it came out of.
    * Empty for a guest, who keeps no book. */
-  selectableAddresses: SelectableAddress[];
+  selectableAddresses: Address[];
   isAuthenticated: boolean;
   signInUrl: string;
   fetchStates: (countryIso: string) => Promise<State[]>;
@@ -104,10 +103,10 @@ export function AddressSection({
   // purchase for the organization usually goes to one of them.
   const offeredAddresses = [
     ...selectableAddresses.filter(
-      (address) => address.owner.type === "company",
+      (address) => address.owner?.type === "company",
     ),
     ...selectableAddresses.filter(
-      (address) => address.owner.type !== "company",
+      (address) => address.owner?.type !== "company",
     ),
   ];
 
