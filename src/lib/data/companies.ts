@@ -16,35 +16,6 @@ export async function getCompanyMemberships() {
   );
 }
 
-/** A company node. Resolved through the buyer's standing, so a node they
- * cannot act for is a 404 rather than a readable record. */
-export async function getCompany(id: string) {
-  return withFallback(async () => {
-    return withAuthRefresh(async (options) => {
-      return getClient().companies.get(id, options);
-    });
-  }, null);
-}
-
-/**
- * A company node's sites, including the ones it inherits from the nodes above
- * it — a division ships to its headquarters' docks as readily as to its own.
- */
-export async function getCompanyAddresses(
-  companyId: string,
-): Promise<Address[]> {
-  return withFallback(async () => {
-    const { data } = await withAuthRefresh(async (options) => {
-      return getClient().companies.addresses.list(
-        companyId,
-        undefined,
-        options,
-      );
-    });
-    return data;
-  }, []);
-}
-
 /**
  * Names the company on a cart that has not named one, when the buyer belongs
  * to exactly one.
