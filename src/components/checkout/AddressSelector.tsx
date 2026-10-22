@@ -174,78 +174,105 @@ export function AddressSelector({
           onValueChange={handleSelectAddress}
           className="rounded-sm border overflow-hidden gap-0"
         >
-          {visibleGroups.map((group, groupIndex) => (
-            <div key={group.key}>
-              {/* Labelled only when there is a second book to tell it from. */}
-              {group.heading && visibleGroups.length > 1 && (
-                <p
-                  className={`px-4 py-2 bg-gray-50 text-xs font-medium uppercase tracking-wide text-gray-500 ${
-                    groupIndex > 0 ? "border-t" : ""
-                  }`}
-                >
-                  {group.heading}
-                </p>
-              )}
-              {group.addresses.map((address, index) => (
-                <label
-                  key={address.id}
-                  className={`flex items-start gap-3 px-4 py-3.5 cursor-pointer transition-colors ${
-                    selectedAddressId === address.id
-                      ? "bg-blue-50"
-                      : "bg-white hover:bg-gray-50"
-                  } ${groupIndex > 0 || index > 0 ? "border-t" : ""}`}
-                >
-                  <RadioGroupItem
-                    value={address.id}
-                    className="mt-0.5 shrink-0"
-                  />
-                  <div className="flex-1 min-w-0">
-                    <span className="text-sm text-gray-900">
-                      {address.full_name}
-                      {address.company && (
-                        <span className="text-gray-500">
-                          {address.full_name ? ", " : ""}
-                          {address.company}
-                        </span>
-                      )}
-                    </span>
-                    {/* Joined from the parts that are actually present: a
+          {visibleGroups.map((group, groupIndex) => {
+            // Labelled only when there is a second book to tell it from.
+            const showHeading = !!group.heading && visibleGroups.length > 1;
+
+            return (
+              <div key={group.key}>
+                {showHeading && (
+                  <p
+                    className={`px-4 py-2 bg-gray-50 text-xs font-medium uppercase tracking-wide text-gray-500 ${
+                      groupIndex > 0 ? "border-t" : ""
+                    }`}
+                  >
+                    {group.heading}
+                  </p>
+                )}
+                {group.addresses.map((address, index) => {
+                  // A company's own sites all carry its name, which the heading
+                  // above already says — so printing it on every row repeats it.
+                  // Kept when it differs from the heading, or when there is no
+                  // heading to have said it.
+                  const company =
+                    showHeading && address.company === group.heading
+                      ? null
+                      : address.company;
+
+                  return (
+                    <label
+                      key={address.id}
+                      className={`flex items-start gap-3 px-4 py-3.5 cursor-pointer transition-colors ${
+                        selectedAddressId === address.id
+                          ? "bg-blue-50"
+                          : "bg-white hover:bg-gray-50"
+                      } ${groupIndex > 0 || index > 0 ? "border-t" : ""}`}
+                    >
+                      <RadioGroupItem
+                        value={address.id}
+                        className="mt-0.5 shrink-0"
+                      />
+                      <div className="flex-1 min-w-0">
+                        {/* What the site is called in the book it came from —
+                        "Dock B", "Home". A company address names no person
+                        and carries the company's name, which is already the
+                        heading above, so without this two warehouses differ
+                        only by their street. */}
+                        {address.label && (
+                          <p className="text-sm font-medium text-gray-900">
+                            {address.label}
+                          </p>
+                        )}
+                        {(address.full_name || company) && (
+                          <span className="text-sm text-gray-900">
+                            {address.full_name}
+                            {company && (
+                              <span className="text-gray-500">
+                                {address.full_name ? ", " : ""}
+                                {company}
+                              </span>
+                            )}
+                          </span>
+                        )}
+                        {/* Joined from the parts that are actually present: a
                         company site names no person, and plenty of countries
                         have no subdivision, so interleaving separators by hand
                         leaves stray commas and double spaces. */}
-                    <p className="text-sm text-gray-500">
-                      {[
-                        address.address1,
-                        address.address2,
-                        address.city,
-                        [
-                          address.state_text || address.state_name,
-                          address.postal_code,
-                        ]
-                          .filter(Boolean)
-                          .join(" "),
-                        address.country_name,
-                      ]
-                        .filter(Boolean)
-                        .join(", ")}
-                    </p>
-                  </div>
-                  {onEditAddress && group.editable && (
-                    <button
-                      type="button"
-                      onClick={(e) => {
-                        e.preventDefault();
-                        onEditAddress(address);
-                      }}
-                      className="text-xs text-gray-500 underline underline-offset-2 hover:text-gray-900 flex-shrink-0"
-                    >
-                      {tc("edit")}
-                    </button>
-                  )}
-                </label>
-              ))}
-            </div>
-          ))}
+                        <p className="text-sm text-gray-500">
+                          {[
+                            address.address1,
+                            address.address2,
+                            address.city,
+                            [
+                              address.state_text || address.state_name,
+                              address.postal_code,
+                            ]
+                              .filter(Boolean)
+                              .join(" "),
+                            address.country_name,
+                          ]
+                            .filter(Boolean)
+                            .join(", ")}
+                        </p>
+                      </div>
+                      {onEditAddress && group.editable && (
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.preventDefault();
+                            onEditAddress(address);
+                          }}
+                          className="text-xs text-gray-500 underline underline-offset-2 hover:text-gray-900 flex-shrink-0"
+                        >
+                          {tc("edit")}
+                        </button>
+                      )}
+                    </label>
+                  );
+                })}
+              </div>
+            );
+          })}
 
           {/* Use a different address option */}
           <label
