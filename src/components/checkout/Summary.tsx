@@ -3,6 +3,7 @@
 import type { Cart } from "@spree/sdk";
 import { useTranslations } from "next-intl";
 import { ProductImage } from "@/components/ui/product-image";
+import { useFormatMoney } from "@/hooks/useFormatMoney";
 
 interface SummaryProps {
   cart: Cart;
@@ -11,6 +12,7 @@ interface SummaryProps {
 export function Summary({ cart }: SummaryProps) {
   const tc = useTranslations("common");
   const t = useTranslations("checkout");
+  const formatMoney = useFormatMoney();
   const items = cart.items || [];
   const hasShipping = (cart.fulfillments?.length ?? 0) > 0;
 
@@ -45,7 +47,9 @@ export function Summary({ cart }: SummaryProps) {
                 </p>
               )}
             </div>
-            <div className="text-sm text-gray-900">{item.display_total}</div>
+            <div className="text-sm text-gray-900">
+              {formatMoney(item.total, item.currency)}
+            </div>
           </div>
         ))}
       </div>
@@ -54,13 +58,17 @@ export function Summary({ cart }: SummaryProps) {
       <div className="border-t border-gray-200 pt-4 space-y-2">
         <div className="flex justify-between text-sm">
           <span className="text-gray-700">{tc("subtotal")}</span>
-          <span className="text-gray-900">{cart.display_item_total}</span>
+          <span className="text-gray-900">
+            {formatMoney(cart.item_total, cart.currency)}
+          </span>
         </div>
 
         <div className="flex justify-between text-sm">
           <span className="text-gray-700">{tc("shipping")}</span>
           {hasShipping ? (
-            <span className="text-gray-900">{cart.display_delivery_total}</span>
+            <span className="text-gray-900">
+              {formatMoney(cart.delivery_total, cart.currency)}
+            </span>
           ) : (
             <span className="text-xs text-gray-500">
               {t("enterShippingAddress")}
@@ -72,7 +80,7 @@ export function Summary({ cart }: SummaryProps) {
           <div className="flex justify-between text-sm">
             <span className="text-gray-700">{tc("discount")}</span>
             <span className="text-green-700">
-              {cart.display_discount_total}
+              {formatMoney(cart.discount_total, cart.currency)}
             </span>
           </div>
         )}
@@ -80,7 +88,9 @@ export function Summary({ cart }: SummaryProps) {
         {parseFloat(cart.tax_total ?? "0") > 0 && (
           <div className="flex justify-between text-sm">
             <span className="text-gray-700">{tc("tax")}</span>
-            <span className="text-gray-900">{cart.display_tax_total}</span>
+            <span className="text-gray-900">
+              {formatMoney(cart.tax_total, cart.currency)}
+            </span>
           </div>
         )}
 
@@ -94,29 +104,29 @@ export function Summary({ cart }: SummaryProps) {
               {cart.currency}
             </span>
             <span className="text-xl font-bold text-gray-900">
-              {cart.display_total}
+              {formatMoney(cart.total, cart.currency)}
             </span>
           </div>
         </div>
 
-        {/* Gift card or store credit — shown below total, reduces amount due.
-            Gift cards use store credits under the hood, so only show one. */}
-        {cart.gift_card && parseFloat(cart.gift_card_total ?? "0") > 0 ? (
+        {/* Below the total, reducing the amount due. Store credit excludes
+            what a gift card paid, so both rows can show. */}
+        {parseFloat(cart.gift_card_total ?? "0") > 0 && (
           <div className="flex justify-between text-sm">
             <span className="text-gray-700">{tc("giftCard")}</span>
             <span className="text-green-700">
-              -{cart.display_gift_card_total}
+              -{formatMoney(cart.gift_card_total, cart.currency)}
             </span>
           </div>
-        ) : cart.store_credit_total &&
-          parseFloat(cart.store_credit_total) > 0 ? (
+        )}
+        {parseFloat(cart.store_credit_total ?? "0") > 0 && (
           <div className="flex justify-between text-sm">
             <span className="text-gray-700">{tc("storeCredit")}</span>
             <span className="text-green-700">
-              -{cart.display_store_credit_total}
+              -{formatMoney(cart.store_credit_total, cart.currency)}
             </span>
           </div>
-        ) : null}
+        )}
 
         {/* Amount due — only shown when gift card or store credit is applied */}
         {cart.amount_due &&
@@ -131,7 +141,7 @@ export function Summary({ cart }: SummaryProps) {
                   {cart.currency}
                 </span>
                 <span className="text-xl font-bold text-gray-900">
-                  {cart.display_amount_due}
+                  {formatMoney(cart.amount_due, cart.currency)}
                 </span>
               </div>
             </div>

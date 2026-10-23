@@ -3,7 +3,7 @@
 import { CircleCheckBig, Package } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useLocale, useTranslations } from "next-intl";
+import { useTranslations } from "next-intl";
 import { use, useEffect, useMemo, useRef, useState } from "react";
 import { AddressBlock } from "@/components/order/AddressBlock";
 import { OrderTotals } from "@/components/order/OrderTotals";
@@ -11,6 +11,7 @@ import { PaymentInfo } from "@/components/order/PaymentInfo";
 import { Button } from "@/components/ui/button";
 import { ProductImage } from "@/components/ui/product-image";
 import { useCheckout } from "@/contexts/CheckoutContext";
+import { useFormatMoney } from "@/hooks/useFormatMoney";
 import { trackPurchase } from "@/lib/analytics/gtm";
 import { getCompletedOrder } from "@/lib/data/checkout";
 import { getCachedCompletedOrder } from "@/lib/utils/completed-order-cache";
@@ -32,7 +33,7 @@ export default function OrderPlacedPage({ params }: OrderPlacedPageProps) {
   const { setSummaryContent } = useCheckout();
   const t = useTranslations("orderPlaced");
   const tc = useTranslations("common");
-  const locale = useLocale();
+  const formatMoney = useFormatMoney();
 
   const [result, setResult] = useState<CompletedPurchase | null>(null);
   const [loading, setLoading] = useState(true);
@@ -94,8 +95,8 @@ export default function OrderPlacedPage({ params }: OrderPlacedPageProps) {
 
   // One checkout, whether it produced one order or one per seller.
   const purchase = useMemo(
-    () => (result ? toPurchase(result, locale) : null),
-    [result, locale],
+    () => (result ? toPurchase(result) : null),
+    [result],
   );
 
   if (loading) {
@@ -197,7 +198,7 @@ export default function OrderPlacedPage({ params }: OrderPlacedPageProps) {
                     </p>
                   </div>
                   <div className="text-sm font-medium text-gray-900">
-                    {item.display_total}
+                    {formatMoney(item.total, item.currency)}
                   </div>
                 </li>
               ))}
@@ -232,7 +233,7 @@ export default function OrderPlacedPage({ params }: OrderPlacedPageProps) {
                         t("standardShipping")}
                     </p>
                     <p className="text-xs text-gray-500">
-                      {fulfillment.display_cost}
+                      {formatMoney(fulfillment.cost, purchase.currency)}
                     </p>
                   </div>
                 </div>
@@ -252,9 +253,8 @@ export default function OrderPlacedPage({ params }: OrderPlacedPageProps) {
                   <div key={payment.id} className="mb-3 last:mb-0">
                     <PaymentInfo
                       payment={payment}
-                      storeCreditLabel={
-                        purchase.totals.gift_card ? t("giftCard") : undefined
-                      }
+                      currency={purchase.currency}
+                      giftCardTotal={purchase.totals.gift_card_total}
                     />
                   </div>
                 ))}

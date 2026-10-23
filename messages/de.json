@@ -298,7 +298,8 @@
     "edit": "Bearbeiten",
     "failedToDeleteAddress": "Adresse konnte nicht gelöscht werden. Bitte versuchen Sie es erneut.",
     "addFirstAddress": "Erste Adresse hinzufügen",
-    "addAddress": "Adresse hinzufügen"
+    "addAddress": "Adresse hinzufügen",
+    "yourAddresses": "Ihre Adressen"
   },
   "account": {
     "myAccount": "Mein Konto",
@@ -385,6 +386,16 @@
     "shipment": "Sendung",
     "shipped": "Versendet",
     "partiallyShipped": "Teilweise versendet",
+    "unfulfilled": "Nicht ausgeführt",
+    "fulfilled": "Ausgeführt",
+    "partial": "Teilweise ausgeführt",
+    "none": "Unbezahlt",
+    "authorized": "Autorisiert",
+    "partiallyPaid": "Teilweise bezahlt",
+    "partiallyRefunded": "Teilweise erstattet",
+    "refunded": "Erstattet",
+    "overcharged": "Überzahlt",
+    "voided": "Storniert",
     "delivered": "Zugestellt",
     "ready": "Bereit",
     "pending": "Ausstehend",
@@ -534,6 +545,39 @@
     "success": "Passwort erfolgreich zurückgesetzt",
     "successDescription": "Ihr Passwort wurde aktualisiert. Sie können sich jetzt mit Ihrem neuen Passwort anmelden.",
     "signIn": "Anmelden"
+  },
+  "dataRequestConfirmation": {
+    "loading": "Ihr Link wird geprüft...",
+    "invalidLink": "Ungültiger Link",
+    "invalidLinkDescription": "Dieser Bestätigungslink ist ungültig oder abgelaufen. Stellen Sie die Anfrage erneut in Ihrem Konto.",
+    "confirming": "Wird bestätigt...",
+    "confirmed": "Anfrage bestätigt",
+    "ignore": "Wenn Sie diese Anfrage nicht gestellt haben, schließen Sie diese Seite. Es passiert nichts.",
+    "genericError": "Etwas ist schiefgelaufen. Bitte versuchen Sie es erneut.",
+    "backToStore": "Zurück zum Shop",
+    "loadError": "Ihr Link konnte nicht geprüft werden",
+    "loadErrorDescription": "Bei uns ist etwas schiefgelaufen. Bitte versuchen Sie es gleich noch einmal.",
+    "retry": "Erneut versuchen",
+    "failed": "Anfrage konnte nicht abgeschlossen werden",
+    "failedDescription": "Wir konnten diese Anfrage nicht abschließen. Bitte stellen Sie sie erneut in Ihrem Konto oder kontaktieren Sie uns.",
+    "access": {
+      "title": "Datenanfrage bestätigen",
+      "description": "Sie haben eine Kopie der personenbezogenen Daten angefordert, die dieser Shop über Sie speichert. Bestätigen Sie die Anfrage und kehren Sie auf diese Seite zurück, sobald die Datei zum Herunterladen bereit ist.",
+      "confirm": "Anfrage bestätigen",
+      "confirmedDescription": "Wir bereiten Ihre Daten vor. Öffnen Sie diese Seite später erneut, um sie herunterzuladen.",
+      "readyTitle": "Ihre Daten sind bereit",
+      "readyDescription": "Laden Sie die Datei herunter, bevor der Link abläuft.",
+      "download": "Meine Daten herunterladen",
+      "expiredDescription": "Der Download-Link für diese Anfrage ist abgelaufen. Stellen Sie die Anfrage erneut in Ihrem Konto."
+    },
+    "erasure": {
+      "title": "Löschanfrage bestätigen",
+      "description": "Sie haben uns gebeten, die personenbezogenen Daten, die dieser Shop über Sie speichert, dauerhaft zu löschen, einschließlich der Namen und Adressen auf Ihren früheren Bestellungen.",
+      "warning": "Dies kann nicht rückgängig gemacht werden.",
+      "confirm": "Meine Daten löschen",
+      "confirmedDescription": "Ihre personenbezogenen Daten werden in Kürze gelöscht.",
+      "completedDescription": "Ihre personenbezogenen Daten wurden gelöscht."
+    }
   },
   "policies": {
     "policyNotFound": "Richtlinie nicht gefunden",

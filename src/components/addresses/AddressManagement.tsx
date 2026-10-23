@@ -1,6 +1,6 @@
 "use client";
 
-import type { Address, AddressParams, Country } from "@spree/sdk";
+import type { Address, AddressCreateParams, Country } from "@spree/sdk";
 import { Plus } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useCallback, useState } from "react";
@@ -128,7 +128,7 @@ export function AddressManagement({
     setModalOpen(true);
   };
 
-  const handleSave = async (data: AddressParams, id?: string) => {
+  const handleSave = async (data: AddressCreateParams, id?: string) => {
     if (id) {
       const result = await updateAddress(id, data);
       if (!result.success) {

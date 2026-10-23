@@ -12,6 +12,7 @@ import {
 } from "@/components/ui/input-group";
 import { ProductImage } from "@/components/ui/product-image";
 import { useStore } from "@/contexts/StoreContext";
+import { useFormatMoney } from "@/hooks/useFormatMoney";
 import { trackQuickSearch, trackSelectItem } from "@/lib/analytics/gtm";
 import { getProducts } from "@/lib/data/products";
 
@@ -25,6 +26,7 @@ export function SearchBar({ basePath, autoFocus, onNavigate }: SearchBarProps) {
   const router = useRouter();
   const { currency } = useStore();
   const t = useTranslations("products");
+  const formatMoney = useFormatMoney();
   const [query, setQuery] = useState("");
   const [suggestions, setSuggestions] = useState<Product[]>([]);
   const [isOpen, setIsOpen] = useState(false);
@@ -228,9 +230,13 @@ export function SearchBar({ basePath, autoFocus, onNavigate }: SearchBarProps) {
                         <p className="text-sm font-medium text-gray-900 truncate">
                           {product.name}
                         </p>
-                        {product.price?.display_amount && (
+                        {product.price?.amount && (
                           <p className="text-sm text-gray-500">
-                            {product.price.display_amount}
+                            {formatMoney(
+                              product.price.amount,
+                              product.price.currency,
+                              { unitPrice: true },
+                            )}
                           </p>
                         )}
                       </div>

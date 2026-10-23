@@ -38,7 +38,7 @@ function order(overrides: Partial<Order> = {}): Order {
 }
 
 function lineItem(id: string, name: string) {
-  return { id, name, quantity: 1, display_total: "$7.00" };
+  return { id, name, quantity: 1, total: "7.0", currency: "USD" };
 }
 
 describe("toPurchase", () => {
@@ -47,7 +47,7 @@ describe("toPurchase", () => {
       items: [lineItem("li_1", "Apple")] as Order["items"],
     });
 
-    const purchase = toPurchase(single, "en");
+    const purchase = toPurchase(single);
 
     expect(purchase.split).toBe(false);
     expect(purchase.number).toBe("R1033-1");
@@ -94,7 +94,7 @@ describe("toPurchase", () => {
   } as OrderGroup;
 
   it("keeps every seller's items when the checkout split", () => {
-    const purchase = toPurchase(group, "en");
+    const purchase = toPurchase(group);
 
     expect(purchase.split).toBe(true);
     expect(purchase.number).toBe("R1033");
@@ -110,39 +110,29 @@ describe("toPurchase", () => {
   });
 
   it("takes the group's own roll-ups and sums the rest from its children", () => {
-    const { totals } = toPurchase(group, "en");
+    const { totals } = toPurchase(group);
 
-    expect(totals.display_item_total).toBe("$10.50");
-    expect(totals.display_total).toBe("$20.50");
+    expect(totals.currency).toBe("USD");
+    expect(totals.item_total).toBe("10.5");
+    expect(totals.total).toBe("20.5");
     // Not serialized by a backend predating the group roll-ups — summed across
     // the orders it holds instead.
-    expect(totals.display_delivery_total).toBe("$10.00");
+    expect(totals.delivery_total).toBe("10");
     expect(totals.tax_total).toBe("1.25");
-    expect(totals.display_tax_total).toBe("$1.25");
-  });
-
-  it("formats the summed figures in the viewer's locale", () => {
-    const { totals } = toPurchase(group, "de");
-
-    // Comma decimal separator, and the symbol trailing — German conventions,
-    // not the en formatting the "$10.00" case above produces.
-    expect(totals.display_delivery_total).toMatch(/^10,00\s?\$$/);
   });
 
   // The backend rolls these up from the same children, in the currency's own
-  // rounding and the store's own formatting, so its answer wins.
+  // rounding, so its answer wins.
   it("prefers the figures the group itself reports", () => {
     const served = {
       ...group,
       delivery_total: "10.00",
-      display_delivery_total: "$10.00 shipping",
       tax_total: "1.25",
-      display_tax_total: "$1.25",
     } as OrderGroup;
 
-    const { totals } = toPurchase(served, "en");
+    const { totals } = toPurchase(served);
 
-    expect(totals.display_delivery_total).toBe("$10.00 shipping");
+    expect(totals.delivery_total).toBe("10.00");
     expect(totals.tax_total).toBe("1.25");
   });
 
@@ -154,7 +144,7 @@ describe("toPurchase", () => {
       payments: [{ id: "py_1", status: "completed" }],
     } as unknown as OrderGroup;
 
-    expect(toPurchase(paid, "en").payments).toHaveLength(1);
-    expect(toPurchase(group, "en").payments).toEqual([]);
+    expect(toPurchase(paid).payments).toHaveLength(1);
+    expect(toPurchase(group).payments).toEqual([]);
   });
 });

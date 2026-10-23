@@ -1,16 +1,33 @@
-import type { CreditCard, Payment, StoreCredit } from "@spree/sdk";
+import {
+  type CreditCard,
+  compareMoney,
+  type Payment,
+  type StoreCredit,
+} from "@spree/sdk";
 import { useTranslations } from "next-intl";
 import { PaymentIcon } from "react-svg-credit-card-payment-icons";
+import { useFormatMoney } from "@/hooks/useFormatMoney";
 import { getCardIconType, getCardLabel } from "@/lib/utils/credit-card";
 
 interface PaymentInfoProps {
   payment: Payment;
-  /** Label override for store credit payments (e.g. "Gift Card") */
-  storeCreditLabel?: string;
+  /** The order's currency; payments carry none of their own. */
+  currency: string;
+  /**
+   * What gift cards paid on the order. A gift card is redeemed as store
+   * credit, so a store credit payment of exactly this amount is the gift card.
+   */
+  giftCardTotal?: string | null;
 }
 
-export function PaymentInfo({ payment, storeCreditLabel }: PaymentInfoProps) {
+export function PaymentInfo({
+  payment,
+  currency,
+  giftCardTotal,
+}: PaymentInfoProps) {
   const t = useTranslations("orders");
+  const tc = useTranslations("common");
+  const formatMoney = useFormatMoney();
   const source = payment.source;
 
   if (payment.source_type === "credit_card" && source) {
@@ -42,14 +59,18 @@ export function PaymentInfo({ payment, storeCreditLabel }: PaymentInfoProps) {
 
   if (payment.source_type === "store_credit" && source) {
     const credit = source as StoreCredit;
-    const label = storeCreditLabel || t("storeCredit");
+    const paidByGiftCard =
+      !!giftCardTotal &&
+      !!payment.amount &&
+      compareMoney(payment.amount, giftCardTotal) === 0;
+    const label = paidByGiftCard ? tc("giftCard") : t("storeCredit");
     return (
       <div>
         <p className="text-sm font-medium text-gray-900">{label}</p>
         <p className="text-xs text-gray-500">
           {t("storeCreditApplied", {
-            amount: payment.display_amount ?? "",
-            remaining: credit.display_amount_remaining,
+            amount: formatMoney(payment.amount, currency),
+            remaining: formatMoney(credit.amount_remaining, credit.currency),
           })}
         </p>
       </div>
@@ -61,7 +82,9 @@ export function PaymentInfo({ payment, storeCreditLabel }: PaymentInfoProps) {
       <p className="text-sm font-medium text-gray-900">
         {payment.payment_method?.name}
       </p>
-      <p className="text-xs text-gray-500">{payment.display_amount}</p>
+      <p className="text-xs text-gray-500">
+        {formatMoney(payment.amount, currency)}
+      </p>
     </div>
   );
 }

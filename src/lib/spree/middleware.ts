@@ -37,6 +37,7 @@ const PUBLIC_ACCOUNT_PATHS = new Set([
   "/account/register",
   "/account/forgot-password",
   "/account/reset-password",
+  "/account/data-requests/confirm",
 ]);
 
 function isProtectedAccountPath(pathname: string, localizedPrefix: string) {

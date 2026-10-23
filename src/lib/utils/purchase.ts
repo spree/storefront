@@ -12,7 +12,6 @@
 import type {
   Address,
   Fulfillment,
-  GiftCard,
   LineItem,
   Order,
   OrderGroup,
@@ -24,26 +23,22 @@ import { isOrderGroup } from "@spree/sdk";
 export type CompletedPurchase = Order | OrderGroup;
 
 /**
- * The money lines the summary renders. An order carries every one of them; a
- * group carries only the roll-ups it is serialized with, so the rest are summed
- * from its children — never prorated, since the children are the record.
+ * The money lines the summary renders, as the amounts the API reports — the
+ * reader's own formatting is applied where they are shown. An order carries
+ * every one of them; a group carries only the roll-ups it is serialized with,
+ * so the rest are summed from its children — never prorated, since the
+ * children are the record.
  */
 export interface PurchaseTotals {
-  display_item_total: string | null;
-  display_delivery_total: string | null;
+  currency: string;
+  item_total: string | null;
+  delivery_total: string | null;
   discount_total: string | null;
-  display_discount_total: string | null;
   tax_total: string | null;
-  display_tax_total: string | null;
   total: string | null;
-  display_total: string | null;
-  gift_card: GiftCard | null;
   gift_card_total: string | null;
-  display_gift_card_total: string | null;
   store_credit_total: string | null;
-  display_store_credit_total: string | null;
   amount_due: string | null;
-  display_amount_due: string | null;
 }
 
 /**
@@ -55,7 +50,7 @@ export interface PurchaseSegment {
   number: string;
   items: LineItem[];
   fulfillments: Fulfillment[];
-  display_total: string | null;
+  total: string | null;
 }
 
 export interface Purchase {
@@ -82,7 +77,7 @@ function toSegment(order: Order): PurchaseSegment {
     number: order.number,
     items: order.items ?? [],
     fulfillments: order.fulfillments ?? [],
-    display_total: order.display_total,
+    total: order.total,
   };
 }
 
@@ -100,23 +95,16 @@ function toAmount(value: string | null | undefined): number {
  * backend that answers them, and one that leaves them to be worked out here.
  * Drop this once the published SDK types carry them.
  */
-type ServedGroupTotals = Omit<Partial<PurchaseTotals>, "gift_card"> & {
+type ServedGroupTotals = Partial<PurchaseTotals> & {
   payments?: Payment[];
-  // Not on PurchaseTotals: the summary shows only the formatted delivery line.
-  delivery_total?: string | null;
 };
 
 /**
  * Builds the view of a checkout the summary page renders.
  *
  * @param result what completion (or a later lookup) answered with
- * @param locale formats the figures a group leaves to be summed — the ones it
- *   serializes come back pre-formatted by the backend
  */
-export function toPurchase(
-  result: CompletedPurchase,
-  locale: string,
-): Purchase {
+export function toPurchase(result: CompletedPurchase): Purchase {
   if (!isOrderGroup(result)) {
     return {
       number: result.number,
@@ -135,36 +123,19 @@ export function toPurchase(
 
   const orders = result.orders ?? [];
   const served = result as OrderGroup & ServedGroupTotals;
-  const format = (amount: number): string =>
-    new Intl.NumberFormat(locale, {
-      style: "currency",
-      currency: result.currency,
-    }).format(amount);
-  const sum = (figure: (order: Order) => string | null): number =>
-    orders.reduce((running, order) => running + toAmount(figure(order)), 0);
 
   // Every figure the group reports is preferred over one worked out here: the
   // backend rolls them up from the same children, in the currency's own
-  // rounding and the store's own formatting. The sums are the fallback for a
-  // backend that leaves them off, and they agree because the inputs are the
-  // same rows.
+  // rounding. The sums are the fallback for a backend that leaves them off,
+  // and they agree because the inputs are the same rows.
   const rolledUp = (
     served: string | null | undefined,
     children: (order: Order) => string | null,
-  ): { amount: string; display: string } => {
-    const total = sum(children);
-    return { amount: served ?? total.toString(), display: format(total) };
-  };
-
-  const delivery = rolledUp(served.delivery_total, (o) => o.delivery_total);
-  const discount = rolledUp(served.discount_total, (o) => o.discount_total);
-  const tax = rolledUp(served.tax_total, (o) => o.tax_total);
-  const giftCard = rolledUp(served.gift_card_total, (o) => o.gift_card_total);
-  const storeCredit = rolledUp(
-    served.store_credit_total,
-    (o) => o.store_credit_total,
-  );
-  const amountDue = rolledUp(served.amount_due, (o) => o.amount_due);
+  ): string =>
+    served ??
+    orders
+      .reduce((running, order) => running + toAmount(children(order)), 0)
+      .toString();
 
   return {
     number: result.number,
@@ -182,25 +153,21 @@ export function toPurchase(
     segments: orders.map(toSegment),
     split: orders.length > 1,
     totals: {
-      display_item_total: result.display_item_total,
-      display_delivery_total: served.display_delivery_total ?? delivery.display,
-      discount_total: discount.amount,
-      display_discount_total: served.display_discount_total ?? discount.display,
-      tax_total: tax.amount,
-      display_tax_total: served.display_tax_total ?? tax.display,
+      currency: result.currency,
+      item_total: result.item_total,
+      delivery_total: rolledUp(served.delivery_total, (o) => o.delivery_total),
+      discount_total: rolledUp(served.discount_total, (o) => o.discount_total),
+      tax_total: rolledUp(served.tax_total, (o) => o.tax_total),
       total: result.total,
-      display_total: result.display_total,
-      // The group does not nest the card — the split copies it onto every
-      // child, so one of them carries it.
-      gift_card: orders.find((order) => order.gift_card)?.gift_card ?? null,
-      gift_card_total: giftCard.amount,
-      display_gift_card_total:
-        served.display_gift_card_total ?? giftCard.display,
-      store_credit_total: storeCredit.amount,
-      display_store_credit_total:
-        served.display_store_credit_total ?? storeCredit.display,
-      amount_due: amountDue.amount,
-      display_amount_due: served.display_amount_due ?? amountDue.display,
+      gift_card_total: rolledUp(
+        served.gift_card_total,
+        (o) => o.gift_card_total,
+      ),
+      store_credit_total: rolledUp(
+        served.store_credit_total,
+        (o) => o.store_credit_total,
+      ),
+      amount_due: rolledUp(served.amount_due, (o) => o.amount_due),
     },
   };
 }

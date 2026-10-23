@@ -1,6 +1,13 @@
 "use server";
 
-import type { AddressParams, Cart, Order, OrderGroup } from "@spree/sdk";
+import type {
+  Cart,
+  CartAddressParams,
+  CurrencyCode,
+  LocaleCode,
+  Order,
+  OrderGroup,
+} from "@spree/sdk";
 import { SpreeError } from "@spree/sdk";
 import { updateTag } from "next/cache";
 import {
@@ -156,8 +163,8 @@ export async function getCompletedOrder(
 export async function updateOrderAddresses(
   cartId: string,
   addresses: {
-    shipping_address?: AddressParams;
-    billing_address?: AddressParams;
+    shipping_address?: CartAddressParams;
+    billing_address?: CartAddressParams;
     shipping_address_id?: string;
     billing_address_id?: string;
     use_shipping?: boolean;
@@ -180,7 +187,7 @@ export async function updateOrderAddresses(
 
 export async function updateCartMarket(
   cartId: string,
-  params: { currency: string; locale: string },
+  params: { currency: CurrencyCode; locale: LocaleCode },
 ) {
   return actionResult(async () => {
     const surface = await resolveSurfaceForCart(cartId);

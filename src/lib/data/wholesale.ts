@@ -1,8 +1,14 @@
 "use server";
 
-import type { Channel, ProductListParams } from "@spree/sdk";
+import {
+  type Channel,
+  formatMoney,
+  type Price,
+  type ProductListParams,
+} from "@spree/sdk";
 import {
   getAccessToken,
+  getLocaleOptions,
   getWholesaleClient,
   isWholesaleEnabled,
   withAuthRefresh,
@@ -13,6 +19,14 @@ import {
   getProducts as getProductsBySurface,
 } from "./products";
 import { withFallback } from "./utils";
+
+function formatVariantPrice(
+  price: Price | null | undefined,
+  locale: string | undefined,
+): string | undefined {
+  if (!price?.amount || !price.currency) return undefined;
+  return formatMoney(price.amount, price.currency, locale, { unitPrice: true });
+}
 
 /**
  * Fetch the wholesale channel's resolved configuration (access posture, guest
@@ -84,6 +98,7 @@ export async function searchWholesaleVariants(
   if (!token) return [];
 
   return withFallback(async () => {
+    const { locale } = await getLocaleOptions();
     const response = await withAuthRefresh((options) =>
       getWholesaleClient().products.list(
         { search: trimmed, expand: ["variants"], limit },
@@ -102,7 +117,7 @@ export async function searchWholesaleVariants(
           productName: product.name,
           optionsText: variant.options_text || undefined,
           sku: variant.sku,
-          displayPrice: variant.price?.display_amount ?? undefined,
+          displayPrice: formatVariantPrice(variant.price, locale),
           purchasable: variant.purchasable ?? false,
         });
         if (suggestions.length >= limit) return suggestions;
@@ -138,6 +153,7 @@ export async function findWholesaleVariantBySku(sku: string): Promise<
 
   return withFallback(
     async () => {
+      const { locale } = await getLocaleOptions();
       const response = await withAuthRefresh((options) =>
         getWholesaleClient().products.list(
           {
@@ -163,7 +179,7 @@ export async function findWholesaleVariantBySku(sku: string): Promise<
             productSlug: product.slug,
             sku: variant.sku ?? trimmed,
             optionsText: variant.options_text || undefined,
-            displayPrice: variant.price?.display_amount ?? undefined,
+            displayPrice: formatVariantPrice(variant.price, locale),
             purchasable: variant.purchasable ?? false,
           };
         }

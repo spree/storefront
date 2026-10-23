@@ -298,7 +298,8 @@
     "edit": "Modifier",
     "failedToDeleteAddress": "Echec de la suppression de l'adresse. Veuillez reessayer.",
     "addFirstAddress": "Ajoutez votre premiere adresse",
-    "addAddress": "Ajouter une adresse"
+    "addAddress": "Ajouter une adresse",
+    "yourAddresses": "Vos adresses"
   },
   "account": {
     "myAccount": "Mon compte",
@@ -385,6 +386,16 @@
     "shipment": "Expedition",
     "shipped": "Expedie",
     "partiallyShipped": "Partiellement expedie",
+    "unfulfilled": "Non traitée",
+    "fulfilled": "Traitée",
+    "partial": "Partiellement traitée",
+    "none": "Non payée",
+    "authorized": "Autorisée",
+    "partiallyPaid": "Partiellement payée",
+    "partiallyRefunded": "Partiellement remboursée",
+    "refunded": "Remboursée",
+    "overcharged": "Trop-perçu",
+    "voided": "Annulée",
     "delivered": "Livre",
     "ready": "Pret",
     "pending": "En attente",
@@ -534,6 +545,39 @@
     "success": "Mot de passe reinitialise avec succes",
     "successDescription": "Votre mot de passe a ete mis a jour. Vous pouvez maintenant vous connecter avec votre nouveau mot de passe.",
     "signIn": "Se connecter"
+  },
+  "dataRequestConfirmation": {
+    "loading": "Vérification de votre lien...",
+    "invalidLink": "Lien invalide",
+    "invalidLinkDescription": "Ce lien de confirmation est invalide ou a expiré. Refaites la demande depuis votre compte.",
+    "confirming": "Confirmation...",
+    "confirmed": "Demande confirmée",
+    "ignore": "Si vous n'avez pas fait cette demande, fermez cette page et rien ne se passera.",
+    "genericError": "Une erreur s'est produite. Veuillez réessayer.",
+    "backToStore": "Retour à la boutique",
+    "loadError": "Impossible de vérifier votre lien",
+    "loadErrorDescription": "Une erreur s'est produite de notre côté. Veuillez réessayer dans un instant.",
+    "retry": "Réessayer",
+    "failed": "La demande n'a pas pu être traitée",
+    "failedDescription": "Nous n'avons pas pu traiter cette demande. Refaites-la depuis votre compte ou contactez-nous.",
+    "access": {
+      "title": "Confirmez votre demande de données",
+      "description": "Vous avez demandé une copie des données personnelles que cette boutique détient à votre sujet. Confirmez la demande, puis revenez sur cette page lorsque le fichier sera prêt pour le télécharger.",
+      "confirm": "Confirmer la demande",
+      "confirmedDescription": "Nous préparons vos données. Rouvrez cette page plus tard pour les télécharger.",
+      "readyTitle": "Vos données sont prêtes",
+      "readyDescription": "Téléchargez le fichier avant l'expiration du lien.",
+      "download": "Télécharger mes données",
+      "expiredDescription": "Le lien de téléchargement de cette demande a expiré. Refaites la demande depuis votre compte."
+    },
+    "erasure": {
+      "title": "Confirmez votre demande d'effacement",
+      "description": "Vous nous avez demandé d'effacer définitivement les données personnelles que cette boutique détient à votre sujet, y compris les noms et adresses de vos commandes passées.",
+      "warning": "Cette action est irréversible.",
+      "confirm": "Effacer mes données",
+      "confirmedDescription": "Vos données personnelles seront effacées sous peu.",
+      "completedDescription": "Vos données personnelles ont été effacées."
+    }
   },
   "policies": {
     "policyNotFound": "Politique introuvable",

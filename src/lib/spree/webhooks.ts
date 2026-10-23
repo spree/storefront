@@ -1,10 +1,17 @@
-import type { WebhookEvent } from "@spree/sdk/webhooks";
+import type { WebhookEvent, WebhookEventName } from "@spree/sdk/webhooks";
 import { verifyWebhookSignature } from "@spree/sdk/webhooks";
 import { NextResponse } from "next/server";
 
-export type { WebhookEvent };
+export type { WebhookEvent, WebhookEventName };
 
-export type WebhookHandler<T = any> = (event: WebhookEvent<T>) => Promise<void>;
+export type WebhookHandler<Name extends WebhookEventName = WebhookEventName> = (
+  event: WebhookEvent<Name>,
+) => Promise<void>;
+
+/** One handler per event name; each receives that event's typed payload. */
+export type WebhookHandlers = {
+  [Name in WebhookEventName]?: WebhookHandler<Name>;
+};
 
 export interface CreateWebhookHandlerOptions {
   /**
@@ -17,7 +24,7 @@ export interface CreateWebhookHandlerOptions {
    * Map of event names to handler functions.
    * Unhandled events return 200 with `{ handled: false }` so Spree doesn't retry.
    */
-  handlers: Record<string, WebhookHandler>;
+  handlers: WebhookHandlers;
 
   /**
    * Max age of the webhook timestamp in seconds before rejecting (replay protection).
@@ -84,7 +91,12 @@ export function createWebhookHandler(options: CreateWebhookHandlerOptions) {
     }
 
     const name = eventName || event.name;
-    const handler = handlers[name];
+    // Own keys only, so an event named after an Object method is unhandled.
+    const handler = Object.hasOwn(handlers, name)
+      ? (handlers[name as WebhookEventName] as
+          | ((event: WebhookEvent) => Promise<void>)
+          | undefined)
+      : undefined;
 
     if (!handler) {
       return NextResponse.json({ received: true, handled: false });

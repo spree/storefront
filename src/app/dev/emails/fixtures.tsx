@@ -1,4 +1,5 @@
 import { createElement, type ReactElement } from "react";
+import { DataRequestConfirmationEmail } from "@/lib/emails/data-request-confirmation";
 import { OrderCanceledEmail } from "@/lib/emails/order-canceled";
 import { OrderConfirmationEmail } from "@/lib/emails/order-confirmation";
 import { PasswordResetEmail } from "@/lib/emails/password-reset";
@@ -143,6 +144,16 @@ export const emailFixtures: EmailFixture[] = [
     render: () =>
       createElement(PasswordResetEmail, {
         resetUrl: "https://example.com/account/reset-password?token=preview",
+      }),
+  },
+  {
+    slug: "data-request-confirmation",
+    label: "Data Request Confirmation",
+    render: () =>
+      createElement(DataRequestConfirmationEmail, {
+        confirmUrl:
+          "https://example.com/account/data-requests/confirm?token=preview",
+        kind: "erasure",
       }),
   },
 ];

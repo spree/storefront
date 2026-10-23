@@ -1,4 +1,5 @@
 import type { Order } from "@spree/sdk";
+import { formatMoney } from "@spree/sdk";
 import Link from "next/link";
 import { getTranslations } from "next-intl/server";
 import { Button } from "@/components/ui/button";
@@ -6,21 +7,8 @@ import {
   formatDate,
   getFulfillmentStatusColor,
   getPaymentStatusColor,
+  getStatusLabel,
 } from "@/lib/utils/format";
-
-function getStatusLabel(
-  status: string | null,
-  t: (key: string) => string,
-): string {
-  if (!status) return t("notAvailable");
-  // Map API statuses like "balance_due" to translation keys like "balanceDue"
-  const key = status.replace(/_([a-z])/g, (_, c: string) => c.toUpperCase());
-  try {
-    return t(key);
-  } catch {
-    return status.replace(/_/g, " ");
-  }
-}
 
 interface OrderListProps {
   orders: Order[];
@@ -93,7 +81,7 @@ export async function OrderList({ orders, basePath, locale }: OrderListProps) {
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-right">
                   <span className="text-sm font-medium text-gray-900">
-                    {order.display_total}
+                    {formatMoney(order.total, order.currency, locale)}
                   </span>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-right">

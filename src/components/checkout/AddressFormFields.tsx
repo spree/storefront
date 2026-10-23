@@ -1,13 +1,15 @@
 "use client";
 
 import type { Country, State } from "@spree/sdk";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
+import { useMemo } from "react";
 import { Input } from "@/components/ui/input";
 import {
   NativeSelect,
   NativeSelectOption,
 } from "@/components/ui/native-select";
 import type { AddressFormData } from "@/lib/utils/address";
+import { countryName, sortByCountryName } from "@/lib/utils/format";
 
 interface AddressFormFieldsProps {
   address: AddressFormData;
@@ -27,6 +29,11 @@ export function AddressFormFields({
   idPrefix,
 }: AddressFormFieldsProps) {
   const t = useTranslations("address");
+  const locale = useLocale();
+  const sortedCountries = useMemo(
+    () => sortByCountryName(countries, locale),
+    [countries, locale],
+  );
   const tc = useTranslations("common");
   const hasStates = states.length > 0;
 
@@ -38,16 +45,16 @@ export function AddressFormFields({
           id={`${idPrefix}-country`}
           aria-label={t("country")}
           className="w-full"
-          value={address.country_iso}
-          onChange={(e) => onChange("country_iso", e.target.value)}
+          value={address.country_code}
+          onChange={(e) => onChange("country_code", e.target.value)}
           required
         >
           <NativeSelectOption value="" disabled>
             {t("selectCountry")}
           </NativeSelectOption>
-          {countries.map((country) => (
+          {sortedCountries.map((country) => (
             <NativeSelectOption key={country.iso} value={country.iso}>
-              {country.name}
+              {countryName(country.iso, locale)}
             </NativeSelectOption>
           ))}
         </NativeSelect>
@@ -130,8 +137,8 @@ export function AddressFormFields({
             id={`${idPrefix}-state`}
             aria-label={t("stateProvince")}
             className="w-full"
-            value={address.state_abbr}
-            onChange={(e) => onChange("state_abbr", e.target.value)}
+            value={address.state_code}
+            onChange={(e) => onChange("state_code", e.target.value)}
             required
           >
             <NativeSelectOption value="" disabled>

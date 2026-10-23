@@ -2,8 +2,11 @@ import type { Address, Cart, Country } from "@spree/sdk";
 import { redirect } from "next/navigation";
 import { connection } from "next/server";
 import { Suspense } from "react";
-import { getAddresses } from "@/lib/data/addresses";
 import { getCheckoutOrder } from "@/lib/data/checkout";
+import {
+  adoptSoleStandingCompany,
+  getCartAddresses,
+} from "@/lib/data/companies";
 import { isAuthenticated as checkAuth } from "@/lib/data/cookies";
 import { getCountry } from "@/lib/data/countries";
 import { getMarketCountries, resolveMarket } from "@/lib/data/markets";
@@ -13,8 +16,10 @@ import { CheckoutPageContent } from "./CheckoutPageContent";
 export interface CheckoutInitialData {
   cart: Cart;
   countries: Country[];
-  savedAddresses: Address[];
   isAuthenticated: boolean;
+  /** Everything the cart accepts — the buyer's own book plus the sites of the
+   * company the purchase is for, each naming the book it came out of. */
+  selectableAddresses: Address[];
 }
 
 interface CheckoutPageProps {
@@ -34,17 +39,30 @@ async function CheckoutDataLoader({ params }: CheckoutPageProps) {
   const authStatus = await checkAuth();
 
   // Fetch initial data in parallel during SSR
-  const [cartData, market, addressesData] = await Promise.all([
+  const [loadedCart, market] = await Promise.all([
     getCheckoutOrder(cartId),
     resolveMarket(urlCountry).catch(() => null),
-    authStatus ? getAddresses() : Promise.resolve({ data: [] as Address[] }),
   ]);
 
   // Redirect to order-placed if already complete
-  if (cartData?.current_step === "complete") {
+  if (loadedCart?.current_step === "complete") {
     const basePath = `/${urlCountry}/en`;
     redirect(`${basePath}/order-placed/${cartId}`);
   }
+
+  // Before the addresses are read, since the company decides which sites are
+  // on offer — and before the totals are rendered, since it also decides the
+  // catalog and the prices.
+  const cartData =
+    authStatus && loadedCart
+      ? ((await adoptSoleStandingCompany(loadedCart)) ?? loadedCart)
+      : loadedCart;
+
+  // Which addresses checkout may offer depends on who the purchase is for, so
+  // the cart is asked rather than the books fetched beside it. Guests keep no
+  // book and the call needs an account, so skip it for them.
+  const selectableAddresses =
+    authStatus && cartData ? await getCartAddresses(cartData.id) : [];
 
   const countriesData = market
     ? await getMarketCountries(market.id).catch(() => ({
@@ -54,7 +72,7 @@ async function CheckoutDataLoader({ params }: CheckoutPageProps) {
 
   // Prefetch states for the default country (warms the server cache)
   const defaultIso =
-    cartData?.shipping_address?.country_iso ?? countriesData.data[0]?.iso;
+    cartData?.shipping_address?.country_code ?? countriesData.data[0]?.iso;
   if (defaultIso) {
     getCountry(defaultIso).catch(() => {});
   }
@@ -63,8 +81,8 @@ async function CheckoutDataLoader({ params }: CheckoutPageProps) {
     ? {
         cart: cartData,
         countries: countriesData.data,
-        savedAddresses: addressesData.data,
         isAuthenticated: authStatus,
+        selectableAddresses,
       }
     : null;
 

@@ -222,28 +222,24 @@ export function trackViewCart(order: Cart | Order): void {
   });
 }
 
-/** The slice of an order the ecommerce payload is built from. */
-interface OrderEcommerceSource {
-  currency: string;
-  total: string | null;
-  discounts?: Cart["discounts"] | Order["discounts"];
-  items?: LineItem[];
-}
-
 function buildOrderEcommercePayload(
-  order: OrderEcommerceSource,
+  order: Cart | Order | OrderGroup,
   extras?: Record<string, unknown>,
 ): Record<string, unknown> {
-  const coupon = order.discounts?.find((d) => d.code)?.code;
+  // A marketplace checkout that reached several sellers is one purchase made
+  // of several orders: report it once, with every order's items.
+  const orders = "orders" in order ? order.orders : [order];
+  const coupon = orders
+    .flatMap((o) => o.discounts ?? [])
+    .find((d) => d.code)?.code;
   return {
     currency: order.currency,
     value: safeParseFloat(order.total),
     ...(coupon && { coupon }),
     ...extras,
-    items:
-      order.items?.map((item, index) =>
-        mapLineItemToGA4Item(item, { index }),
-      ) ?? [],
+    items: orders
+      .flatMap((o) => o.items ?? [])
+      .map((item, index) => mapLineItemToGA4Item(item, { index })),
   };
 }
 
@@ -292,30 +288,24 @@ export function trackPurchase(result: Cart | Order | OrderGroup): void {
     // Storage unavailable (private browsing, quota exceeded) — proceed without dedup
   }
 
-  const grouped = "orders" in result;
-  const orders: Array<Cart | Order> = grouped ? result.orders : [result];
+  // The group reports neither tax nor shipping of its own — both are summed
+  // from the orders it holds.
+  const orders: Array<Cart | Order> =
+    "orders" in result ? result.orders : [result];
 
   pushEcommerceEvent(
     "purchase",
-    buildOrderEcommercePayload(
-      {
-        currency: result.currency,
-        total: result.total,
-        discounts: grouped ? orders[0]?.discounts : result.discounts,
-        items: orders.flatMap((child) => child.items ?? []),
-      },
-      {
-        transaction_id: result.number,
-        tax: orders.reduce(
-          (running, child) => running + safeParseFloat(child.tax_total),
-          0,
-        ),
-        shipping: orders.reduce(
-          (running, child) => running + safeParseFloat(child.delivery_total),
-          0,
-        ),
-      },
-    ),
+    buildOrderEcommercePayload(result, {
+      transaction_id: result.number,
+      tax: orders.reduce(
+        (running, child) => running + safeParseFloat(child.tax_total),
+        0,
+      ),
+      shipping: orders.reduce(
+        (running, child) => running + safeParseFloat(child.delivery_total),
+        0,
+      ),
+    }),
   );
 
   try {

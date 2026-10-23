@@ -11,6 +11,7 @@ import { QuantityPickerField } from "@/components/cart/QuantityPickerField";
 import { Button } from "@/components/ui/button";
 import { ProductImage } from "@/components/ui/product-image";
 import { useCart } from "@/contexts/CartContext";
+import { useFormatMoney } from "@/hooks/useFormatMoney";
 import { trackRemoveFromCart, trackViewCart } from "@/lib/analytics/gtm";
 import { extractBasePath } from "@/lib/utils/path";
 
@@ -30,6 +31,7 @@ export default function CartPage() {
   const viewCartFiredRef = useRef(false);
   const t = useTranslations("cart");
   const tc = useTranslations("common");
+  const formatMoney = useFormatMoney();
 
   // Track view_cart when cart loads with items
   useEffect(() => {
@@ -124,7 +126,9 @@ export default function CartPage() {
                     </p>
                   )}
                   <p className="mt-2 text-lg font-semibold text-gray-900">
-                    {item.display_price}
+                    {formatMoney(item.price, item.currency, {
+                      unitPrice: true,
+                    })}
                   </p>
                 </div>
 
@@ -162,26 +166,30 @@ export default function CartPage() {
             <dl className="mt-6 space-y-4">
               <div className="flex justify-between">
                 <dt className="text-gray-500">{tc("subtotal")}</dt>
-                <dd className="text-gray-900">{cart.display_item_total}</dd>
+                <dd className="text-gray-900">
+                  {formatMoney(cart.item_total, cart.currency)}
+                </dd>
               </div>
               {cart.discount_total && parseFloat(cart.discount_total) < 0 && (
                 <div className="flex justify-between text-green-600">
                   <dt>{tc("discount")}</dt>
-                  <dd>{cart.display_discount_total}</dd>
+                  <dd>{formatMoney(cart.discount_total, cart.currency)}</dd>
                 </div>
               )}
               {cart.delivery_total && parseFloat(cart.delivery_total) > 0 && (
                 <div className="flex justify-between">
                   <dt className="text-gray-500">{tc("shipping")}</dt>
                   <dd className="text-gray-900">
-                    {cart.display_delivery_total}
+                    {formatMoney(cart.delivery_total, cart.currency)}
                   </dd>
                 </div>
               )}
               {cart.tax_total && parseFloat(cart.tax_total) > 0 && (
                 <div className="flex justify-between">
                   <dt className="text-gray-500">{tc("tax")}</dt>
-                  <dd className="text-gray-900">{cart.display_tax_total}</dd>
+                  <dd className="text-gray-900">
+                    {formatMoney(cart.tax_total, cart.currency)}
+                  </dd>
                 </div>
               )}
               <div className="border-t pt-4 flex justify-between">
@@ -189,22 +197,24 @@ export default function CartPage() {
                   {tc("total")}
                 </dt>
                 <dd className="text-lg font-bold text-gray-900">
-                  {cart.display_total}
+                  {formatMoney(cart.total, cart.currency)}
                 </dd>
               </div>
 
-              {cart.gift_card && parseFloat(cart.gift_card_total ?? "0") > 0 ? (
+              {parseFloat(cart.gift_card_total ?? "0") > 0 && (
                 <div className="flex justify-between text-green-600">
                   <dt>{t("giftCard")}</dt>
-                  <dd>-{cart.display_gift_card_total}</dd>
+                  <dd>-{formatMoney(cart.gift_card_total, cart.currency)}</dd>
                 </div>
-              ) : cart.store_credit_total &&
-                parseFloat(cart.store_credit_total) > 0 ? (
+              )}
+              {parseFloat(cart.store_credit_total ?? "0") > 0 && (
                 <div className="flex justify-between text-green-600">
                   <dt>{t("storeCredit")}</dt>
-                  <dd>-{cart.display_store_credit_total}</dd>
+                  <dd>
+                    -{formatMoney(cart.store_credit_total, cart.currency)}
+                  </dd>
                 </div>
-              ) : null}
+              )}
 
               {cart.amount_due &&
                 cart.amount_due !== cart.total &&
@@ -214,7 +224,7 @@ export default function CartPage() {
                       {t("amountDue")}
                     </dt>
                     <dd className="text-lg font-bold text-gray-900">
-                      {cart.display_amount_due}
+                      {formatMoney(cart.amount_due, cart.currency)}
                     </dd>
                   </div>
                 )}

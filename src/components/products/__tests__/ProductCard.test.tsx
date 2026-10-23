@@ -5,6 +5,7 @@ import { ProductCard } from "@/components/products/ProductCard";
 
 vi.mock("next-intl", () => ({
   useTranslations: () => (key: string) => key,
+  useLocale: () => "en",
 }));
 
 vi.mock("@/contexts/StoreContext", () => ({
@@ -19,14 +20,13 @@ const baseProduct = {
   purchasable: true,
   thumbnail_url: "https://example.com/shirt.jpg",
   price: {
-    display_amount: "$25.00",
-    amount_in_cents: 2500,
-    compare_at_amount_in_cents: null,
-    display_compare_at_amount: null,
+    amount: "25.00",
+    currency: "USD",
+    compare_at_amount: null,
   },
   original_price: {
-    display_amount: "$25.00",
-    amount_in_cents: 2500,
+    amount: "25.00",
+    currency: "USD",
   },
 } as unknown as Product;
 
@@ -37,14 +37,13 @@ const saleProduct = {
   purchasable: true,
   thumbnail_url: "https://example.com/shirt.jpg",
   price: {
-    display_amount: "$15.00",
-    amount_in_cents: 1500,
-    compare_at_amount_in_cents: null,
-    display_compare_at_amount: null,
+    amount: "15.00",
+    currency: "USD",
+    compare_at_amount: null,
   },
   original_price: {
-    display_amount: "$25.00",
-    amount_in_cents: 2500,
+    amount: "25.00",
+    currency: "USD",
   },
 } as unknown as Product;
 
@@ -55,14 +54,13 @@ const outOfStockProduct = {
   purchasable: false,
   thumbnail_url: "https://example.com/shirt.jpg",
   price: {
-    display_amount: "$25.00",
-    amount_in_cents: 2500,
-    compare_at_amount_in_cents: null,
-    display_compare_at_amount: null,
+    amount: "25.00",
+    currency: "USD",
+    compare_at_amount: null,
   },
   original_price: {
-    display_amount: "$25.00",
-    amount_in_cents: 2500,
+    amount: "25.00",
+    currency: "USD",
   },
 } as unknown as Product;
 
@@ -73,14 +71,13 @@ const noImageProduct = {
   purchasable: true,
   thumbnail_url: null,
   price: {
-    display_amount: "$25.00",
-    amount_in_cents: 2500,
-    compare_at_amount_in_cents: null,
-    display_compare_at_amount: null,
+    amount: "25.00",
+    currency: "USD",
+    compare_at_amount: null,
   },
   original_price: {
-    display_amount: "$25.00",
-    amount_in_cents: 2500,
+    amount: "25.00",
+    currency: "USD",
   },
 } as unknown as Product;
 
