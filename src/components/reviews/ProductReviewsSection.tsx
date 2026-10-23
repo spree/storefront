@@ -4,6 +4,7 @@ import { Suspense } from "react";
 import { getProductReviews } from "@/lib/data/reviews";
 import { promiseWithTimeout } from "@/lib/utils/promise-with-timeout";
 import { ProductReviewCardView } from "./ProductReviewCardView";
+import { ProductReviewStructuredData } from "./ProductReviewStructuredData";
 import { ProductReviewsEmptyState } from "./ProductReviewsEmptyState";
 import {
   PDP_PREVIEW_REVIEW_LIMIT,
@@ -73,58 +74,64 @@ export async function ProductReviewsSection({
   const hasPublishedReviews = hasSummary || reviewsPage.data.length > 0;
 
   return (
-    <section
-      id="reviews"
-      className={
-        embedded
-          ? "border-t border-[#e1e3df] pt-10 pb-2"
-          : "container mx-auto border-t border-[#e1e3df] px-4 py-10 sm:px-6 sm:py-12 lg:px-8"
-      }
-    >
-      {hasPublishedReviews ? (
-        <h2 className="text-[16px] font-semibold tracking-tight text-[#222] sm:text-lg">
-          {t("title")}
-        </h2>
-      ) : null}
+    <>
+      <ProductReviewStructuredData
+        product={product}
+        reviews={reviewsPage.data}
+      />
+      <section
+        id="reviews"
+        className={
+          embedded
+            ? "border-t border-[#e1e3df] pt-10 pb-2"
+            : "container mx-auto border-t border-[#e1e3df] px-4 py-10 sm:px-6 sm:py-12 lg:px-8"
+        }
+      >
+        {hasPublishedReviews ? (
+          <h2 className="text-[16px] font-semibold tracking-tight text-[#222] sm:text-lg">
+            {t("title")}
+          </h2>
+        ) : null}
 
-      {hasSummary ? (
-        <div className="mt-5 border-b border-[#e1e3df] pb-6 sm:mt-6 sm:pb-7">
-          <RatingDistribution
-            product={product}
-            locale={locale}
-            variant={embedded ? "flat" : "card"}
+        {hasSummary ? (
+          <div className="mt-5 border-b border-[#e1e3df] pb-6 sm:mt-6 sm:pb-7">
+            <RatingDistribution
+              product={product}
+              locale={locale}
+              variant={embedded ? "flat" : "card"}
+            />
+          </div>
+        ) : (
+          <ProductReviewsEmptyState
+            heading={t("emptyProductHeading")}
+            description={t("emptyProductIncentive")}
           />
-        </div>
-      ) : (
-        <ProductReviewsEmptyState
-          heading={t("emptyProductHeading")}
-          description={t("emptyProductIncentive")}
-        />
-      )}
+        )}
 
-      {reviewsPage.data.length > 0 ? (
-        <>
-          <div className="mt-5 sm:mt-6">
-            <Suspense fallback={null}>
-              <ProductReviewsSort current={sort} />
-            </Suspense>
-          </div>
-          <div className="mt-5 sm:mt-6">
-            {embedded ? (
-              <ProductReviewsList
-                productSlug={product.slug}
-                sort={sort}
-                previewReviews={reviewsPage.data}
-                totalCount={totalCount}
-              />
-            ) : (
-              reviewsPage.data.map((review) => (
-                <ProductReviewCardView key={review.id} review={review} />
-              ))
-            )}
-          </div>
-        </>
-      ) : null}
-    </section>
+        {reviewsPage.data.length > 0 ? (
+          <>
+            <div className="mt-5 sm:mt-6">
+              <Suspense fallback={null}>
+                <ProductReviewsSort current={sort} />
+              </Suspense>
+            </div>
+            <div className="mt-5 sm:mt-6">
+              {embedded ? (
+                <ProductReviewsList
+                  productSlug={product.slug}
+                  sort={sort}
+                  previewReviews={reviewsPage.data}
+                  totalCount={totalCount}
+                />
+              ) : (
+                reviewsPage.data.map((review) => (
+                  <ProductReviewCardView key={review.id} review={review} />
+                ))
+              )}
+            </div>
+          </>
+        ) : null}
+      </section>
+    </>
   );
 }

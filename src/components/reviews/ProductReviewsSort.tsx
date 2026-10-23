@@ -5,7 +5,7 @@ import { usePathname, useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { cn } from "@/lib/utils";
 
-const SORTS = ["newest", "highest", "lowest"] as const;
+const SORTS = ["newest", "highest", "lowest", "most_helpful"] as const;
 export type ProductReviewSort = (typeof SORTS)[number];
 
 interface ProductReviewsSortProps {

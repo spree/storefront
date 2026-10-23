@@ -27,7 +27,10 @@ const emptyPage = {
 
 export async function getProductReviews(
   productIdOrSlug: string,
-  params?: ListParams & { sort?: "newest" | "highest" | "lowest" },
+  params?: ListParams & {
+    sort?: "newest" | "highest" | "lowest" | "most_helpful";
+    q?: Record<string, string | number | boolean>;
+  },
 ) {
   const client = getClient();
   const reviews = client.products && Reflect.get(client.products, "reviews");
