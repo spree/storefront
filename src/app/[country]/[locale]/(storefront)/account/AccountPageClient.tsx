@@ -1,6 +1,6 @@
 "use client";
 
-import type { Order } from "@spree/sdk";
+import type { AuthProvider, Order } from "@spree/sdk";
 import {
   ArrowUpRight,
   CircleAlert,
@@ -17,6 +17,7 @@ import { useTranslations } from "next-intl";
 import type { ReactNode } from "react";
 import { useEffect, useState } from "react";
 import { AccountShell } from "@/components/account/AccountShell";
+import { SocialLoginButtons } from "@/components/account/SocialLoginButtons";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import {
@@ -30,6 +31,7 @@ import {
 import { Field, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { useAuth } from "@/contexts/AuthContext";
+import { listAuthProviders } from "@/lib/data/customer";
 import { getUnreadMessageCount } from "@/lib/data/messages";
 import { getOrders } from "@/lib/data/orders";
 import { resolveAccountRedirect } from "@/lib/utils/account-redirect";
@@ -66,6 +68,16 @@ export function AccountPageClient({ discovery }: { discovery?: ReactNode }) {
   const [recentOrders, setRecentOrders] = useState<Order[]>([]);
   const [ordersLoading, setOrdersLoading] = useState(false);
   const [unreadMessages, setUnreadMessages] = useState(0);
+  const [authProviders, setAuthProviders] = useState<AuthProvider[]>([]);
+
+  useEffect(() => {
+    if (isAuthenticated) return;
+    void listAuthProviders().then((result) => {
+      if (result.success) {
+        setAuthProviders(result.providers ?? []);
+      }
+    });
+  }, [isAuthenticated]);
 
   useEffect(() => {
     if (!isAuthenticated) return;
@@ -160,6 +172,11 @@ export function AccountPageClient({ discovery }: { discovery?: ReactNode }) {
           </CardHeader>
 
           <CardContent>
+            <SocialLoginButtons
+              providers={authProviders}
+              returnTo={redirectUrl || `${basePath}/account`}
+              disabled={loading}
+            />
             <form onSubmit={handleSubmit} className="space-y-4">
               {error && (
                 <Alert variant="destructive">

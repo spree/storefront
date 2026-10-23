@@ -1,10 +1,12 @@
 "use client";
 
+import type { AuthProvider } from "@spree/sdk";
 import { CircleAlert, Eye, EyeOff } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { useEffect, useState } from "react";
+import { SocialLoginButtons } from "@/components/account/SocialLoginButtons";
 import { PolicyConsent } from "@/components/policy/PolicyConsent";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
@@ -19,6 +21,7 @@ import {
 import { Field, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { useAuth } from "@/contexts/AuthContext";
+import { listAuthProviders } from "@/lib/data/customer";
 import { extractBasePath } from "@/lib/utils/path";
 
 export default function RegisterPage() {
@@ -41,6 +44,15 @@ export default function RegisterPage() {
   const [error, setError] = useState<string | null>(null);
   const [policyConsent, setPolicyConsent] = useState(false);
   const [policyError, setPolicyError] = useState(false);
+  const [authProviders, setAuthProviders] = useState<AuthProvider[]>([]);
+
+  useEffect(() => {
+    void listAuthProviders().then((result) => {
+      if (result.success) {
+        setAuthProviders(result.providers ?? []);
+      }
+    });
+  }, []);
 
   // Redirect if already authenticated
   // useEffect is needed here to prevent rendering issues.
@@ -108,6 +120,11 @@ export default function RegisterPage() {
         </CardHeader>
 
         <CardContent>
+          <SocialLoginButtons
+            providers={authProviders}
+            returnTo={`${basePath}/account`}
+            disabled={submitting}
+          />
           <form onSubmit={handleSubmit} className="space-y-4">
             {error && (
               <Alert variant="destructive">

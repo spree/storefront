@@ -381,6 +381,24 @@ export async function listAuthProviders() {
   }, "Failed to load providers");
 }
 
+export async function completeOAuthCallback(
+  provider: string,
+  params: { code: string; state: string },
+) {
+  return actionResult(async () => {
+    const result = await getClient().auth.callback(provider, params);
+    if ("linked" in result && result.linked) {
+      updateTag("customer");
+      return { linked: true as const };
+    }
+    if ("token" in result && "refresh_token" in result) {
+      await finalizeAuth(result.token, result.refresh_token);
+      return { linked: false as const, user: result.user };
+    }
+    throw new Error("Unexpected OAuth response");
+  }, "Social sign-in failed");
+}
+
 export async function startPhoneVerification(phone: string) {
   return actionResult(async () => {
     const result = await withAuthRefresh((options) =>

@@ -3,6 +3,16 @@ import { getClient } from "@/lib/spree";
 export type StorefrontIntegrationsConfig = {
   google_analytics?: { measurement_id: string };
   google_tag_manager?: { container_id: string };
+  turnstile?: {
+    site_key: string;
+    protect_registration?: boolean;
+    protect_login?: boolean;
+    protect_password_reset?: boolean;
+  };
+  social_auth?: Record<
+    string,
+    { buyer_login_enabled?: boolean; seller_login_enabled?: boolean }
+  >;
 };
 
 export async function getStorefrontIntegrations(): Promise<StorefrontIntegrationsConfig> {
