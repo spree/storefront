@@ -38,6 +38,10 @@ interface ProductPageProps {
   searchParams: Promise<{
     category_id?: string;
     review_sort?: string;
+    review_rating?: string;
+    review_media?: string;
+    review_q?: string;
+    review_page?: string;
     src?: string | string[];
     list_id?: string | string[];
     pos?: string | string[];
@@ -72,12 +76,27 @@ export default async function ProductPage({
 }: ProductPageProps) {
   const { country, locale, slug } = await params;
   const queryParams = await searchParams;
-  const { category_id, review_sort } = queryParams;
+  const {
+    category_id,
+    review_sort,
+    review_rating,
+    review_media,
+    review_q,
+    review_page,
+  } = queryParams;
   const cartDiscovery = parseCartDiscoveryFromSearchParams(queryParams);
   const reviewSort: ProductReviewSort =
-    review_sort === "highest" || review_sort === "lowest"
+    review_sort === "highest" ||
+    review_sort === "lowest" ||
+    review_sort === "most_helpful"
       ? review_sort
       : "newest";
+  const reviewFilters = {
+    rating: review_rating ? Number(review_rating) : undefined,
+    withMedia: review_media === "1",
+    keyword: review_q?.trim() || undefined,
+    page: review_page ? Number(review_page) : 1,
+  };
   const basePath = `/${country}/${locale}`;
 
   const themeTemplatesOn = themeTemplateProductEnabled();
@@ -127,6 +146,7 @@ export default async function ProductPage({
         locale,
         country,
         reviewSort,
+        reviewFilters,
         categoryId: category_id,
         cartDiscovery,
       };

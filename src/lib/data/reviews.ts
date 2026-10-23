@@ -25,12 +25,14 @@ const emptyPage = {
   },
 };
 
+export type ProductReviewListOptions = ListParams & {
+  sort?: "newest" | "highest" | "lowest" | "most_helpful";
+  q?: Record<string, string | number | boolean>;
+};
+
 export async function getProductReviews(
   productIdOrSlug: string,
-  params?: ListParams & {
-    sort?: "newest" | "highest" | "lowest" | "most_helpful";
-    q?: Record<string, string | number | boolean>;
-  },
+  params?: ProductReviewListOptions,
 ) {
   const client = getClient();
   const reviews = client.products && Reflect.get(client.products, "reviews");
@@ -160,4 +162,42 @@ export async function uploadReviewMedia(formData: FormData) {
 
     return upload.signed_id;
   });
+}
+
+export async function markReviewHelpful(productSlug: string, reviewId: string) {
+  return withAuthRefresh(async (options) =>
+    getClient().products.reviews.markHelpful(productSlug, reviewId, options),
+  );
+}
+
+export async function unmarkReviewHelpful(
+  productSlug: string,
+  reviewId: string,
+) {
+  return withAuthRefresh(async (options) =>
+    getClient().products.reviews.unmarkHelpful(productSlug, reviewId, options),
+  );
+}
+
+export async function getProductReviewAttributeScores(productSlug: string) {
+  const client = getClient();
+  const scores = client.products.reviewAttributeScores;
+  if (!scores?.list) return [];
+  return withFallback(async () => {
+    const response = await scores.list(productSlug);
+    return Array.isArray(response.data) ? response.data : [];
+  }, []);
+}
+
+export async function getProductReviewAttributeTemplate(productSlug: string) {
+  const client = getClient();
+  const template = client.products.reviewAttributeTemplate;
+  if (!template?.get) return null;
+  return withFallback(async () => {
+    const response = await template.get(productSlug);
+    if (response && typeof response === "object" && "data" in response) {
+      return (response as { data: unknown }).data;
+    }
+    return response;
+  }, null);
 }

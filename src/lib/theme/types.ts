@@ -36,7 +36,13 @@ export type HomeThemeContext = BaseThemeContext & {
 export type ProductThemeContext = BaseThemeContext & {
   kind: "product";
   product: Product;
-  reviewSort?: "newest" | "highest" | "lowest";
+  reviewSort?: "newest" | "highest" | "lowest" | "most_helpful";
+  reviewFilters?: {
+    rating?: number;
+    withMedia?: boolean;
+    keyword?: string;
+    page?: number;
+  };
   categoryId?: string;
   cartDiscovery?: CartDiscoveryInput;
 };

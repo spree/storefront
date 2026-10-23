@@ -147,10 +147,21 @@ export async function renderResourceSection(
             product={context.product}
             locale={context.locale}
             sort={
-              String(section.settings.sort || "newest") as
+              String(section.settings.sort || context.reviewSort || "newest") as
                 | "newest"
                 | "highest"
                 | "lowest"
+                | "most_helpful"
+            }
+            filters={context.reviewFilters}
+            layout={
+              String(section.settings.layout || "full") as
+                | "summary"
+                | "full"
+                | "carousel"
+                | "gallery"
+                | "highlights"
+                | "attributes"
             }
           />
         </section>

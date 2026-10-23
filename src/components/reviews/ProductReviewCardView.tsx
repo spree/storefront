@@ -8,6 +8,7 @@ import { useLocale, useTranslations } from "next-intl";
 import { cn } from "@/lib/utils";
 import { formatDateTime } from "@/lib/utils/format";
 import { extractBasePath } from "@/lib/utils/path";
+import { ReviewHelpfulButton } from "./ReviewHelpfulButton";
 import { ReviewMedia } from "./ReviewMedia";
 import { StarRatingDisplay } from "./StarRating";
 
@@ -19,6 +20,7 @@ export function reviewBodyExceedsPreview(review: ProductReview): boolean {
 
 interface ProductReviewCardViewProps {
   review: ProductReview;
+  productSlug?: string;
   compact?: boolean;
   showProductLink?: boolean;
   basePath?: string;
@@ -50,6 +52,7 @@ function ReviewerName({
 
 export function ProductReviewCardView({
   review,
+  productSlug,
   compact = false,
   showProductLink = false,
   basePath = "",
@@ -169,6 +172,27 @@ export function ProductReviewCardView({
         </ul>
       ) : null}
 
+      {!compact && review.attribute_answers?.length ? (
+        <ul className="mt-3 space-y-1.5 text-xs text-[#595959]">
+          {review.attribute_answers.map((answer) => (
+            <li key={answer.key} className="flex flex-wrap items-center gap-2">
+              <span className="font-medium text-[#222]">{answer.label}</span>
+              {answer.kind === "rating_5" && answer.rating_value != null ? (
+                <StarRatingDisplay
+                  rating={answer.rating_value}
+                  size="sm"
+                  tone="dark"
+                />
+              ) : null}
+              {answer.text_value ? <span>{answer.text_value}</span> : null}
+              {answer.choice_values?.length ? (
+                <span>{answer.choice_values.join(", ")}</span>
+              ) : null}
+            </li>
+          ))}
+        </ul>
+      ) : null}
+
       {showProductLink && review.product_name && review.product_slug ? (
         <p className="mt-3 text-xs text-[#595959]">
           {t("productFallback")}:{" "}
@@ -183,6 +207,12 @@ export function ProductReviewCardView({
 
       {!compact ? (
         <ReviewMedia images={review.images} videos={review.videos} />
+      ) : null}
+
+      {!compact && productSlug ? (
+        <div className="mt-3">
+          <ReviewHelpfulButton productSlug={productSlug} review={review} />
+        </div>
       ) : null}
 
       {!compact && review.seller_reply ? (
