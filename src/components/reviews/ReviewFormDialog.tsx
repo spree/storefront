@@ -4,7 +4,7 @@ import type { ProductReview, ReviewablePurchase } from "@spree/sdk";
 import { ArrowLeft, ArrowRight, Check, ImagePlus, X } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
-import { useId, useRef, useState, useTransition } from "react";
+import { useEffect, useId, useRef, useState, useTransition } from "react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -18,9 +18,17 @@ import { ProductImage } from "@/components/ui/product-image";
 import { Textarea } from "@/components/ui/textarea";
 import {
   createProductReview,
+  getProductReviewAttributeTemplate,
   updateProductReview,
   uploadReviewMedia,
 } from "@/lib/data/reviews";
+import {
+  type AttributeAnswerDraft,
+  type ReviewAttributeDefinition,
+  ReviewAttributeQuestions,
+  serializeAttributeAnswers,
+  validateAttributeAnswers,
+} from "./ReviewAttributeQuestions";
 import { StarRatingInput } from "./StarRating";
 
 type PendingMedia = {
@@ -75,11 +83,22 @@ export function ReviewFormDialog({ target, onClose }: ReviewFormDialogProps) {
     target.mode === "edit" ? (target.review.body ?? "") : "",
   );
   const [media, setMedia] = useState<PendingMedia[]>([]);
+  const [attributeDefinitions, setAttributeDefinitions] = useState<
+    ReviewAttributeDefinition[]
+  >([]);
+  const [attributeAnswers, setAttributeAnswers] = useState<
+    Record<string, AttributeAnswerDraft>
+  >({});
 
   const productLabel =
     target.mode === "create"
       ? target.purchase.product_name
       : target.review.product_name;
+
+  const attributesValid = validateAttributeAnswers(
+    attributeDefinitions,
+    attributeAnswers,
+  );
 
   const canSubmit =
     rating >= 1 &&
@@ -91,6 +110,7 @@ export function ReviewFormDialog({ target, onClose }: ReviewFormDialogProps) {
     customerServiceRating >= 1 &&
     customerServiceRating <= 5 &&
     recommended !== null &&
+    attributesValid &&
     !pending &&
     !uploading &&
     title.trim().length > 0 &&
@@ -102,6 +122,19 @@ export function ReviewFormDialog({ target, onClose }: ReviewFormDialogProps) {
     target.mode === "edit" ? (target.review.images ?? []) : [];
   const existingVideos =
     target.mode === "edit" ? (target.review.videos ?? []) : [];
+
+  useEffect(() => {
+    if (target.mode !== "create") return;
+    const slug = target.purchase.product_slug;
+    if (!slug) return;
+    void getProductReviewAttributeTemplate(slug).then((template) => {
+      if (!template || typeof template !== "object") return;
+      const definitions = Reflect.get(template, "definitions");
+      if (Array.isArray(definitions)) {
+        setAttributeDefinitions(definitions as ReviewAttributeDefinition[]);
+      }
+    });
+  }, [target]);
 
   async function handleAddMedia(fileList: FileList | null) {
     if (!fileList?.length) return;
@@ -168,6 +201,10 @@ export function ReviewFormDialog({ target, onClose }: ReviewFormDialogProps) {
   }
 
   function handleSubmit() {
+    if (!attributesValid) {
+      setError(t("attributeAnswersRequired"));
+      return;
+    }
     if (!canSubmit) return;
     setError(null);
     startTransition(async () => {
@@ -178,6 +215,8 @@ export function ReviewFormDialog({ target, onClose }: ReviewFormDialogProps) {
         const videoIds = media
           .filter((item) => item.kind === "video")
           .map((item) => item.signedId);
+        const serializedAttributes =
+          serializeAttributeAnswers(attributeAnswers);
         if (target.mode === "create") {
           await createProductReview({
             line_item_id: target.purchase.line_item_id,
@@ -190,6 +229,10 @@ export function ReviewFormDialog({ target, onClose }: ReviewFormDialogProps) {
             body: body.trim() || undefined,
             images: imageIds.length ? imageIds : undefined,
             videos: videoIds.length ? videoIds : undefined,
+            attribute_answers:
+              serializedAttributes.length > 0
+                ? serializedAttributes
+                : undefined,
           });
         } else {
           await updateProductReview(target.review.id, {
@@ -400,6 +443,15 @@ export function ReviewFormDialog({ target, onClose }: ReviewFormDialogProps) {
                 </div>
               </div>
             </fieldset>
+            {attributeDefinitions.length > 0 ? (
+              <ReviewAttributeQuestions
+                definitions={attributeDefinitions}
+                answers={attributeAnswers}
+                onChange={setAttributeAnswers}
+                disabled={pending || uploading}
+                legend={t("categoryQuestionsLegend")}
+              />
+            ) : null}
             <div>
               <label
                 htmlFor={titleInputId}

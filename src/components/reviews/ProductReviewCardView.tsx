@@ -8,6 +8,7 @@ import { useLocale, useTranslations } from "next-intl";
 import { cn } from "@/lib/utils";
 import { formatDateTime } from "@/lib/utils/format";
 import { extractBasePath } from "@/lib/utils/path";
+import { ProductReviewReportButton } from "./ProductReviewReportButton";
 import { ReviewHelpfulButton } from "./ReviewHelpfulButton";
 import { ReviewMedia } from "./ReviewMedia";
 import { StarRatingDisplay } from "./StarRating";
@@ -210,8 +211,9 @@ export function ProductReviewCardView({
       ) : null}
 
       {!compact && productSlug ? (
-        <div className="mt-3">
+        <div className="mt-3 flex flex-wrap items-center gap-1">
           <ReviewHelpfulButton productSlug={productSlug} review={review} />
+          <ProductReviewReportButton reviewId={review.id} />
         </div>
       ) : null}
 

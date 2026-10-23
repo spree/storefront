@@ -16,6 +16,7 @@ import {
   ProductReviewsSort,
 } from "./ProductReviewsSort";
 import {
+  buildReviewListHref,
   buildReviewListQuery,
   type ProductReviewListFilters,
 } from "./product-review-list-filters";
@@ -77,10 +78,10 @@ export async function ProductReviewsSection({
   const reviewsPage =
     aggregateReviewCount > 0
       ? await promiseWithTimeout(
-          getProductReviews(
-            product.slug,
-            buildReviewListQuery(sort, filters, pageLimit),
-          ),
+          getProductReviews(product.slug, {
+            ...buildReviewListQuery(sort, filters, pageLimit),
+            sort,
+          }),
           REVIEWS_FETCH_TIMEOUT_MS,
           emptyReviewsPage,
         )
@@ -175,7 +176,7 @@ export async function ProductReviewsSection({
               >
                 {currentPage > 1 ? (
                   <a
-                    href={`?review_page=${currentPage - 1}`}
+                    href={buildReviewListHref(sort, filters, currentPage - 1)}
                     className="rounded-md border px-3 py-1.5"
                   >
                     {t("previousPage")}
@@ -186,7 +187,7 @@ export async function ProductReviewsSection({
                 </span>
                 {currentPage < totalPages ? (
                   <a
-                    href={`?review_page=${currentPage + 1}`}
+                    href={buildReviewListHref(sort, filters, currentPage + 1)}
                     className="rounded-md border px-3 py-1.5"
                   >
                     {t("nextPage")}

@@ -1539,7 +1539,21 @@
     "status_pending": "Pending moderation",
     "status_published": "Published",
     "status_rejected": "Not published",
-    "status_hidden": "Hidden"
+    "status_hidden": "Hidden",
+    "categoryQuestionsLegend": "About this item",
+    "attributeAnswersRequired": "Answer all required category questions before submitting.",
+    "reportReview": "Report review",
+    "reportReviewTitle": "Report this review",
+    "reportReviewDescription": "Tell us what is wrong. We review every report and do not remove reviews just because they were reported.",
+    "reportReasonLabel": "Reason",
+    "reportReasonNone": "Choose a reason",
+    "reportReasonRequired": "Choose a reason for your report.",
+    "reportDetailsLabel": "Details (optional)",
+    "reportSubmit": "Submit report",
+    "reportCancel": "Cancel",
+    "reportSubmitted": "Thank you. We received your report.",
+    "reportFailed": "Could not submit your report. Please try again.",
+    "reportDuplicate": "You have already reported this review."
   },
   "sellers": {
     "contactSeller": "Contact seller",

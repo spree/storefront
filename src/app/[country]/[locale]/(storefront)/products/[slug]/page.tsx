@@ -225,6 +225,7 @@ export default async function ProductPage({
               product={product}
               locale={locale}
               sort={reviewSort}
+              filters={reviewFilters}
               embedded
             />
           </Suspense>
