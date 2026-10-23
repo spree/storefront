@@ -192,13 +192,15 @@ export async function SellerShopHeader({
                   <span aria-hidden="true">·</span>
                   <span>{t("followersCount", { count: followersCount })}</span>
                 </div>
-                <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs font-medium text-[var(--marketplace-seller-accent-text,#29252d)]">
-                  {seller.ships_from?.trim() ? (
-                    <span className="inline-flex items-center gap-1">
-                      <MapPin className="size-3.5" aria-hidden="true" />
+                {seller.ships_from?.trim() ? (
+                  <div className="mt-1.5 inline-flex items-center gap-1 text-sm text-[var(--marketplace-seller-accent-muted,#766f78)]">
+                    <MapPin className="size-3.5 shrink-0" aria-hidden="true" />
+                    <span>
                       {t("shipsFrom", { location: seller.ships_from.trim() })}
                     </span>
-                  ) : null}
+                  </div>
+                ) : null}
+                <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs font-medium text-[var(--marketplace-seller-accent-text,#29252d)]">
                   {seller.badges?.some(
                     (badge) =>
                       badge.key === "on_time_shipping" &&

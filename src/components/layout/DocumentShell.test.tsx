@@ -8,6 +8,11 @@ vi.mock("next/font/google", () => ({
 
 vi.mock("@next/third-parties/google", () => ({
   GoogleTagManager: () => null,
+  GoogleAnalytics: () => null,
+}));
+
+vi.mock("@/components/layout/StorefrontAnalyticsConsent", () => ({
+  StorefrontAnalyticsConsent: () => null,
 }));
 
 vi.mock("@vercel/analytics/next", () => ({

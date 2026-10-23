@@ -1,11 +1,10 @@
-import { GoogleTagManager } from "@next/third-parties/google";
 import { Analytics } from "@vercel/analytics/next";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import { Geist, Playfair_Display } from "next/font/google";
 import { Suspense } from "react";
+import { StorefrontAnalyticsConsent } from "@/components/layout/StorefrontAnalyticsConsent";
 import { localeDirection } from "@/i18n/locales";
 
-const gtmId = process.env.GTM_ID;
 const spreeApiOrigin = (() => {
   try {
     return process.env.SPREE_API_URL
@@ -46,11 +45,11 @@ export function DocumentShell({ children, locale }: DocumentShellProps) {
           </>
         )}
       </head>
-      {gtmId && <GoogleTagManager gtmId={gtmId} />}
       <body
         className={`${geist.variable} ${playfair.variable} antialiased min-h-screen flex flex-col`}
         suppressHydrationWarning
       >
+        <StorefrontAnalyticsConsent />
         <Suspense fallback={null}>{children}</Suspense>
         <Analytics />
         <SpeedInsights />

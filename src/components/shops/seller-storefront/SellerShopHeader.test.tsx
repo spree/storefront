@@ -4,7 +4,8 @@ import { describe, expect, it, vi } from "vitest";
 
 vi.mock("next-intl/server", () => ({
   getLocale: async () => "en",
-  getTranslations: async () => (key: string) => key,
+  getTranslations: async () => (key: string, values?: { location?: string }) =>
+    values?.location ? `${key}:${values.location}` : key,
 }));
 
 vi.mock("@/components/shops/ContactShopButton", () => ({
@@ -33,6 +34,20 @@ const seller = (badges: Seller["badges"]) =>
   }) as Seller;
 
 describe("SellerShopHeader trust signals", () => {
+  it("shows the seller's public shipping location below shop stats", async () => {
+    const html = renderToStaticMarkup(
+      await SellerShopHeader({
+        seller: { ...seller([]), ships_from: "Wilmington, DE" } as Seller,
+        basePath: "/us/en",
+        following: false,
+        shopPath: "/us/en/sellers/test-maker",
+      }),
+    );
+
+    expect(html).toContain("shipsFrom");
+    expect(html).toContain("shipsFrom:Wilmington, DE");
+  });
+
   it("applies the saved shop accent to the profile band with readable text", async () => {
     const html = renderToStaticMarkup(
       await SellerShopHeader({
