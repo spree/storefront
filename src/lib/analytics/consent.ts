@@ -23,6 +23,9 @@ export function setAnalyticsConsent(choice: AnalyticsConsentChoice): void {
   if (typeof window === "undefined") return;
   try {
     window.localStorage.setItem(CONSENT_STORAGE_KEY, choice);
+    window.dispatchEvent(
+      new CustomEvent("spree-analytics-consent", { detail: choice }),
+    );
   } catch {
     // ignore quota / private mode
   }

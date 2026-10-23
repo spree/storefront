@@ -13,6 +13,8 @@ export type StorefrontIntegrationsConfig = {
     string,
     { buyer_login_enabled?: boolean; seller_login_enabled?: boolean }
   >;
+  crisp?: { website_id: string };
+  microsoft_clarity?: { project_id: string };
 };
 
 export async function getStorefrontIntegrations(): Promise<StorefrontIntegrationsConfig> {
