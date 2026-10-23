@@ -271,8 +271,15 @@ export function trackAddPaymentInfo(
   );
 }
 
-export function trackPurchase(order: Order | OrderGroup): void {
-  const key = `gtm_purchase_${order.number}`;
+/**
+ * One purchase event per checkout, however many orders it produced.
+ *
+ * A basket spanning several sellers completes into an order group, so the
+ * items, tax and shipping are collected across its orders — GA4 would
+ * otherwise record a transaction missing every seller but the first.
+ */
+export function trackPurchase(result: Cart | Order | OrderGroup): void {
+  const key = `gtm_purchase_${result.number}`;
   try {
     if (typeof window !== "undefined" && localStorage.getItem(key)) {
       return;
@@ -281,12 +288,23 @@ export function trackPurchase(order: Order | OrderGroup): void {
     // Storage unavailable (private browsing, quota exceeded) — proceed without dedup
   }
 
+  // The group reports neither tax nor shipping of its own — both are summed
+  // from the orders it holds.
+  const orders: Array<Cart | Order> =
+    "orders" in result ? result.orders : [result];
+
   pushEcommerceEvent(
     "purchase",
-    buildOrderEcommercePayload(order, {
-      transaction_id: order.number,
-      tax: safeParseFloat(order.tax_total),
-      shipping: safeParseFloat(order.delivery_total),
+    buildOrderEcommercePayload(result, {
+      transaction_id: result.number,
+      tax: orders.reduce(
+        (running, child) => running + safeParseFloat(child.tax_total),
+        0,
+      ),
+      shipping: orders.reduce(
+        (running, child) => running + safeParseFloat(child.delivery_total),
+        0,
+      ),
     }),
   );
 

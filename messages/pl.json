@@ -418,6 +418,8 @@
     "thanksForOrderAnonymous": "Dziękujemy za zamówienie!",
     "orderNumber": "Zamówienie #{number}",
     "emailConfirmation": "Wkrótce otrzymasz potwierdzenie e-mailem.",
+    "splitDeliveries": "Twoje zamówienie dotrze w {count} osobnych dostawach.",
+    "deliveryOf": "Dostawa {index} z {count}",
     "orderItems": "Pozycje zamówienia",
     "contactInformation": "Dane kontaktowe",
     "shippingAddress": "Adres wysyłki",
