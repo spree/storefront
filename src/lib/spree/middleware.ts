@@ -42,13 +42,18 @@ const PUBLIC_ACCOUNT_PATHS = new Set([
   "/account/reset-password",
 ]);
 
+function isPublicAccountPath(normalizedPath: string): boolean {
+  if (PUBLIC_ACCOUNT_PATHS.has(normalizedPath)) return true;
+  return normalizedPath.startsWith("/account/auth/callback/");
+}
+
 function isProtectedAccountPath(pathname: string, localizedPrefix: string) {
   const localizedPath = pathname.slice(localizedPrefix.length);
   const normalizedPath = localizedPath.replace(/\/+$/, "") || "/";
 
   return (
     normalizedPath.startsWith("/account/") &&
-    !PUBLIC_ACCOUNT_PATHS.has(normalizedPath)
+    !isPublicAccountPath(normalizedPath)
   );
 }
 

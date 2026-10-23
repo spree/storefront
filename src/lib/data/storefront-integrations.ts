@@ -1,4 +1,4 @@
-import { getClient } from "@/lib/spree";
+import { getClient } from "@/lib/spree/config";
 
 export type StorefrontIntegrationsConfig = {
   google_analytics?: { measurement_id: string };
