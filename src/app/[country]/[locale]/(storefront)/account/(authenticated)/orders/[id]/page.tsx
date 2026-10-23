@@ -1,4 +1,3 @@
-import { isOrderGroup } from "@spree/sdk";
 import Link from "next/link";
 import { connection } from "next/server";
 import { getTranslations } from "next-intl/server";
@@ -25,9 +24,10 @@ export default async function OrderDetailPage({
   const basePath = `/${country}/${locale}`;
   const order = await getOrder(id);
 
-  // Account pages link to single orders by their id; an order group only
-  // comes back for a cart id, which is not an order of this account.
-  if (!order || isOrderGroup(order) || order.completed_at === null) {
+  // The history lists one row per checkout, so this id is a group's whenever
+  // the basket reached several sellers — `/orders/:id` resolves either shape,
+  // and the detail below renders the whole purchase from it.
+  if (!order || order.completed_at === null) {
     return (
       <div className="text-center py-12">
         <h2 className="text-xl font-medium text-gray-900 mb-2">
