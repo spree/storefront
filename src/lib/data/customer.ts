@@ -122,6 +122,7 @@ export async function syncSession(): Promise<{
 export async function login(
   email: string,
   password: string,
+  turnstileToken?: string,
 ): Promise<{
   success: boolean;
   user?: {
@@ -135,7 +136,11 @@ export async function login(
   error?: string;
 }> {
   try {
-    const result = await getClient().auth.login({ email, password });
+    const result = await getClient().auth.login({
+      email,
+      password,
+      ...(turnstileToken ? { turnstile_token: turnstileToken } : {}),
+    });
     if ("mfa_required" in result) {
       return { success: false, mfaRequired: true, mfaToken: result.mfa_token };
     }
@@ -187,6 +192,7 @@ export async function register(params: {
   first_name?: string;
   last_name?: string;
   phone?: string;
+  turnstile_token?: string;
   /** Arbitrary key-value data stored on the customer (e.g. wholesale company). */
   metadata?: Record<string, unknown>;
 }): Promise<{
@@ -245,10 +251,12 @@ export async function logout(): Promise<void> {
 export async function requestPasswordReset(
   email: string,
   redirectUrl?: string,
+  turnstileToken?: string,
 ) {
   return getClient().passwordResets.create({
     email,
     ...(redirectUrl && { redirect_url: redirectUrl }),
+    ...(turnstileToken ? { turnstile_token: turnstileToken } : {}),
   });
 }
 

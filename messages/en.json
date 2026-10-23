@@ -726,6 +726,7 @@
     "socialLoginFailed": "We could not complete social sign-in. Try again or use your password.",
     "completingSignIn": "Completing sign-in…",
     "backToSignIn": "Back to sign in",
+    "turnstileRequired": "Complete the security check before continuing.",
     "email": "Email",
     "password": "Password",
     "signIn": "Sign In",
@@ -1170,7 +1171,8 @@
     "resetEmailSent": "If an account exists for <strong>{email}</strong>, we've sent password reset instructions.",
     "linkExpiry": "The link in the email will expire in 15 minutes. Check your spam folder if you don't see it.",
     "tryDifferentEmail": "Try a different email",
-    "genericError": "Something went wrong. Please try again."
+    "genericError": "Something went wrong. Please try again.",
+    "turnstileRequired": "Complete the security check before continuing."
   },
   "resetPassword": {
     "title": "Set a new password",

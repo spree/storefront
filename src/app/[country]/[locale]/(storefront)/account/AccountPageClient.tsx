@@ -18,6 +18,7 @@ import type { ReactNode } from "react";
 import { useEffect, useState } from "react";
 import { AccountShell } from "@/components/account/AccountShell";
 import { SocialLoginButtons } from "@/components/account/SocialLoginButtons";
+import { AuthTurnstile } from "@/components/security/AuthTurnstile";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import {
@@ -31,6 +32,7 @@ import {
 import { Field, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { useAuth } from "@/contexts/AuthContext";
+import { useTurnstileConfig } from "@/hooks/use-turnstile-config";
 import { listAuthProviders } from "@/lib/data/customer";
 import { getUnreadMessageCount } from "@/lib/data/messages";
 import { getOrders } from "@/lib/data/orders";
@@ -69,6 +71,8 @@ export function AccountPageClient({ discovery }: { discovery?: ReactNode }) {
   const [ordersLoading, setOrdersLoading] = useState(false);
   const [unreadMessages, setUnreadMessages] = useState(0);
   const [authProviders, setAuthProviders] = useState<AuthProvider[]>([]);
+  const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
+  const { required: turnstileRequired } = useTurnstileConfig("login");
 
   useEffect(() => {
     if (isAuthenticated) return;
@@ -136,7 +140,13 @@ export function AccountPageClient({ discovery }: { discovery?: ReactNode }) {
       return;
     }
 
-    const result = await login(email, password);
+    if (turnstileRequired && !turnstileToken) {
+      setError(t("turnstileRequired"));
+      setLoading(false);
+      return;
+    }
+
+    const result = await login(email, password, turnstileToken ?? undefined);
     if (result.success) {
       if (redirectUrl) {
         router.push(redirectUrl);
@@ -263,6 +273,13 @@ export function AccountPageClient({ discovery }: { discovery?: ReactNode }) {
                     </Link>
                   </div>
                 </>
+              ) : null}
+
+              {!mfaToken ? (
+                <AuthTurnstile
+                  action="login"
+                  onTokenChange={setTurnstileToken}
+                />
               ) : null}
 
               <div className="w-full">

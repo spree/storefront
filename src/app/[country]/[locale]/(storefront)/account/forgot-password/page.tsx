@@ -5,6 +5,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { useState } from "react";
+import { AuthTurnstile } from "@/components/security/AuthTurnstile";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import {
@@ -17,6 +18,7 @@ import {
 } from "@/components/ui/card";
 import { Field, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
+import { useTurnstileConfig } from "@/hooks/use-turnstile-config";
 import { requestPasswordReset } from "@/lib/data/customer";
 import { extractBasePath } from "@/lib/utils/path";
 
@@ -29,16 +31,27 @@ export default function ForgotPasswordPage() {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [submitted, setSubmitted] = useState(false);
+  const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
+  const { required: turnstileRequired } = useTurnstileConfig("password_reset");
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
+    if (turnstileRequired && !turnstileToken) {
+      setError(t("turnstileRequired"));
+      return;
+    }
+
     setSubmitting(true);
 
     try {
       const origin = window.location.origin;
       const redirectUrl = `${origin}${basePath}/account/reset-password`;
-      const result = await requestPasswordReset(email, redirectUrl);
+      const result = await requestPasswordReset(
+        email,
+        redirectUrl,
+        turnstileToken ?? undefined,
+      );
       if (result?.message) {
         setSubmitted(true);
       } else {
@@ -129,6 +142,11 @@ export default function ForgotPasswordPage() {
                 placeholder="you@example.com"
               />
             </Field>
+
+            <AuthTurnstile
+              action="password_reset"
+              onTokenChange={setTurnstileToken}
+            />
 
             <div className="w-full">
               <Button

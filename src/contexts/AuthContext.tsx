@@ -45,6 +45,7 @@ interface AuthContextType {
   login: (
     email: string,
     password: string,
+    turnstileToken?: string,
   ) => Promise<{
     success: boolean;
     error?: string;
@@ -169,8 +170,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   // Login
   const login = useCallback(
-    async (email: string, password: string) => {
-      const result = await loginAction(email, password);
+    async (email: string, password: string, turnstileToken?: string) => {
+      const result = await loginAction(email, password, turnstileToken);
       if (result.success && result.user) {
         resetTrafficSessionToken();
         setUser(toUser(result.user));
