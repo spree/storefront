@@ -150,9 +150,9 @@ export function ProductDetails({ product, basePath }: ProductDetailsProps) {
             )}
           </div>
 
-          {/* Stock Status */}
+          {/* Stock Status — stock with no price cannot be bought, so it reads as out of stock like the button; a guest who must sign in to see prices gets no button, so stock alone decides */}
           <div className="mt-4">
-            {inStock ? (
+            {inStock && (isPurchasable || pricesHidden) ? (
               <span className="inline-flex items-center gap-1.5 text-green-600">
                 <CircleCheckBig className="w-5 h-5" />
                 {t("inStock")}
