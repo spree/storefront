@@ -1,3 +1,6 @@
+/** Embedded PDP preview row count (server-safe; do not import from client modules). */
+export const PDP_PREVIEW_REVIEW_LIMIT = 5;
+
 export type ProductReviewListFilters = {
   rating?: number;
   withMedia?: boolean;

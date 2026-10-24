@@ -17,8 +17,9 @@ import {
   reviewBodyExceedsPreview,
 } from "./ProductReviewCardView";
 import type { ProductReviewSort } from "./ProductReviewsSort";
+import { PDP_PREVIEW_REVIEW_LIMIT } from "./product-review-list-filters";
 
-export const PDP_PREVIEW_REVIEW_LIMIT = 5;
+export { PDP_PREVIEW_REVIEW_LIMIT };
 
 type ProductReviewsListProps = {
   productSlug: string;
@@ -54,7 +55,7 @@ export function ProductReviewsList({
     setLoading(true);
     getProductReviews(productSlug, {
       sort,
-      limit: Math.min(totalCount, 100),
+      limit: Math.max(1, Math.min(totalCount, 100)),
       page: 1,
     })
       .then((page) => {

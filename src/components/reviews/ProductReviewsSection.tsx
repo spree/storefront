@@ -7,10 +7,7 @@ import { ProductReviewCardView } from "./ProductReviewCardView";
 import { ProductReviewStructuredData } from "./ProductReviewStructuredData";
 import { ProductReviewsEmptyState } from "./ProductReviewsEmptyState";
 import { ProductReviewsFilters } from "./ProductReviewsFilters";
-import {
-  PDP_PREVIEW_REVIEW_LIMIT,
-  ProductReviewsList,
-} from "./ProductReviewsList";
+import { ProductReviewsList } from "./ProductReviewsList";
 import {
   type ProductReviewSort,
   ProductReviewsSort,
@@ -18,6 +15,7 @@ import {
 import {
   buildReviewListHref,
   buildReviewListQuery,
+  PDP_PREVIEW_REVIEW_LIMIT,
   type ProductReviewListFilters,
 } from "./product-review-list-filters";
 import { RatingDistribution } from "./RatingDistribution";
@@ -75,17 +73,14 @@ export async function ProductReviewsSection({
     },
   };
 
-  const reviewsPage =
-    aggregateReviewCount > 0
-      ? await promiseWithTimeout(
-          getProductReviews(product.slug, {
-            ...buildReviewListQuery(sort, filters, pageLimit),
-            sort,
-          }),
-          REVIEWS_FETCH_TIMEOUT_MS,
-          emptyReviewsPage,
-        )
-      : emptyReviewsPage;
+  const reviewsPage = await promiseWithTimeout(
+    getProductReviews(product.slug, {
+      ...buildReviewListQuery(sort, filters, pageLimit),
+      sort,
+    }),
+    REVIEWS_FETCH_TIMEOUT_MS,
+    emptyReviewsPage,
+  );
 
   const totalCount =
     reviewsPage.meta?.count ?? reviewsPage.data.length ?? aggregateReviewCount;
@@ -127,12 +122,12 @@ export async function ProductReviewsSection({
               />
             ) : null}
           </div>
-        ) : (
+        ) : reviewsPage.data.length === 0 ? (
           <ProductReviewsEmptyState
             heading={t("emptyProductHeading")}
             description={t("emptyProductIncentive")}
           />
-        )}
+        ) : null}
 
         {reviewsPage.data.length > 0 && layout !== "summary" ? (
           <>
