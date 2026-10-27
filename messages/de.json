@@ -672,5 +672,11 @@
       "signInForPricing": "Zur Preisanzeige anmelden",
       "signInToOrder": "Zum Bestellen anmelden"
     }
+  },
+  "notFound": {
+    "title": "Seite nicht gefunden",
+    "description": "Die gesuchte Seite existiert nicht oder ist nicht mehr verfügbar.",
+    "backHome": "Zur Startseite",
+    "browseProducts": "Alle Produkte ansehen"
   }
 }

@@ -672,5 +672,11 @@
       "signInForPricing": "Zaloguj się, aby zobaczyć ceny",
       "signInToOrder": "Zaloguj się, aby zamówić"
     }
+  },
+  "notFound": {
+    "title": "Nie znaleziono strony",
+    "description": "Strona, której szukasz, nie istnieje lub nie jest już dostępna.",
+    "backHome": "Przejdź do strony głównej",
+    "browseProducts": "Zobacz wszystkie produkty"
   }
 }
