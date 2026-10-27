@@ -332,7 +332,8 @@
     "showPassword": "Pokaż hasło",
     "hidePassword": "Ukryj hasło",
     "forgotPassword": "Zapomniałeś hasła?",
-    "policyConsentRequired": "Musisz zaakceptować regulamin sklepu, aby utworzyć konto"
+    "policyConsentRequired": "Musisz zaakceptować regulamin sklepu, aby utworzyć konto",
+    "companies": "Firmy"
   },
   "register": {
     "createAccount": "Utwórz konto",
@@ -628,5 +629,36 @@
       "signInForPricing": "Zaloguj się, aby zobaczyć ceny",
       "signInToOrder": "Zaloguj się, aby zamówić"
     }
+  },
+  "companies": {
+    "title": "Firmy",
+    "subtitle": "Organizacje, dla których możesz kupować.",
+    "empty": "Nie należysz jeszcze do żadnej firmy.",
+    "members": "Członkowie",
+    "addMember": "Dodaj",
+    "addMemberPlaceholder": "wspolpracownik@przyklad.pl",
+    "addMemberFailed": "Nie udało się dodać tej osoby.",
+    "removeMember": "Usuń członka",
+    "invitationPending": "Zaproszenie wysłane",
+    "revoke": "Cofnij",
+    "addresses": "Książka adresowa",
+    "addressesHelp": "Dokąd dostarczane są zamówienia tej organizacji. Pokazujemy też lokalizacje odziedziczone po jednostce nadrzędnej.",
+    "viewOrders": "Zobacz zamówienia firmy",
+    "ordersTitle": "Zamówienia firmy",
+    "invitationTitle": "Dołącz do {company}",
+    "invitationBody": "Zaproszono Cię do zakupów w {store} jako {email}.",
+    "invitationMissingToken": "W tym linku brakuje kodu zaproszenia.",
+    "invitationInvalidTitle": "To zaproszenie jest już nieaktualne",
+    "invitationInvalidBody": "Mogło zostać przyjęte, cofnięte albo po prostu wygasło. Poproś o nowe.",
+    "invitationWrongAccount": "To zaproszenie wysłano na {invited}, a jesteś zalogowany jako {current}. Zaloguj się na zaproszony adres.",
+    "invitationAcceptFailed": "Nie udało się przyjąć zaproszenia.",
+    "acceptAsSignedIn": "Przyjmij zaproszenie",
+    "acceptAndRegister": "Załóż konto i dołącz",
+    "accepting": "Przyjmowanie…",
+    "firstName": "Imię",
+    "lastName": "Nazwisko",
+    "password": "Hasło",
+    "buyingFor": "Zakup dla",
+    "buyPersonally": "Kup prywatnie"
   }
 }

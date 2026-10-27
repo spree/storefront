@@ -8,6 +8,7 @@ import { usePathname } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { useEffect, useRef, useState } from "react";
 import { QuantityPickerField } from "@/components/cart/QuantityPickerField";
+import { BuyingForSelector } from "@/components/companies/BuyingForSelector";
 import { Button } from "@/components/ui/button";
 import { ProductImage } from "@/components/ui/product-image";
 import { useCart } from "@/contexts/CartContext";
@@ -95,6 +96,15 @@ export default function CartPage() {
       <h1 className="text-3xl font-bold text-gray-900 mb-8">
         {t("shoppingCart")}
       </h1>
+
+      {/* Above the items: the prices below are the ones this audience gets,
+          so the choice belongs before the buyer reads them. */}
+      <div className="mb-6">
+        <BuyingForSelector
+          cartId={cart.id}
+          selectedCompanyId={cart.company_id ?? null}
+        />
+      </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         {/* Cart Items */}

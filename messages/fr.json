@@ -332,7 +332,8 @@
     "showPassword": "Afficher le mot de passe",
     "hidePassword": "Masquer le mot de passe",
     "forgotPassword": "Mot de passe oublie ?",
-    "policyConsentRequired": "Vous devez accepter les politiques du magasin pour creer un compte"
+    "policyConsentRequired": "Vous devez accepter les politiques du magasin pour creer un compte",
+    "companies": "Entreprises"
   },
   "register": {
     "createAccount": "Creer un compte",
@@ -628,5 +629,36 @@
       "signInForPricing": "Connectez-vous pour voir les prix",
       "signInToOrder": "Connectez-vous pour commander"
     }
+  },
+  "companies": {
+    "title": "Entreprises",
+    "subtitle": "Les organisations pour lesquelles vous pouvez acheter.",
+    "empty": "Vous n'êtes membre d'aucune entreprise pour le moment.",
+    "members": "Membres",
+    "addMember": "Ajouter",
+    "addMemberPlaceholder": "collegue@exemple.fr",
+    "addMemberFailed": "Impossible d'ajouter cette personne.",
+    "removeMember": "Retirer le membre",
+    "invitationPending": "Invitation envoyée",
+    "revoke": "Révoquer",
+    "addresses": "Carnet d'adresses",
+    "addressesHelp": "Où cette organisation est livrée. Les sites hérités d'une entité parente sont également affichés.",
+    "viewOrders": "Voir les commandes de l'entreprise",
+    "ordersTitle": "Commandes de l'entreprise",
+    "invitationTitle": "Rejoindre {company}",
+    "invitationBody": "Vous avez été invité à acheter sur {store} en tant que {email}.",
+    "invitationMissingToken": "Ce lien ne contient pas de code d'invitation.",
+    "invitationInvalidTitle": "Cette invitation n'est plus valide",
+    "invitationInvalidBody": "Elle a peut-être déjà été acceptée, révoquée, ou elle a expiré. Demandez-en une nouvelle.",
+    "invitationWrongAccount": "Cette invitation a été envoyée à {invited}, mais vous êtes connecté en tant que {current}. Connectez-vous avec l'adresse invitée.",
+    "invitationAcceptFailed": "Impossible d'accepter l'invitation.",
+    "acceptAsSignedIn": "Accepter l'invitation",
+    "acceptAndRegister": "Créer un compte et rejoindre",
+    "accepting": "Acceptation…",
+    "firstName": "Prénom",
+    "lastName": "Nom",
+    "password": "Mot de passe",
+    "buyingFor": "Achat pour",
+    "buyPersonally": "Acheter à titre personnel"
   }
 }

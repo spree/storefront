@@ -24,6 +24,8 @@ overrides:
 
 pnpmfileChecksum: sha256-o3VLQXdyI9vA7QtNyhqYCgThbDt536xv9aHjiejMWQ4=
 
+pnpmfileChecksum: sha256-N1/Dc+ZPONiIP8Hd+SAy7UlA4/PNS1kNfPizHE+UtK8=
+
 importers:
 
   .:

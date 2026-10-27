@@ -2,6 +2,7 @@
 
 import type { LucideIcon } from "lucide-react";
 import {
+  Building2,
   CreditCard,
   Gift,
   Home,
@@ -17,7 +18,10 @@ import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
 import { extractBasePath } from "@/lib/utils/path";
 
-function getNavItems(t: ReturnType<typeof useTranslations<"account">>): {
+function getNavItems(
+  t: ReturnType<typeof useTranslations<"account">>,
+  hasCompanies: boolean,
+): {
   href: string;
   label: string;
   icon: LucideIcon;
@@ -25,6 +29,17 @@ function getNavItems(t: ReturnType<typeof useTranslations<"account">>): {
   return [
     { href: "/account", label: t("overview"), icon: Home },
     { href: "/account/orders", label: t("orders"), icon: ShoppingBag },
+    // Only for buyers who actually act for one — an ordinary shopper never
+    // sees that companies exist.
+    ...(hasCompanies
+      ? [
+          {
+            href: "/account/companies",
+            label: t("companies"),
+            icon: Building2,
+          },
+        ]
+      : []),
     { href: "/account/addresses", label: t("addresses"), icon: MapPin },
     {
       href: "/account/credit-cards",
@@ -36,13 +51,19 @@ function getNavItems(t: ReturnType<typeof useTranslations<"account">>): {
   ];
 }
 
-export function AccountShell({ children }: { children: React.ReactNode }) {
+export function AccountShell({
+  children,
+  hasCompanies = false,
+}: {
+  children: React.ReactNode;
+  hasCompanies?: boolean;
+}) {
   const t = useTranslations("account");
   const pathname = usePathname();
   const router = useRouter();
   const basePath = extractBasePath(pathname);
   const { user, logout } = useAuth();
-  const navItems = getNavItems(t);
+  const navItems = getNavItems(t, hasCompanies);
 
   const handleLogout = async () => {
     await logout();

@@ -332,7 +332,8 @@
     "showPassword": "Passwort anzeigen",
     "hidePassword": "Passwort verbergen",
     "forgotPassword": "Passwort vergessen?",
-    "policyConsentRequired": "Sie müssen den Geschäftsrichtlinien zustimmen, um ein Konto zu erstellen"
+    "policyConsentRequired": "Sie müssen den Geschäftsrichtlinien zustimmen, um ein Konto zu erstellen",
+    "companies": "Unternehmen"
   },
   "register": {
     "createAccount": "Konto erstellen",
@@ -628,5 +629,36 @@
       "signInForPricing": "Zur Preisanzeige anmelden",
       "signInToOrder": "Zum Bestellen anmelden"
     }
+  },
+  "companies": {
+    "title": "Unternehmen",
+    "subtitle": "Die Organisationen, für die Sie einkaufen können.",
+    "empty": "Sie sind noch in keinem Unternehmen Mitglied.",
+    "members": "Mitglieder",
+    "addMember": "Hinzufügen",
+    "addMemberPlaceholder": "kollege@beispiel.de",
+    "addMemberFailed": "Diese Person konnte nicht hinzugefügt werden.",
+    "removeMember": "Mitglied entfernen",
+    "invitationPending": "Einladung gesendet",
+    "revoke": "Zurückziehen",
+    "addresses": "Adressbuch",
+    "addressesHelp": "Wohin diese Organisation beliefert wird. Von einer übergeordneten Einheit geerbte Standorte werden ebenfalls angezeigt.",
+    "viewOrders": "Unternehmensbestellungen ansehen",
+    "ordersTitle": "Unternehmensbestellungen",
+    "invitationTitle": "{company} beitreten",
+    "invitationBody": "Sie wurden eingeladen, bei {store} als {email} einzukaufen.",
+    "invitationMissingToken": "Diesem Link fehlt der Einladungscode.",
+    "invitationInvalidTitle": "Diese Einladung ist nicht mehr gültig",
+    "invitationInvalidBody": "Sie wurde möglicherweise bereits angenommen, zurückgezogen oder ist abgelaufen. Bitten Sie um eine neue Einladung.",
+    "invitationWrongAccount": "Diese Einladung ging an {invited}, Sie sind aber als {current} angemeldet. Melden Sie sich mit der eingeladenen Adresse an.",
+    "invitationAcceptFailed": "Die Einladung konnte nicht angenommen werden.",
+    "acceptAsSignedIn": "Einladung annehmen",
+    "acceptAndRegister": "Konto erstellen und beitreten",
+    "accepting": "Wird angenommen…",
+    "firstName": "Vorname",
+    "lastName": "Nachname",
+    "password": "Passwort",
+    "buyingFor": "Einkauf für",
+    "buyPersonally": "Privat einkaufen"
   }
 }

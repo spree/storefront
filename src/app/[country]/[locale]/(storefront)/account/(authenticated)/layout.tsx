@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { Suspense } from "react";
 import { AuthenticatedAccountShell } from "@/components/account/AuthenticatedAccountShell";
 import { REQUEST_PATHNAME_HEADER, REQUEST_SEARCH_HEADER } from "@/i18n/routing";
+import { getMyCompanies } from "@/lib/data/companies";
 import { getAccessToken, getRefreshToken } from "@/lib/spree";
 import {
   buildAccountLoginHref,
@@ -43,8 +44,15 @@ export async function AuthenticatedAccountLayoutContent({
   // the customer is anonymous.
   if (!accessToken && !refreshToken) redirect(loginHref);
 
+  // Resolved once for the whole account area: the nav only offers companies to
+  // a buyer who has standing over one.
+  const { data: memberships } = await getMyCompanies();
+
   return (
-    <AuthenticatedAccountShell loginHref={loginHref}>
+    <AuthenticatedAccountShell
+      loginHref={loginHref}
+      hasCompanies={memberships.length > 0}
+    >
       {children}
     </AuthenticatedAccountShell>
   );
