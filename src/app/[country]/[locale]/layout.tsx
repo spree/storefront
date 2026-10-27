@@ -1,3 +1,4 @@
+import type { Market } from "@spree/sdk";
 import type { Metadata } from "next";
 import { headers } from "next/headers";
 import { notFound, redirect } from "next/navigation";
@@ -27,7 +28,7 @@ import {
   REQUEST_PATHNAME_HEADER,
   REQUEST_SEARCH_HEADER,
 } from "@/i18n/routing";
-import { type getMarkets, getStorefrontMarkets } from "@/lib/data/markets";
+import { getStorefrontMarkets } from "@/lib/data/markets";
 import { generateStoreMetadata } from "@/lib/metadata/store";
 import { buildOrganizationJsonLd } from "@/lib/seo";
 import { getDefaultCountry, getDefaultLocale } from "@/lib/store";
@@ -175,7 +176,7 @@ interface CountryLocaleProvidersProps {
   children: React.ReactNode;
   country: string;
   locale: Locale;
-  markets: Awaited<ReturnType<typeof getMarkets>>["data"];
+  markets: Market[];
   messages: IntlMessages;
 }
 

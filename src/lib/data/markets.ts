@@ -36,14 +36,6 @@ async function cachedListMarketCountries(
   return getClient().markets.countries.list(marketId, options);
 }
 
-export async function getMarkets(options?: {
-  locale?: string;
-  country?: string;
-}): Promise<{ data: Market[] }> {
-  const resolvedOptions = options ?? (await getLocaleOptions());
-  return cachedListMarkets(resolvedOptions);
-}
-
 /**
  * List Markets through the configured default country and locale rather than
  * the request's cookies. The URL's country/locale pair may not be valid yet,

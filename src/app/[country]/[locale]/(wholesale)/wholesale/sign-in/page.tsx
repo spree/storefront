@@ -1,9 +1,7 @@
 import { redirect } from "next/navigation";
-import { Suspense } from "react";
 import { getCustomer } from "@/lib/data/customer";
 import { getWholesaleChannel } from "@/lib/data/wholesale";
 import { safeRedirectPath } from "@/lib/utils/path";
-import { WholesalePageSkeleton } from "../_components/WholesalePageSkeleton";
 import { WholesaleSignInWall } from "../_components/WholesaleSignInWall";
 
 interface WholesaleSignInPageProps {
@@ -21,15 +19,7 @@ interface WholesaleSignInPageProps {
  * `?redirect=` contract; an already-authenticated buyer is bounced into the
  * portal, where the gate resolves their approval state.
  */
-export default function WholesaleSignInPage(props: WholesaleSignInPageProps) {
-  return (
-    <Suspense fallback={<WholesalePageSkeleton />}>
-      <WholesaleSignInPageContent {...props} />
-    </Suspense>
-  );
-}
-
-async function WholesaleSignInPageContent({
+export default async function WholesaleSignInPage({
   params,
   searchParams,
 }: WholesaleSignInPageProps) {

@@ -1,9 +1,9 @@
 /**
- * Suspense fallback for wholesale pages. Every page resolves the buyer's
- * session before choosing between the sign-in wall and the portal, so the
- * placeholder stays neutral rather than guessing which one will render.
+ * Every wholesale page resolves the buyer's session before choosing between
+ * the sign-in wall and the portal, so the placeholder stays neutral rather
+ * than guessing which one will render.
  */
-export function WholesalePageSkeleton() {
+export default function WholesaleLoading(): React.JSX.Element {
   return (
     <div
       aria-hidden="true"
