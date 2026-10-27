@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { getTranslations } from "next-intl/server";
+import { Suspense } from "react";
 import { cachedGetPolicy, getPolicy } from "@/lib/data/policies";
 import {
   buildLocalizedAlternates,
@@ -75,7 +76,35 @@ export async function generateMetadata({
   };
 }
 
-export default async function PolicyPage({
+/**
+ * The policy slug is only known per request, so the page body streams behind
+ * a skeleton instead of blocking the navigation.
+ */
+export default function PolicyPage(props: PolicyPageProps): React.JSX.Element {
+  return (
+    <Suspense fallback={<PolicyPageSkeleton />}>
+      <PolicyPageContent {...props} />
+    </Suspense>
+  );
+}
+
+function PolicyPageSkeleton(): React.JSX.Element {
+  return (
+    <div
+      aria-hidden="true"
+      className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 animate-pulse motion-reduce:animate-none"
+    >
+      <div className="h-9 w-64 rounded bg-gray-200 mb-8" />
+      <div className="space-y-3">
+        <div className="h-4 rounded bg-gray-100" />
+        <div className="h-4 rounded bg-gray-100" />
+        <div className="h-4 w-2/3 rounded bg-gray-100" />
+      </div>
+    </div>
+  );
+}
+
+async function PolicyPageContent({
   params,
 }: PolicyPageProps): Promise<React.JSX.Element> {
   const { country, slug, locale } = await params;

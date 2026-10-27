@@ -1,10 +1,12 @@
 import { notFound } from "next/navigation";
 import { getTranslations } from "next-intl/server";
+import { Suspense } from "react";
 import { ProductDetails } from "@/app/[country]/[locale]/(storefront)/products/[slug]/ProductDetails";
 import { PRODUCT_PAGE_EXPAND } from "@/lib/data/cached";
 import { getWholesaleProduct } from "@/lib/data/wholesale";
 import { WHOLESALE_MIN_QUANTITY } from "@/lib/wholesale";
 import { WholesaleGate } from "../../_components/WholesaleGate";
+import { WholesalePageSkeleton } from "../../_components/WholesalePageSkeleton";
 
 interface WholesaleProductPageProps {
   params: Promise<{ country: string; locale: string; slug: string }>;
@@ -18,7 +20,15 @@ interface WholesaleProductPageProps {
  * provider inside this route group. Wholesale prices are resolved by the API
  * via the price list on the gated channel.
  */
-export default async function WholesaleProductPage({
+export default function WholesaleProductPage(props: WholesaleProductPageProps) {
+  return (
+    <Suspense fallback={<WholesalePageSkeleton />}>
+      <WholesaleProductPageContent {...props} />
+    </Suspense>
+  );
+}
+
+async function WholesaleProductPageContent({
   params,
 }: WholesaleProductPageProps) {
   const { country, locale, slug } = await params;

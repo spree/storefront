@@ -1,4 +1,5 @@
 import { getTranslations } from "next-intl/server";
+import { Suspense } from "react";
 import { ProductListing } from "@/components/products/ProductListing";
 import { resolveCurrency } from "@/lib/data/markets";
 import {
@@ -8,13 +9,22 @@ import {
 import { parseListingSearchParams } from "@/lib/utils/listing-search-params";
 import { WHOLESALE_MIN_QUANTITY } from "@/lib/wholesale";
 import { WholesaleGate } from "./_components/WholesaleGate";
+import { WholesalePageSkeleton } from "./_components/WholesalePageSkeleton";
 
 interface WholesalePlpProps {
   params: Promise<{ country: string; locale: string }>;
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }
 
-export default async function WholesaleProductsPage({
+export default function WholesaleProductsPage(props: WholesalePlpProps) {
+  return (
+    <Suspense fallback={<WholesalePageSkeleton />}>
+      <WholesaleProductsPageContent {...props} />
+    </Suspense>
+  );
+}
+
+async function WholesaleProductsPageContent({
   params,
   searchParams,
 }: WholesalePlpProps) {

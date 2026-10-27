@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
+import { Suspense } from "react";
 import { ProductListing } from "@/components/products/ProductListing";
+import { ProductListingSkeleton } from "@/components/products/ProductListingSkeleton";
 import { JsonLd } from "@/components/seo/JsonLd";
 import { getCategory, getCategoryProducts } from "@/lib/data/categories";
 import { resolveCurrency } from "@/lib/data/markets";
@@ -27,7 +29,25 @@ export async function generateMetadata({
   return generateCategoryMetadata({ country, locale, permalink });
 }
 
-export default async function CategoryPage({
+/**
+ * The category permalink and listing filters are only known per request, so
+ * the page body streams behind a skeleton instead of blocking the navigation.
+ */
+export default function CategoryPage(props: CategoryPageProps) {
+  return (
+    <Suspense
+      fallback={
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8 pt-4">
+          <ProductListingSkeleton />
+        </div>
+      }
+    >
+      <CategoryPageContent {...props} />
+    </Suspense>
+  );
+}
+
+async function CategoryPageContent({
   params,
   searchParams,
 }: CategoryPageProps) {

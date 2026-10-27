@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import { getTranslations } from "next-intl/server";
+import { Suspense } from "react";
 import { ProductListing } from "@/components/products/ProductListing";
+import { ProductListingSkeleton } from "@/components/products/ProductListingSkeleton";
 import { resolveCurrency } from "@/lib/data/markets";
 import { getProductFilters, getProducts } from "@/lib/data/products";
 import { generateProductsMetadata } from "@/lib/metadata/products";
@@ -21,7 +23,30 @@ export async function generateMetadata({
   return generateProductsMetadata({ country, locale });
 }
 
-export default async function ProductsPage({
+/**
+ * The search query lives in the URL, which is only known per request, so the
+ * page body streams behind a skeleton instead of blocking the navigation.
+ */
+export default function ProductsPage(props: ProductsPageProps) {
+  return (
+    <Suspense fallback={<ProductsPageSkeleton />}>
+      <ProductsPageContent {...props} />
+    </Suspense>
+  );
+}
+
+function ProductsPageSkeleton() {
+  return (
+    <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="mb-8">
+        <div className="h-9 w-64 rounded bg-gray-200 animate-pulse motion-reduce:animate-none" />
+      </div>
+      <ProductListingSkeleton />
+    </div>
+  );
+}
+
+async function ProductsPageContent({
   params,
   searchParams,
 }: ProductsPageProps) {

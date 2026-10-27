@@ -27,7 +27,7 @@ import {
   REQUEST_PATHNAME_HEADER,
   REQUEST_SEARCH_HEADER,
 } from "@/i18n/routing";
-import { getMarkets } from "@/lib/data/markets";
+import { type getMarkets, getStorefrontMarkets } from "@/lib/data/markets";
 import { generateStoreMetadata } from "@/lib/metadata/store";
 import { buildOrganizationJsonLd } from "@/lib/seo";
 import { getDefaultCountry, getDefaultLocale } from "@/lib/store";
@@ -103,12 +103,7 @@ export async function CountryLocaleLayoutContent({
   // requested country/locale pair has not been validated yet; forwarding it to
   // the Store API can fail before we get the Market data needed to redirect an
   // unsupported pair (for example /pl/pl when Poland's Market supports de).
-  const marketLookupLocale =
-    resolveSupportedLocale(getDefaultLocale()) ?? DEFAULT_LOCALE;
-  const markets = await getMarkets({
-    country: getDefaultCountry(),
-    locale: marketLookupLocale,
-  })
+  const markets = await getStorefrontMarkets()
     .then((res) => res.data)
     .catch(() => null);
 
