@@ -666,11 +666,20 @@
       "alreadyMember": "Already have a wholesale account?",
       "receivedTitle": "Application received",
       "receivedDescription": "Thanks for applying. We'll review your account and approve wholesale access shortly.",
-      "goToPortal": "Go to portal"
+      "goToPortal": "Go to portal",
+      "companyFailed": "We could not register your business. Please try again."
     },
     "hiddenPrice": {
       "signInForPricing": "Sign in for pricing",
-      "signInToOrder": "Sign in to order"
+      "signInToOrder": "Sign in to order",
+      "registerForPricing": "Register your business for pricing",
+      "awaitingApproval": "Pricing available once your business is approved"
+    },
+    "register": {
+      "title": "Register your business",
+      "description": "You have an account, but trade pricing is for registered businesses. Tell us who you buy for.",
+      "whatNext": "Registering takes a moment and unlocks trade pricing straight away, unless this store reviews new businesses first.",
+      "cta": "Register your business"
     }
   }
 }

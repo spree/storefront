@@ -7,10 +7,13 @@ import { useHiddenPricing } from "@/contexts/HiddenPricingContext";
 import { cn } from "@/lib/utils";
 
 /**
- * Rendered in place of a price when the viewer isn't entitled to see it (a guest
- * on a `prices_hidden` channel). Links to the wholesale sign-in, returning the
- * buyer to the page they were on. Renders nothing outside a HiddenPricingProvider
- * — so on the DTC storefront a genuinely absent price stays silent.
+ * Rendered in place of a price the viewer is not entitled to see, saying what
+ * they can do about it: sign in, register a business, or wait for the merchant
+ * to review the one they have. Which of the three comes from the API's
+ * `pricing_access` code, so the prompt never guesses.
+ *
+ * Renders nothing outside a HiddenPricingProvider — so on the DTC storefront a
+ * genuinely absent price stays silent.
  */
 export function HiddenPricePrompt({ className }: { className?: string }) {
   const hiddenPricing = useHiddenPricing();
@@ -18,9 +21,32 @@ export function HiddenPricePrompt({ className }: { className?: string }) {
 
   if (!hiddenPricing) return null;
 
+  const remedy = hiddenPricing.remedy ?? "sign-in";
+
+  // Nothing to click: the company exists and the merchant is reviewing it, so
+  // the honest thing is to say so rather than offer an action that repeats.
+  if (remedy === "awaiting-approval") {
+    return (
+      <span
+        className={cn(
+          "inline-flex items-center gap-1.5 text-sm text-slate-500",
+          className,
+        )}
+      >
+        <Lock className="h-3.5 w-3.5" />
+        {t("hiddenPrice.awaitingApproval")}
+      </span>
+    );
+  }
+
+  const href =
+    remedy === "register" && hiddenPricing.registerHref
+      ? hiddenPricing.registerHref
+      : hiddenPricing.signInHref;
+
   return (
     <Link
-      href={hiddenPricing.signInHref}
+      href={href}
       className={cn(
         // Keeps the prompt clickable when a host card covers itself with a
         // stretched-link overlay (ProductCard).
@@ -30,7 +56,9 @@ export function HiddenPricePrompt({ className }: { className?: string }) {
       )}
     >
       <Lock className="h-3.5 w-3.5" />
-      {t("hiddenPrice.signInForPricing")}
+      {remedy === "register"
+        ? t("hiddenPrice.registerForPricing")
+        : t("hiddenPrice.signInForPricing")}
     </Link>
   );
 }

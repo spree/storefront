@@ -24,16 +24,20 @@ import {
 import { Field, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { useAuth } from "@/contexts/AuthContext";
+import { registerCompany } from "@/lib/data/companies";
 import { extractBasePath } from "@/lib/utils/path";
 import { wholesaleSignInHref } from "@/lib/wholesale";
 
 /**
- * Wholesale application form. Registers a customer via the shared register flow
- * (phone is forwarded; company name persists as customer metadata, which the
- * merchant sees on the admin customer record). On success the buyer has an
- * account but is not yet in the Wholesale group — the demo "approval" is an
- * admin adding them — so we show a received/pending confirmation rather than
- * dropping them into the portal.
+ * Wholesale registration. Creates the account when the visitor has none, then
+ * founds their company through the Store API — two calls so one form reads as
+ * one step, which is what the API expects a storefront to do.
+ *
+ * Whether the new company may trade immediately is the store's activation
+ * policy's answer, so this page does not promise either outcome: it hands the
+ * buyer to the portal, where the posture decides what they see. A merchant
+ * running an approval process gets the awaiting-review screen there, and a
+ * store with the default policy gets prices straight away.
  */
 export default function WholesaleApplyPage() {
   const t = useTranslations("wholesale");
@@ -73,15 +77,26 @@ export default function WholesaleApplyPage() {
         ...(firstName && { first_name: firstName }),
         ...(lastName && { last_name: lastName }),
         ...(phone && { phone }),
-        // Company has no first-class customer column; persist it as metadata so
-        // it reaches the applicant's admin record for the merchant's review.
-        ...(company.trim() && { metadata: { company: company.trim() } }),
       });
-      if (result.success) {
-        setSubmitted(true);
-      } else {
+      if (!result.success) {
         setError(result.error ?? tr("registrationFailed"));
+        return;
       }
+
+      // The account exists and is signed in, so the company can be founded on
+      // the buyer's own credential. A refusal here leaves them with a usable
+      // account, which is why the message is shown rather than swallowed —
+      // they can reach the portal and try again from the register prompt.
+      const companyResult = await registerCompany({
+        name: company.trim(),
+        ...(phone.trim() && { registration: { phone: phone.trim() } }),
+      });
+      if (!companyResult.success) {
+        setError(companyResult.error ?? t("apply.companyFailed"));
+        return;
+      }
+
+      setSubmitted(true);
     } catch {
       setError(tr("unexpectedError"));
     } finally {

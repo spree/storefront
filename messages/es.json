@@ -666,11 +666,20 @@
       "alreadyMember": "¿Ya tienes una cuenta mayorista?",
       "receivedTitle": "Solicitud recibida",
       "receivedDescription": "Gracias por tu solicitud. Revisaremos tu cuenta y aprobaremos el acceso mayorista en breve.",
-      "goToPortal": "Ir al portal"
+      "goToPortal": "Ir al portal",
+      "companyFailed": "No pudimos registrar su empresa. Vuelva a intentarlo."
     },
     "hiddenPrice": {
       "signInForPricing": "Inicia sesión para ver precios",
-      "signInToOrder": "Inicia sesión para pedir"
+      "signInToOrder": "Inicia sesión para pedir",
+      "registerForPricing": "Registre su empresa para ver los precios",
+      "awaitingApproval": "Precios disponibles cuando su empresa sea aprobada"
+    },
+    "register": {
+      "title": "Registre su empresa",
+      "description": "Tiene una cuenta, pero los precios comerciales son para empresas registradas. ¿Para quién compra?",
+      "whatNext": "El registro tarda un momento y desbloquea los precios comerciales de inmediato, salvo que esta tienda revise primero las nuevas empresas.",
+      "cta": "Registrar mi empresa"
     }
   }
 }
