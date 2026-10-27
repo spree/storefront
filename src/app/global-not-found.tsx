@@ -1,21 +1,50 @@
 import "./globals.css";
 import type { Metadata } from "next";
+import { headers } from "next/headers";
 import { getTranslations } from "next-intl/server";
+import { Suspense } from "react";
+import StorefrontLayout from "@/app/[country]/[locale]/(storefront)/layout";
+import { CountryLocaleProviders } from "@/app/[country]/[locale]/layout";
 import { DocumentShell } from "@/components/layout/DocumentShell";
-import { Button } from "@/components/ui/button";
-import { DEFAULT_LOCALE, resolveSupportedLocale } from "@/i18n/locales";
-import { getDefaultLocale, getStoreName } from "@/lib/store";
+import { NotFoundContent } from "@/components/layout/NotFoundContent";
+import {
+  DEFAULT_LOCALE,
+  loadMessages,
+  resolveSupportedLocale,
+} from "@/i18n/locales";
+import { findMarketForCountry } from "@/i18n/markets";
+import { REQUEST_PATHNAME_HEADER } from "@/i18n/routing";
+import { getStorefrontMarkets } from "@/lib/data/markets";
+import { getDefaultCountry, getDefaultLocale, getStoreName } from "@/lib/store";
 
 /**
  * Served with a real 404 status for unmatched URLs and for products,
- * categories and policies the proxy found missing (see src/proxy.ts). It
- * renders outside the [country]/[locale] layout, so it uses the store's
- * default language. Its links are plain anchors so the request goes through
- * the proxy, which sends each visitor to their own country and language.
+ * categories and policies the proxy found missing (see src/proxy.ts). Next.js
+ * sets that status before rendering, which a page inside the streaming
+ * [country]/[locale] layout cannot do, so this page renders the storefront
+ * chrome itself. The country and language come from the original URL, which
+ * the proxy forwards in a request header.
  */
-const locale = resolveSupportedLocale(getDefaultLocale()) ?? DEFAULT_LOCALE;
+async function getRequestContext() {
+  const pathname = (await headers()).get(REQUEST_PATHNAME_HEADER) ?? "";
+  const [, requestedCountry, requestedLocale] = pathname.split("/");
+  const markets = await getStorefrontMarkets()
+    .then((res) => res.data)
+    .catch(() => []);
+  const country =
+    requestedCountry && findMarketForCountry(markets, requestedCountry)
+      ? requestedCountry.toLowerCase()
+      : getDefaultCountry();
+  const locale =
+    resolveSupportedLocale(requestedLocale) ??
+    resolveSupportedLocale(getDefaultLocale()) ??
+    DEFAULT_LOCALE;
+
+  return { country, locale, markets };
+}
 
 export async function generateMetadata(): Promise<Metadata> {
+  const { locale } = await getRequestContext();
   const t = await getTranslations({ locale, namespace: "notFound" });
   return {
     title: `${t("title")} | ${getStoreName()}`,
@@ -23,35 +52,31 @@ export async function generateMetadata(): Promise<Metadata> {
   };
 }
 
-export default async function GlobalNotFound(): Promise<React.JSX.Element> {
-  const t = await getTranslations({ locale, namespace: "notFound" });
+export default function GlobalNotFound(): React.JSX.Element {
+  return (
+    <Suspense fallback={null}>
+      <NotFoundDocument />
+    </Suspense>
+  );
+}
+
+async function NotFoundDocument(): Promise<React.JSX.Element> {
+  const { country, locale, markets } = await getRequestContext();
+  const messages = await loadMessages(locale);
+  const basePath = `/${country}/${locale}`;
 
   return (
     <DocumentShell locale={locale}>
-      <header className="border-b border-gray-200">
-        <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-5">
-          <a href="/" className="text-xl font-bold text-gray-900">
-            {getStoreName()}
-          </a>
-        </div>
-      </header>
-      <main className="flex-1 flex items-center">
-        <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-24 text-center">
-          <p className="text-sm font-semibold text-gray-500">404</p>
-          <h1 className="mt-2 text-3xl font-bold text-gray-900 sm:text-4xl">
-            {t("title")}
-          </h1>
-          <p className="mt-4 text-gray-600">{t("description")}</p>
-          <div className="mt-8 flex flex-wrap items-center justify-center gap-4">
-            <Button asChild>
-              <a href="/">{t("backHome")}</a>
-            </Button>
-            <Button variant="outline" asChild>
-              <a href="/products">{t("browseProducts")}</a>
-            </Button>
-          </div>
-        </div>
-      </main>
+      <CountryLocaleProviders
+        country={country}
+        locale={locale}
+        markets={markets}
+        messages={messages}
+      >
+        <StorefrontLayout params={Promise.resolve({ country, locale })}>
+          <NotFoundContent basePath={basePath} />
+        </StorefrontLayout>
+      </CountryLocaleProviders>
     </DocumentShell>
   );
 }

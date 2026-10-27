@@ -180,7 +180,7 @@ interface CountryLocaleProvidersProps {
   messages: IntlMessages;
 }
 
-function CountryLocaleProviders({
+export function CountryLocaleProviders({
   children,
   country,
   locale,

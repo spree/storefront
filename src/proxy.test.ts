@@ -49,19 +49,58 @@ describe("proxy", () => {
     expect(response.status).toBe(200);
   });
 
-  it("skips the check for in-app navigations and prefetches", async () => {
+  it("marks the missing URL so the 404 page's own requests reach it", async () => {
+    isMissingStorefrontResource.mockResolvedValue(true);
+
+    const response = await proxy(
+      new NextRequest("https://store.example/us/en/products/gone"),
+    );
+
+    const cookie = response.headers.get("set-cookie") ?? "";
+    expect(cookie).toContain("spree_missing_page=1");
+    expect(cookie).toContain("Path=/us/en/products/gone");
+  });
+
+  it("skips the check for in-app navigations, prefetches and actions", async () => {
     await proxy(
       new NextRequest("https://store.example/us/en/products/gone", {
-        headers: { rsc: "1" },
+        headers: { "sec-fetch-dest": "empty" },
       }),
     );
     await proxy(
       new NextRequest("https://store.example/us/en/products/gone", {
-        headers: { "next-router-prefetch": "1" },
+        method: "POST",
       }),
     );
 
     expect(isMissingStorefrontResource).not.toHaveBeenCalled();
+  });
+
+  it("answers the 404 page's actions and refreshes with the 404 page", async () => {
+    const response = await proxy(
+      new NextRequest("https://store.example/us/en/products/gone", {
+        method: "POST",
+        headers: { cookie: "spree_missing_page=1", "next-action": "abc" },
+      }),
+    );
+
+    expect(isMissingStorefrontResource).not.toHaveBeenCalled();
+    expect(response.headers.get(REWRITE_HEADER)).toBe(
+      "https://store.example/_storefront-not-found",
+    );
+  });
+
+  it("clears the marker once the record exists again", async () => {
+    const response = await proxy(
+      new NextRequest("https://store.example/us/en/products/t-shirt", {
+        headers: { cookie: "spree_missing_page=1" },
+      }),
+    );
+
+    expect(response.headers.get(REWRITE_HEADER)).toBeNull();
+    expect(response.headers.get("set-cookie")).toContain(
+      "spree_missing_page=;",
+    );
   });
 
   it("keeps locale redirects ahead of the check", async () => {

@@ -1,5 +1,6 @@
 import { type NextRequest, NextResponse } from "next/server";
 import { SUPPORTED_LOCALES } from "@/i18n/locales";
+import { REQUEST_PATHNAME_HEADER } from "@/i18n/routing";
 import { createSpreeMiddleware } from "@/lib/spree/middleware";
 import { isMissingStorefrontResource } from "@/lib/spree/missing-resource";
 import { getDefaultCountry, getDefaultLocale } from "@/lib/store";
@@ -19,16 +20,36 @@ const NOT_FOUND_REWRITE_PATH = "/_storefront-not-found";
 const STOREFRONT_PATH = /^\/([^/]+)\/([^/]+)(\/.+)$/;
 
 /**
- * Status codes only matter for full page loads. In-app navigations and
- * prefetches carry the RSC header and keep rendering the page's own
- * not-found UI, so they skip the extra Store API request.
+ * Marks a URL the proxy answered with the 404 page, scoped to that path. The
+ * 404 page's cart and session providers call Server Actions and refresh the
+ * router on that same URL; without the marker the record's own route answers
+ * them with a different page tree and the browser reloads into the 404 page
+ * again, in a loop.
  */
-function isDocumentRequest(request: NextRequest): boolean {
+const MISSING_PAGE_COOKIE = "spree_missing_page";
+
+/**
+ * Status codes only matter for full page loads. Next.js strips its own router
+ * headers before the proxy runs, so in-app navigations, prefetches and Server
+ * Actions are told apart by the browser's Sec-Fetch-Dest instead. Crawlers
+ * and other clients that don't send it are treated as page loads.
+ */
+function isPageLoad(request: NextRequest): boolean {
+  const destination = request.headers.get("sec-fetch-dest");
   return (
     (request.method === "GET" || request.method === "HEAD") &&
-    !request.headers.has("rsc") &&
-    !request.headers.has("next-router-prefetch")
+    (!destination || destination === "document")
   );
+}
+
+function rewriteToNotFound(request: NextRequest): NextResponse {
+  // Forward the original URL so the 404 page renders in the visitor's country
+  // and language.
+  const requestHeaders = new Headers(request.headers);
+  requestHeaders.set(REQUEST_PATHNAME_HEADER, request.nextUrl.pathname);
+  return NextResponse.rewrite(new URL(NOT_FOUND_REWRITE_PATH, request.url), {
+    request: { headers: requestHeaders },
+  });
 }
 
 export async function proxy(request: NextRequest): Promise<NextResponse> {
@@ -36,18 +57,38 @@ export async function proxy(request: NextRequest): Promise<NextResponse> {
 
   // Redirects already decided the response; only a pass-through path is
   // canonical /{country}/{locale}/... at this point.
-  if (response.status !== 200 || !isDocumentRequest(request)) {
-    return response;
-  }
+  if (response.status !== 200) return response;
 
-  const match = request.nextUrl.pathname.match(STOREFRONT_PATH);
+  const { pathname } = request.nextUrl;
+  const match = pathname.match(STOREFRONT_PATH);
   if (!match) return response;
+
+  const markedMissing = request.cookies.has(MISSING_PAGE_COOKIE);
+  if (!isPageLoad(request)) {
+    return markedMissing ? rewriteToNotFound(request) : response;
+  }
 
   const [, country, locale, path] = match;
   if (await isMissingStorefrontResource(path, { country, locale })) {
-    return NextResponse.rewrite(new URL(NOT_FOUND_REWRITE_PATH, request.url));
+    const notFound = rewriteToNotFound(request);
+    notFound.cookies.set(MISSING_PAGE_COOKIE, "1", {
+      path: pathname,
+      httpOnly: true,
+      sameSite: "lax",
+      secure: process.env.NODE_ENV === "production",
+      maxAge: 60 * 60,
+    });
+    return notFound;
   }
 
+  // The record exists again (or never went missing), so stop routing this
+  // URL's actions to the 404 page.
+  if (markedMissing) {
+    response.cookies.set(MISSING_PAGE_COOKIE, "", {
+      path: pathname,
+      maxAge: 0,
+    });
+  }
   return response;
 }
 
