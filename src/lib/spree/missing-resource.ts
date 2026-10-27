@@ -1,11 +1,36 @@
-import { SpreeError } from "@spree/sdk";
-import { getClient } from "./config";
+import { type Client, createClient, SpreeError } from "@spree/sdk";
+import { getConfig } from "./config";
 
 /**
  * Upper bound on the existence check. A slow Store API must not hold up the
- * page, so past this point the page renders as usual.
+ * page, so past this point the request is cancelled and the page renders as
+ * usual.
  */
 const LOOKUP_TIMEOUT_MS = 1500;
+
+let lookupClient: Client | null = null;
+
+/**
+ * A client of its own so every lookup is a single request that is cancelled
+ * at the timeout, rather than one left running (and retried) against a Store
+ * API that is already slow.
+ */
+function getLookupClient(): Client {
+  if (!lookupClient) {
+    const { baseUrl, publishableKey } = getConfig();
+    lookupClient = createClient({
+      baseUrl,
+      publishableKey,
+      retry: false,
+      fetch: (input, init) =>
+        fetch(input, {
+          ...init,
+          signal: AbortSignal.timeout(LOOKUP_TIMEOUT_MS),
+        }),
+    });
+  }
+  return lookupClient;
+}
 
 interface LookupOptions {
   country: string;
@@ -44,14 +69,18 @@ function resourceLookup(path: string): ResourceLookup | null {
 
   if (section === "products" && rest.length === 1) {
     return (options) =>
-      getClient().products.get(rest[0], { fields: ["id"] }, options);
+      getLookupClient().products.get(rest[0], { fields: ["id"] }, options);
   }
   if (section === "c" && rest.length > 0) {
     return (options) =>
-      getClient().categories.get(rest.join("/"), { fields: ["id"] }, options);
+      getLookupClient().categories.get(
+        rest.join("/"),
+        { fields: ["id"] },
+        options,
+      );
   }
   if (section === "policies" && rest.length === 1) {
-    return (options) => getClient().policies.get(rest[0], options);
+    return (options) => getLookupClient().policies.get(rest[0], options);
   }
   return null;
 }
@@ -73,17 +102,10 @@ export async function isMissingStorefrontResource(
   const lookup = resourceLookup(path);
   if (!lookup) return false;
 
-  let timer: ReturnType<typeof setTimeout> | undefined;
-  const timeout = new Promise<void>((resolve) => {
-    timer = setTimeout(resolve, LOOKUP_TIMEOUT_MS);
-  });
-
   try {
-    await Promise.race([lookup(options), timeout]);
+    await lookup(options);
     return false;
   } catch (error) {
     return error instanceof SpreeError && error.status === 404;
-  } finally {
-    clearTimeout(timer);
   }
 }

@@ -59,6 +59,9 @@ describe("proxy", () => {
     const cookie = response.headers.get("set-cookie") ?? "";
     expect(cookie).toContain("spree_missing_page=1");
     expect(cookie).toContain("Path=/us/en/products/gone");
+    // The middleware's country and language cookies survive the rewrite.
+    expect(response.cookies.get("spree_country")?.value).toBe("us");
+    expect(response.cookies.get("spree_locale")?.value).toBe("en");
   });
 
   it("skips the check for in-app navigations, prefetches and actions", async () => {

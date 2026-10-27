@@ -71,6 +71,11 @@ export async function proxy(request: NextRequest): Promise<NextResponse> {
   const [, country, locale, path] = match;
   if (await isMissingStorefrontResource(path, { country, locale })) {
     const notFound = rewriteToNotFound(request);
+    // Keep the country and language cookies the middleware set for this URL,
+    // which the 404 page's cart and session actions read.
+    for (const cookie of response.cookies.getAll()) {
+      notFound.cookies.set(cookie);
+    }
     notFound.cookies.set(MISSING_PAGE_COOKIE, "1", {
       path: pathname,
       httpOnly: true,

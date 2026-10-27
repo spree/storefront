@@ -1,19 +1,30 @@
 import { SpreeError } from "@spree/sdk";
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
-const { getProduct, getCategory, getPolicy } = vi.hoisted(() => ({
+const { getProduct, getCategory, getPolicy, createClient } = vi.hoisted(() => ({
   getProduct: vi.fn(),
   getCategory: vi.fn(),
   getPolicy: vi.fn(),
+  createClient: vi.fn(),
+}));
+
+vi.mock("@spree/sdk", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@spree/sdk")>()),
+  createClient,
 }));
 
 vi.mock("@/lib/spree/config", () => ({
-  getClient: () => ({
-    products: { get: getProduct },
-    categories: { get: getCategory },
-    policies: { get: getPolicy },
+  getConfig: () => ({
+    baseUrl: "https://api.example",
+    publishableKey: "pk_test",
   }),
 }));
+
+createClient.mockReturnValue({
+  products: { get: getProduct },
+  categories: { get: getCategory },
+  policies: { get: getPolicy },
+});
 
 import { isMissingStorefrontResource } from "@/lib/spree/missing-resource";
 
@@ -28,14 +39,12 @@ function apiError(status: number): SpreeError {
 
 describe("isMissingStorefrontResource", () => {
   beforeEach(() => {
-    vi.clearAllMocks();
+    getProduct.mockReset();
+    getCategory.mockReset();
+    getPolicy.mockReset();
     getProduct.mockResolvedValue({ id: "prod_1" });
     getCategory.mockResolvedValue({ id: "ctg_1" });
     getPolicy.mockResolvedValue({ id: "pol_1" });
-  });
-
-  afterEach(() => {
-    vi.useRealTimers();
   });
 
   it("asks for the record in the URL's country and language", async () => {
@@ -92,14 +101,22 @@ describe("isMissingStorefrontResource", () => {
     ).resolves.toBe(false);
   });
 
-  it("gives up on a slow Store API instead of holding the page", async () => {
-    vi.useFakeTimers();
-    getProduct.mockReturnValue(new Promise(() => {}));
+  it("cancels a slow lookup with a single, unretried request", async () => {
+    await isMissingStorefrontResource("/products/t-shirt", options);
 
-    const result = isMissingStorefrontResource("/products/t-shirt", options);
-    await vi.advanceTimersByTimeAsync(1500);
+    const config = createClient.mock.calls[0]?.[0];
+    expect(config).toMatchObject({
+      baseUrl: "https://api.example",
+      publishableKey: "pk_test",
+      retry: false,
+    });
 
-    await expect(result).resolves.toBe(false);
+    const fetchSpy = vi
+      .spyOn(globalThis, "fetch")
+      .mockResolvedValue(new Response("{}"));
+    await config.fetch("https://api.example/products/t-shirt", {});
+    expect(fetchSpy.mock.calls[0]?.[1]?.signal).toBeInstanceOf(AbortSignal);
+    fetchSpy.mockRestore();
   });
 
   it("skips paths that are not product, category or policy pages", async () => {
