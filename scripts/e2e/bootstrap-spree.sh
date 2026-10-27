@@ -4,12 +4,12 @@
 # Steps:
 #   1. `spree seed` — seed the default store, roles, countries.
 #   2. `spree sample-data` — load sample products, categories, images.
-#   3. `spree api-key create --name E2E --type publishable` — mint a key
-#      and capture the printed pk_… token.
+#   3. mint a publishable API key bound to a public channel, and capture
+#      its pk_… token.
 #
 # Idempotent: the CLI's seed/sample-data tasks are no-ops on already-seeded
-# databases, and a fresh API key per run is fine (old "E2E" keys just
-# accumulate but don't break anything).
+# databases, and the API key step reuses a correctly-bound "E2E" key when one
+# already exists.
 #
 # Output: writes `.env.e2e` at the repo root with SPREE_API_URL +
 # SPREE_PUBLISHABLE_KEY for the storefront to consume.
@@ -89,12 +89,12 @@ npx @spree/cli sample-data
 echo "==> Configuring Stripe payment gateway on the default store"
 docker compose exec -T -e STRIPE_PUBLISHABLE_KEY -e STRIPE_SECRET_KEY web bin/rails runner - <<'RUBY'
 store = Spree::Store.default
-gateway = Spree::PaymentMethod.where(type: 'SpreeStripe::Gateway', name: 'E2E Stripe').first_or_initialize
+gateway = Spree::PaymentMethod.where(type: 'SpreeStripe::Gateway', name: 'E2E Stripe', store: store).first_or_initialize
 gateway.assign_attributes(
   active: true,
   display_on: 'both',
   auto_capture: true,
-  stores: [store],
+  store: store,
   preferences: {
     publishable_key: ENV.fetch('STRIPE_PUBLISHABLE_KEY'),
     secret_key: ENV.fetch('STRIPE_SECRET_KEY')
@@ -107,12 +107,35 @@ gateway.save!(validate: false)
 puts "OK: gateway #{gateway.id} (#{gateway.name})"
 RUBY
 
-echo "==> Creating publishable API key (spree api-key create)"
-api_key_output=$(npx @spree/cli api-key create --name E2E --type publishable)
+# Created via `bin/rails runner` rather than `spree api-key create`, because the
+# key must be bound to a channel and the CLI has no --channel flag. Sample data
+# seeds three channels ("Online Store", "Wholesale", "Point of Sale"), and a key
+# with no channel cannot resolve one — every Store API read is then gated by
+# StorefrontGating and answers 401 (surfacing to the client as 404). Binding to
+# a channel whose storefront access is "public" is what makes guest reads work.
+#
+# The channel is immutable after creation ("Channel cannot be changed after the
+# key is created"), so an existing E2E key bound to the wrong channel is revoked
+# and replaced rather than updated.
+echo "==> Creating publishable API key bound to a public channel"
+api_key_output=$(docker compose exec -T web bin/rails runner - <<'RUBY'
+store = Spree::Store.default
+channel = store.channels.detect { |c| c.resolved_storefront_access == 'public' }
+raise 'No public channel found on the default store.' if channel.nil?
+
+existing = Spree::ApiKey.active.publishable.find_by(store: store, name: 'E2E')
+existing.update!(revoked_at: Time.current) if existing && existing.channel_id != channel.id
+
+key = Spree::ApiKey.active.publishable.find_by(store: store, name: 'E2E', channel: channel)
+key ||= Spree::ApiKey.create!(store: store, name: 'E2E', key_type: 'publishable', channel: channel)
+
+puts key.token
+RUBY
+)
 
 publishable_key=$(printf '%s\n' "$api_key_output" | grep -oE 'pk_[A-Za-z0-9_-]+' | head -n 1)
 if [[ -z "$publishable_key" ]]; then
-  echo "Could not extract publishable key from CLI output:" >&2
+  echo "Could not create a publishable API key:" >&2
   printf '%s\n' "$api_key_output" >&2
   exit 1
 fi

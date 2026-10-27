@@ -23,7 +23,7 @@
     "@next/third-parties": "^16.1.6",
     "@paypal/react-paypal-js": "^9.1.1",
     "@sentry/nextjs": "^10.38.0",
-    "@spree/sdk": "^1.2.1",
+    "@spree/sdk": "2.0.0-beta.1",
     "@stripe/react-stripe-js": "^5.6.0",
     "@stripe/stripe-js": "^8.7.0",
     "@swc/helpers": "^0.5.21",
@@ -57,11 +57,22 @@
   },
   "pnpm": {
     "overrides": {
+      "@hono/node-server": "^2.0.5",
+      "brace-expansion": "^5.0.9",
+      "browserslist": "^4.28.9",
+      "fast-uri": "^3.1.7",
+      "hono": "^4.13.7",
+      "ip-address": "^10.7.0",
+      "js-yaml": "^4.3.2",
       "minimatch": "^10.2.1",
-      "postcss": "^8.5.10",
       "mute-stream": "^3.0.0",
+      "nanoid": "^3.3.18",
+      "postcss": "^8.5.28",
+      "qs": "^6.16.0",
+      "shadcn>postcss-selector-parser": "^7.1.6",
       "sharp": "^0.35.3",
-      "@hono/node-server": "^2.0.5"
+      "socket.io-parser": "^4.2.7",
+      "undici": "^7.29.1"
     },
     "onlyBuiltDependencies": [
       "@parcel/watcher",

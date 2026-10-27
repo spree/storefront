@@ -50,6 +50,15 @@ services:
       DATABASE_URL: postgres://postgres@postgres:5432/spree_e2e
       REDIS_URL: redis://redis:6379/0
       SECRET_KEY_BASE: e2e_secret_key_base_not_for_production_use_only_e2e_e2e_e2e_e2e
+      # `spree seed` mints the first admin only when both of these are set;
+      # without them it prints a first-run setup URL and creates no user, and
+      # `spree sample-data` then aborts with "No admin user found for the
+      # store" — it files every sample import against `store.users.first`.
+      # Setting them here rather than passing them per-command keeps them
+      # available to any `docker compose exec web` call. Throwaway credentials
+      # for a disposable container that is never exposed off the runner.
+      ADMIN_EMAIL: e2e@example.com
+      ADMIN_PASSWORD: spree123
       RAILS_FORCE_SSL: "false"
       RAILS_ASSUME_SSL: "false"
       # The canonical public host Spree uses for URLs generated outside a request

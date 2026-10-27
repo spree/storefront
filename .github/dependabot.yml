@@ -1,11 +1,58 @@
-# To get started with Dependabot version updates, you'll need to specify which
-# package ecosystems to update and where the package manifests are located.
-# Please see the documentation for all configuration options:
-# https://docs.github.com/code-security/dependabot/dependabot-version-updates/configuration-options-for-the-dependabot.yml-file
-
+# Dependabot configuration.
+#
+# NOTE: Dependabot *security* updates — the PRs that fix an open security
+# alert — are switched on in repository settings, not here:
+#   Settings → Code security → Dependabot security updates
+# This file configures update *behaviour*: version updates below, and (via a
+# group with `applies-to: security-updates`) how security PRs are grouped.
+#
+# Most of this project's advisories land on transitive dependencies that
+# Dependabot cannot bump on its own, because no parent release requires the
+# fixed version yet. Those are pinned via `pnpm.overrides` in package.json;
+# drop an override once the parent package ships a release that carries the
+# fix on its own.
 version: 2
 updates:
-  - package-ecosystem: "npm" # See documentation for possible values
-    directory: "/" # Location of package manifests
+  - package-ecosystem: "npm"
+    directory: "/"
     schedule:
       interval: "weekly"
+    open-pull-requests-limit: 10
+    versioning-strategy: increase
+    # Roll routine updates into a few PRs instead of one per package.
+    groups:
+      # Bundle all security fixes into a single PR rather than one per alert.
+      security:
+        applies-to: security-updates
+        patterns:
+          - "*"
+      next:
+        patterns:
+          - "next"
+          - "@next/*"
+          - "eslint-config-next"
+      react:
+        patterns:
+          - "react"
+          - "react-dom"
+          - "@types/react"
+          - "@types/react-dom"
+      dev-dependencies:
+        dependency-type: "development"
+        update-types:
+          - "minor"
+          - "patch"
+      production-minor-patch:
+        dependency-type: "production"
+        update-types:
+          - "minor"
+          - "patch"
+
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    groups:
+      actions:
+        patterns:
+          - "*"
