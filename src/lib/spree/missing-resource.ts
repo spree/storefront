@@ -14,9 +14,18 @@ interface LookupOptions {
 
 type ResourceLookup = (options: LookupOptions) => Promise<unknown>;
 
+/**
+ * The SDK interpolates slugs into the Store API path unencoded, so a decoded
+ * segment that could change that path (an encoded slash, a dot segment, a
+ * query or fragment) skips the check rather than reach another endpoint.
+ */
 function decodeSegment(segment: string): string | null {
   try {
-    return decodeURIComponent(segment);
+    const decoded = decodeURIComponent(segment);
+    if (decoded === "." || decoded === ".." || /[/\\?#]/.test(decoded)) {
+      return null;
+    }
+    return decoded;
   } catch {
     return null;
   }

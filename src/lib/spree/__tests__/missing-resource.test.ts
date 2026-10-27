@@ -110,6 +110,12 @@ describe("isMissingStorefrontResource", () => {
       "/cart",
       "/wholesale/products/t-shirt",
       "/products/%E0%A4%A",
+      "/products/..%2F..%2Fcustomers%2Fme",
+      "/products/..",
+      "/c/men/%2E%2E",
+      "/policies/terms%3Fexpand%3Dall",
+      "/policies/terms%23x",
+      "/products/a%5C..%5Cb",
     ]) {
       await expect(isMissingStorefrontResource(path, options)).resolves.toBe(
         false,
