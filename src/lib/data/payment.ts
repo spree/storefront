@@ -147,7 +147,6 @@ export async function completeCheckoutOrder(
         // Order already completed — try to fetch it so the thank-you page
         // can cache and display it without a second round-trip.
         const completedOrder = await getCompletedOrder(cartId, surface).catch(
-        const completedOrder = await getOrder(cartId, undefined, surface).catch(
           () => null,
         );
         updateTag(checkoutTag(surface));
