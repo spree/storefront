@@ -4,7 +4,8 @@
 # Steps:
 #   1. `spree seed` — seed the default store, roles, countries.
 #   2. `spree sample-data` — load sample products, categories, images.
-#   3. mint a publishable API key bound to a public channel, and capture
+#   3. add a product that has both color and size options.
+#   4. mint a publishable API key bound to a public channel, and capture
 #      its pk_… token.
 #
 # Idempotent: the CLI's seed/sample-data tasks are no-ops on already-seeded
@@ -36,8 +37,17 @@ readonly SPREE_URL="http://localhost:4000"
 # STRIPE_SECRET_KEY is a repository secret and STRIPE_PUBLISHABLE_KEY a
 # repository variable, both injected via the workflow env (see
 # .github/workflows/ci.yml).
-if [[ -z "${STRIPE_PUBLISHABLE_KEY:-}" || -z "${STRIPE_SECRET_KEY:-}" ]]; then
-  echo "STRIPE_PUBLISHABLE_KEY and STRIPE_SECRET_KEY must both be set." >&2
+#
+# Without either key the backend is still bootstrapped, just with no Stripe
+# gateway: runs that get no secrets (forks, Dependabot) then run every spec
+# but the Stripe-paid checkouts, which skip themselves (see e2e/support.ts).
+STRIPE_CONFIGURED=true
+if [[ -z "${STRIPE_PUBLISHABLE_KEY:-}" && -z "${STRIPE_SECRET_KEY:-}" ]]; then
+  STRIPE_CONFIGURED=false
+  echo "warning: STRIPE_PUBLISHABLE_KEY and STRIPE_SECRET_KEY are not set —" >&2
+  echo "         skipping the Stripe gateway; Stripe checkout specs will skip." >&2
+elif [[ -z "${STRIPE_PUBLISHABLE_KEY:-}" || -z "${STRIPE_SECRET_KEY:-}" ]]; then
+  echo "STRIPE_PUBLISHABLE_KEY and STRIPE_SECRET_KEY must both be set (or neither)." >&2
   echo "Use a pk_test_…/sk_test_… pair from your own Stripe sandbox." >&2
   echo "See script header for details." >&2
   exit 1
@@ -45,13 +55,13 @@ fi
 
 # Full-shape checks (not just prefix): a stray quote, space, or other
 # copy-paste artifact would otherwise flow into .env.e2e and break parsing.
-if [[ ! "$STRIPE_PUBLISHABLE_KEY" =~ ^pk_test_[A-Za-z0-9_]+$ ]]; then
+if [[ "$STRIPE_CONFIGURED" == true && ! "$STRIPE_PUBLISHABLE_KEY" =~ ^pk_test_[A-Za-z0-9_]+$ ]]; then
   echo "STRIPE_PUBLISHABLE_KEY must be a test-mode key (pk_test_…)." >&2
   echo "Got: ${STRIPE_PUBLISHABLE_KEY:0:8}…" >&2
   exit 1
 fi
 
-if [[ ! "$STRIPE_SECRET_KEY" =~ ^sk_test_[A-Za-z0-9_]+$ ]]; then
+if [[ "$STRIPE_CONFIGURED" == true && ! "$STRIPE_SECRET_KEY" =~ ^sk_test_[A-Za-z0-9_]+$ ]]; then
   echo "STRIPE_SECRET_KEY must be a test-mode key (sk_test_…)." >&2
   echo "Got: ${STRIPE_SECRET_KEY:0:8}…" >&2
   exit 1
@@ -86,8 +96,9 @@ npx @spree/cli sample-data
 # The keys reach Ruby via the container environment (-e pass-through from
 # this script's env) rather than heredoc interpolation, so the Ruby source
 # never embeds them — the heredoc delimiter is quoted on purpose.
-echo "==> Configuring Stripe payment gateway on the default store"
-docker compose exec -T -e STRIPE_PUBLISHABLE_KEY -e STRIPE_SECRET_KEY web bin/rails runner - <<'RUBY'
+if [[ "$STRIPE_CONFIGURED" == true ]]; then
+  echo "==> Configuring Stripe payment gateway on the default store"
+  docker compose exec -T -e STRIPE_PUBLISHABLE_KEY -e STRIPE_SECRET_KEY web bin/rails runner - <<'RUBY'
 store = Spree::Store.default
 gateway = Spree::PaymentMethod.where(type: 'SpreeStripe::Gateway', name: 'E2E Stripe', store: store).first_or_initialize
 gateway.assign_attributes(
@@ -105,6 +116,99 @@ gateway.assign_attributes(
 # when checkout creates a PaymentIntent.
 gateway.save!(validate: false)
 puts "OK: gateway #{gateway.id} (#{gateway.name})"
+RUBY
+fi
+
+# The sample catalog's products vary by color only and are all in stock at
+# full price, so the product page tests for picking a color and a size, a
+# discounted variant and a sold-out one need a product of their own.
+echo "==> Creating a product with color and size options"
+docker compose exec -T web bin/rails runner - <<'RUBY'
+store = Spree::Store.default
+color = Spree::OptionType.for_store(store).find_by!(name: 'color')
+size = Spree::OptionType.for_store(store).find_or_create_by!(name: 'size') do |option_type|
+  option_type.label = 'Size'
+  option_type.kind = 'buttons'
+end
+colors = { 'black' => ['Black', '#000000'], 'red' => ['Red', '#cc0000'] }.to_h do |name, (label, code)|
+  [name, color.option_values.find_or_create_by!(name: name) { |ov| ov.label = label; ov.color_code = code }]
+end
+sizes = %w[S M L].each_with_index.to_h do |label, index|
+  [label, size.option_values.find_or_create_by!(name: label.downcase) { |ov| ov.label = label; ov.position = index + 1 }]
+end
+
+product = store.products.find_or_initialize_by(slug: 'e2e-two-option-tee')
+product.assign_attributes(name: 'E2E Two-Option Tee', status: 'active', description: 'A product with color and size options.')
+product.save!
+product.option_types = [color, size]
+location = Spree::StockLocation.order_default.first
+
+# Black in S, M and L, red in S and M only. Red M is on sale and black L is
+# sold out.
+[
+  ['black', 'S'], ['black', 'M'], ['black', 'L', { stock: 0 }],
+  ['red', 'S'], ['red', 'M', { price: 15, compare_at: 25 }]
+].each do |color_name, size_label, overrides = {}|
+  sku = "E2E-TEE-#{color_name}-#{size_label}".upcase
+  variant = product.variants.find_or_initialize_by(sku: sku)
+  variant.option_values = [colors.fetch(color_name), sizes.fetch(size_label)]
+  variant.set_price('USD', overrides.fetch(:price, 20), overrides[:compare_at])
+  variant.save!
+  stock_item = variant.stock_items.find_or_create_by!(stock_location: location)
+  stock_item.update!(backorderable: false)
+  stock_item.set_count_on_hand(overrides.fetch(:stock, 100))
+end
+# Saving the product creates a variant without options; the page would open on it.
+product.variants.reject { |variant| variant.option_values.any? }.each(&:destroy!)
+store.channels.each { |channel| product.product_publications.find_or_create_by!(channel: channel) }
+puts "OK: #{product.slug} (#{product.variants.count} variants)"
+RUBY
+
+# A basket holding goods from more than one seller completes into an order
+# group — one order per seller — and the order-placed page has to render the
+# whole group, on arrival and after a reload. That needs a second seller next
+# to the operator: an approved seller with its own warehouse and product, and a
+# first-party product to pair it with. Both are single-variant so the tests
+# can add them straight from their product pages.
+#
+# The operator's "Standard" method is shared with sellers because sample data
+# seeds no seller-owned delivery method — without one, the seller's package
+# gets no rate and checkout stops at "cannot be delivered".
+echo "==> Creating a marketplace seller and products for split checkouts"
+docker compose exec -T web bin/rails runner - <<'RUBY'
+store = Spree::Store.default
+default_location = Spree::StockLocation.order_default.first
+
+seller = store.sellers.find_or_initialize_by(slug: 'e2e-seller')
+seller.assign_attributes(name: 'E2E Seller', status: 'approved', terms_accepted_at: seller.terms_accepted_at || Time.current)
+seller.save!
+
+warehouse = Spree::StockLocation.find_or_initialize_by(name: 'E2E Seller Warehouse')
+warehouse.assign_attributes(
+  seller: seller, store: store, active: true,
+  address1: default_location.address1, city: default_location.city, zipcode: default_location.zipcode,
+  country_id: default_location.country_id, state_id: default_location.state_id
+)
+warehouse.save!
+
+Spree::DeliveryMethod.first_party.find_by!(name: 'Standard').update!(available_to_sellers: true)
+
+[
+  ['e2e-first-party-mug', 'E2E First-Party Mug', nil, default_location],
+  ['e2e-seller-mug', 'E2E Seller Mug', seller, warehouse]
+].each do |slug, name, owner, location|
+  product = store.products.find_or_initialize_by(slug: slug)
+  product.assign_attributes(name: name, status: 'active', seller: owner, description: "#{name}, for split-checkout tests.")
+  product.save!
+  variant = product.default_variant
+  variant.set_price('USD', 12)
+  variant.save!
+  stock_item = variant.stock_items.find_or_create_by!(stock_location: location)
+  stock_item.update!(backorderable: false)
+  stock_item.set_count_on_hand(1000)
+  store.channels.each { |channel| product.product_publications.find_or_create_by!(channel: channel) }
+  puts "OK: #{product.slug} (seller: #{owner&.name || 'first party'})"
+end
 RUBY
 
 # Created via `bin/rails runner` rather than `spree api-key create`, because the
@@ -144,7 +248,7 @@ cat >"$ENV_FILE" <<EOF
 # Generated by scripts/e2e/bootstrap-spree.sh — DO NOT EDIT
 SPREE_API_URL=$SPREE_URL
 SPREE_PUBLISHABLE_KEY=$publishable_key
-NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=$STRIPE_PUBLISHABLE_KEY
+NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=${STRIPE_PUBLISHABLE_KEY:-}
 EOF
 
 echo

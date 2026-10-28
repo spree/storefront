@@ -1,4 +1,9 @@
+import { existsSync } from "node:fs";
 import { defineConfig, devices } from "@playwright/test";
+
+// The specs read what the bootstrap configured (e.g. whether Stripe is set
+// up), so load the same file the dev server boots with.
+if (existsSync(".env.e2e")) process.loadEnvFile(".env.e2e");
 
 /**
  * Playwright config for the storefront E2E suite.

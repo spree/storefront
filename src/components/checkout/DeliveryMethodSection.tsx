@@ -3,9 +3,12 @@
 import type { Fulfillment } from "@spree/sdk";
 import { useTranslations } from "next-intl";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { useFormatMoney } from "@/hooks/useFormatMoney";
 
 interface DeliveryMethodSectionProps {
   fulfillments: Fulfillment[];
+  /** The cart's currency; delivery rates carry none of their own. */
+  currency: string;
   onDeliveryRateSelect: (
     fulfillmentId: string,
     rateId: string,
@@ -16,11 +19,13 @@ interface DeliveryMethodSectionProps {
 
 export function DeliveryMethodSection({
   fulfillments,
+  currency,
   onDeliveryRateSelect,
   processing,
   errors,
 }: DeliveryMethodSectionProps) {
   const t = useTranslations("checkout");
+  const formatMoney = useFormatMoney();
 
   return (
     <div>
@@ -91,7 +96,7 @@ export function DeliveryMethodSection({
                         </span>
                       </div>
                       <span className="text-sm text-gray-900">
-                        {rate.display_cost}
+                        {formatMoney(rate.cost, currency)}
                       </span>
                     </label>
                   ))}

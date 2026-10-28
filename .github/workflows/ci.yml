@@ -3,8 +3,10 @@ name: CI
 on:
   push:
     branches: [main, 6-0-dev]
+  # Every pull request, whatever it targets — a PR stacked on a feature branch
+  # gets the same checks, E2E included, as one opened against main.
   pull_request:
-    branches: [main, 6-0-dev]
+  workflow_dispatch:
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -58,28 +60,30 @@ jobs:
 
   e2e:
     name: E2E (Playwright + Spree)
-    # Repository secrets are not exposed to runs triggered from forks, nor
-    # to dependabot[bot] runs (those only get Dependabot secrets), so the
-    # Stripe-backed checkout E2E cannot run there — skip the job (shows as
-    # "skipped", not failed). The secrets context is unavailable in
-    # job-level `if`, so key presence is checked in the first step instead:
-    # same-repo runs fail loudly there when the keys are missing.
-    if: >-
-      github.actor != 'dependabot[bot]' &&
-      (github.event_name != 'pull_request' ||
-      github.event.pull_request.head.repo.full_name == github.repository)
+    # Runs on every trigger. Repository secrets are not exposed to runs from
+    # forks, nor to dependabot[bot] runs (those only get Dependabot secrets),
+    # so those runs bootstrap Spree without a Stripe gateway and the
+    # Stripe-paid checkout specs skip themselves; every other spec runs.
     runs-on: ubuntu-latest
     timeout-minutes: 25
     steps:
-      - name: Fail if Stripe keys are not configured
+      # Same-repo runs always get the secrets, so missing keys there are a
+      # misconfiguration — fail loudly rather than silently losing the
+      # checkout coverage.
+      - name: Check Stripe keys
         env:
           STRIPE_SECRET_KEY: ${{ secrets.STRIPE_SECRET_KEY }}
           STRIPE_PUBLISHABLE_KEY: ${{ vars.STRIPE_PUBLISHABLE_KEY }}
+          TRUSTED_RUN: ${{ github.actor != 'dependabot[bot]' && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) }}
         run: |
-          if [ -z "$STRIPE_SECRET_KEY" ] || [ -z "$STRIPE_PUBLISHABLE_KEY" ]; then
+          if [ -n "$STRIPE_SECRET_KEY" ] && [ -n "$STRIPE_PUBLISHABLE_KEY" ]; then
+            exit 0
+          fi
+          if [ "$TRUSTED_RUN" = "true" ]; then
             echo "::error::STRIPE_SECRET_KEY (repository secret) and STRIPE_PUBLISHABLE_KEY (repository variable) must be set under Settings → Secrets and variables → Actions. Use a sk_test_…/pk_test_… pair from your own Stripe sandbox."
             exit 1
           fi
+          echo "::notice::No Stripe keys on this run (fork or Dependabot) — the Stripe checkout specs will be skipped."
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v4
         with:
           persist-credentials: false

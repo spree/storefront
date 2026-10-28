@@ -2,9 +2,10 @@ import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
 import { createWebhookHandler } from "@/lib/spree/webhooks";
 import {
+  handleDataRequestConfirmation,
   handleOrderCanceled,
-  handleOrderCompleted,
-  handleOrderShipped,
+  handleOrderFulfilled,
+  handleOrderPlaced,
   handlePasswordReset,
 } from "@/lib/webhooks/handlers";
 
@@ -21,10 +22,11 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
   const handler = createWebhookHandler({
     secret: webhookSecret,
     handlers: {
-      "order.completed": handleOrderCompleted,
+      "order.placed": handleOrderPlaced,
       "order.canceled": handleOrderCanceled,
-      "order.shipped": handleOrderShipped,
+      "order.fulfilled": handleOrderFulfilled,
       "customer.password_reset_requested": handlePasswordReset,
+      "data_request.confirmation_requested": handleDataRequestConfirmation,
     },
   });
 

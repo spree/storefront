@@ -1,3 +1,5 @@
+import { compareMoney, isDecimalString } from "@spree/sdk";
+
 export interface PriceBucket {
   id: string;
   label: string;
@@ -34,16 +36,27 @@ interface BucketLabelOptions {
   locale?: string;
 }
 
+/**
+ * Buckets for the price filter. The range comes from the API as decimal
+ * strings; the thresholds are whole amounts in the currency.
+ */
 export function generatePriceBuckets(
-  filterMin: number,
-  filterMax: number,
+  filterMin: string,
+  filterMax: string,
   currency: string,
   options?: BucketLabelOptions,
 ): PriceBucket[] {
   const { t, locale } = options || {};
   const buckets: PriceBucket[] = [];
+  if (!isDecimalString(filterMin) || !isDecimalString(filterMax))
+    return buckets;
 
-  if (filterMin < THRESHOLDS[0]) {
+  const below = (amount: string, threshold: number) =>
+    compareMoney(amount, String(threshold)) < 0;
+  const above = (amount: string, threshold: number) =>
+    compareMoney(amount, String(threshold)) > 0;
+
+  if (below(filterMin, THRESHOLDS[0])) {
     const price = formatCurrency(THRESHOLDS[0], currency, locale);
     buckets.push({
       id: `under-${THRESHOLDS[0]}`,
@@ -53,7 +66,10 @@ export function generatePriceBuckets(
   }
 
   for (let i = 0; i < THRESHOLDS.length - 1; i++) {
-    if (filterMax > THRESHOLDS[i] && filterMin < THRESHOLDS[i + 1]) {
+    if (
+      above(filterMax, THRESHOLDS[i]) &&
+      below(filterMin, THRESHOLDS[i + 1])
+    ) {
       const min = formatCurrency(THRESHOLDS[i], currency, locale);
       const max = formatCurrency(THRESHOLDS[i + 1], currency, locale);
       buckets.push({
@@ -66,7 +82,7 @@ export function generatePriceBuckets(
   }
 
   const lastThreshold = THRESHOLDS[THRESHOLDS.length - 1];
-  if (filterMax > lastThreshold) {
+  if (above(filterMax, lastThreshold)) {
     const price = formatCurrency(lastThreshold, currency, locale);
     buckets.push({
       id: `${lastThreshold}-plus`,

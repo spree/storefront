@@ -5,6 +5,7 @@ import { Check, ClipboardCopy } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
+import { useFormatMoney } from "@/hooks/useFormatMoney";
 import { formatDate } from "@/lib/utils/format";
 
 function getStateColor(state: string, expired: boolean): string {
@@ -92,6 +93,7 @@ function CopyButton({ code }: { code: string }) {
 function GiftCardItem({ card }: { card: GiftCard }) {
   const t = useTranslations("giftCards");
   const locale = useLocale();
+  const formatMoney = useFormatMoney();
   const usagePercentage =
     Number(card.amount) > 0
       ? Math.round((Number(card.amount_used) / Number(card.amount)) * 100)
@@ -122,7 +124,7 @@ function GiftCardItem({ card }: { card: GiftCard }) {
         </div>
         <div className="text-right">
           <p className="text-2xl font-bold text-gray-900">
-            {card.display_amount_remaining}
+            {formatMoney(card.amount_remaining, card.currency)}
           </p>
           <p className="text-sm text-gray-500">{t("remaining")}</p>
         </div>
@@ -132,10 +134,14 @@ function GiftCardItem({ card }: { card: GiftCard }) {
       <div className="mb-4">
         <div className="flex justify-between text-sm mb-1">
           <span className="text-gray-600">
-            {t("usedAmount", { amount: card.display_amount_used ?? "" })}
+            {t("usedAmount", {
+              amount: formatMoney(card.amount_used, card.currency),
+            })}
           </span>
           <span className="text-gray-600">
-            {t("totalAmountWithValue", { amount: card.display_amount ?? "" })}
+            {t("totalAmountWithValue", {
+              amount: formatMoney(card.amount, card.currency),
+            })}
           </span>
         </div>
         <div className="w-full bg-gray-200 rounded-lg h-2">

@@ -1,6 +1,13 @@
 "use server";
 
-import type { AddressParams, Cart } from "@spree/sdk";
+import type {
+  Cart,
+  CartAddressParams,
+  CurrencyCode,
+  LocaleCode,
+  Order,
+  OrderGroup,
+} from "@spree/sdk";
 import { SpreeError } from "@spree/sdk";
 import { updateTag } from "next/cache";
 import {
@@ -99,24 +106,59 @@ export async function getCheckoutOrder(cartId: string): Promise<Cart | null> {
   );
 }
 
-export async function getCompletedOrder(cartId: string): Promise<Cart | null> {
-  const surface = await resolveSurfaceForCart(cartId);
+/**
+ * What the checkout behind `cartId` produced — used by the order-placed page,
+ * on a refresh or any other load that doesn't come straight from completion.
+ *
+ * The cart id resolves the whole purchase on a current backend, whether the
+ * checkout produced one order or one per seller — a split one answers with the
+ * order group, since that is what owns the cart once the split moves it there.
+ *
+ * The replay below is the fallback for a backend predating that: there, no
+ * order carries the cart id after a split and the lookup 404s, so re-posting
+ * completion is what hands the group back — the workflow replays an
+ * already-completed cart rather than completing it again. It only runs once
+ * the cart is known to be gone from the incomplete set, so a checkout still in
+ * progress is never completed by someone loading the confirmation URL for it.
+ *
+ * Does not call getCart() for the first probe because getCart() auto-clears the
+ * cart token cookie on failure, which would break the lookups that follow for
+ * guest users.
+ */
+export async function getCompletedOrder(
+  cartId: string,
+  knownSurface?: Surface,
+): Promise<Order | OrderGroup | null> {
+  const surface = knownSurface ?? (await resolveSurfaceForCart(cartId));
 
-  // Fetch order directly — used by the order-placed page.
-  // Does not call getCart() first because getCart() auto-clears
-  // the cart token cookie on failure, which breaks getOrder()
-  // for guest users.
-  return withFallback(
-    async () => (await getOrder(cartId, undefined, surface)) as unknown as Cart,
-    null,
-  );
+  const order = await getOrder(cartId, undefined, surface);
+  if (order) return order;
+
+  return withFallback(async () => {
+    const options = await getCartOptions(surface);
+    const client = getClientForSurface(surface);
+
+    try {
+      await client.carts.get(cartId, options);
+      // Still an open cart — this checkout has not been placed, so there is
+      // nothing completed to show and nothing here may place it.
+      return null;
+    } catch (error) {
+      // Only a 404 proves the cart left the incomplete set. Anything else —
+      // a network failure, a 5xx — says nothing about where the checkout got
+      // to, and a replay on that basis could complete a live cart.
+      if (!(error instanceof SpreeError) || error.status !== 404) throw error;
+    }
+
+    return client.carts.complete(cartId, options);
+  }, null);
 }
 
 export async function updateOrderAddresses(
   cartId: string,
   addresses: {
-    shipping_address?: AddressParams;
-    billing_address?: AddressParams;
+    shipping_address?: CartAddressParams;
+    billing_address?: CartAddressParams;
     shipping_address_id?: string;
     billing_address_id?: string;
     use_shipping?: boolean;
@@ -139,7 +181,7 @@ export async function updateOrderAddresses(
 
 export async function updateCartMarket(
   cartId: string,
-  params: { currency: string; locale: string },
+  params: { currency: CurrencyCode; locale: LocaleCode },
 ) {
   return actionResult(async () => {
     const surface = await resolveSurfaceForCart(cartId);

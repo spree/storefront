@@ -300,7 +300,8 @@
     "edit": "Edit",
     "failedToDeleteAddress": "Failed to delete address. Please try again.",
     "addFirstAddress": "Add Your First Address",
-    "addAddress": "Add Address"
+    "addAddress": "Add Address",
+    "yourAddresses": "Your addresses"
   },
   "account": {
     "myAccount": "My Account",
@@ -387,6 +388,16 @@
     "shipment": "Shipment",
     "shipped": "Shipped",
     "partiallyShipped": "Partially Shipped",
+    "unfulfilled": "Unfulfilled",
+    "fulfilled": "Fulfilled",
+    "partial": "Partially Fulfilled",
+    "none": "Unpaid",
+    "authorized": "Authorized",
+    "partiallyPaid": "Partially Paid",
+    "partiallyRefunded": "Partially Refunded",
+    "refunded": "Refunded",
+    "overcharged": "Overpaid",
+    "voided": "Voided",
     "delivered": "Delivered",
     "ready": "Ready",
     "pending": "Pending",
@@ -409,6 +420,8 @@
     "thanksForOrderAnonymous": "Thanks for your order!",
     "orderNumber": "Order #{number}",
     "emailConfirmation": "You will receive an email confirmation shortly.",
+    "splitDeliveries": "Your order is arriving in {count} separate deliveries.",
+    "deliveryOf": "Delivery {index} of {count}",
     "orderItems": "Order Items",
     "contactInformation": "Contact Information",
     "shippingAddress": "Shipping Address",
@@ -548,6 +561,39 @@
     "successDescription": "Your password has been updated. You can now sign in with your new password.",
     "signIn": "Sign in"
   },
+  "dataRequestConfirmation": {
+    "loading": "Checking your link...",
+    "invalidLink": "Invalid link",
+    "invalidLinkDescription": "This confirmation link is invalid or has expired. Make the request again from your account.",
+    "confirming": "Confirming...",
+    "confirmed": "Request confirmed",
+    "ignore": "If you did not make this request, close this page and nothing will happen.",
+    "genericError": "Something went wrong. Please try again.",
+    "backToStore": "Back to the store",
+    "loadError": "We could not check your link",
+    "loadErrorDescription": "Something went wrong on our side. Please try again in a moment.",
+    "retry": "Try again",
+    "failed": "Request could not be completed",
+    "failedDescription": "We could not complete this request. Please make it again from your account, or contact us.",
+    "access": {
+      "title": "Confirm your data request",
+      "description": "You asked for a copy of the personal data this store holds about you. Confirm the request, then come back to this page when the file is ready to download it.",
+      "confirm": "Confirm request",
+      "confirmedDescription": "We are preparing your data. Open this page again later to download it.",
+      "readyTitle": "Your data is ready",
+      "readyDescription": "Download the file before the link expires.",
+      "download": "Download your data",
+      "expiredDescription": "The download link for this request has expired. Make the request again from your account."
+    },
+    "erasure": {
+      "title": "Confirm your erasure request",
+      "description": "You asked us to permanently erase the personal data this store holds about you, including the names and addresses on your past orders.",
+      "warning": "This cannot be undone.",
+      "confirm": "Erase my data",
+      "confirmedDescription": "Your personal data will be erased shortly.",
+      "completedDescription": "Your personal data has been erased."
+    }
+  },
   "policies": {
     "policyNotFound": "Policy Not Found",
     "noContent": "No content available for this policy.",
@@ -643,5 +689,11 @@
       "signInForPricing": "Sign in for pricing",
       "signInToOrder": "Sign in to order"
     }
+  },
+  "notFound": {
+    "title": "Page not found",
+    "description": "The page you are looking for does not exist or is no longer available.",
+    "backHome": "Go to the home page",
+    "browseProducts": "Browse all products"
   }
 }

@@ -37,13 +37,22 @@ function spreeImagePatterns(): RemotePattern[] {
 
 const nextConfig: NextConfig = {
   output: "standalone",
-  allowedDevOrigins: ["shop.lvh.me", "*.trycloudflare.com", "192.168.33.13"],
+  allowedDevOrigins: [
+    "shop.lvh.me",
+    "*.trycloudflare.com",
+    "192.168.33.13",
+    // Spree monorepo worktrees: store.<branch>.spree.localhost
+    "**.spree.localhost",
+  ],
   env: {
     NEXT_PUBLIC_SENTRY_DSN: process.env.SENTRY_DSN || "",
   },
   transpilePackages: ["@spree/sdk"],
   reactCompiler: true,
   experimental: {
+    // Real 404 responses for missing products, categories and policies render
+    // app/global-not-found.tsx (see src/proxy.ts).
+    globalNotFound: true,
     optimizePackageImports: [
       "lucide-react",
       "@radix-ui/react-dropdown-menu",

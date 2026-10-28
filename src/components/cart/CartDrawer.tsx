@@ -17,6 +17,7 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet";
 import { useCart } from "@/contexts/CartContext";
+import { useFormatMoney } from "@/hooks/useFormatMoney";
 import { trackRemoveFromCart, trackViewCart } from "@/lib/analytics/gtm";
 import { extractBasePath } from "@/lib/utils/path";
 
@@ -42,6 +43,7 @@ export function CartDrawer() {
   } = useCart();
   const t = useTranslations("cart");
   const tc = useTranslations("common");
+  const formatMoney = useFormatMoney();
   const [expressProcessing, setExpressProcessing] = useState(false);
   const pathname = usePathname();
   const basePath = extractBasePath(pathname);
@@ -209,15 +211,23 @@ export function CartDrawer() {
                             parseFloat(item.price) ? (
                             <>
                               <span className="text-gray-400 line-through mr-2">
-                                {item.display_compare_at_amount}
+                                {formatMoney(
+                                  item.compare_at_amount,
+                                  item.currency,
+                                  { unitPrice: true },
+                                )}
                               </span>
                               <span className="text-red-600">
-                                {item.display_price}
+                                {formatMoney(item.price, item.currency, {
+                                  unitPrice: true,
+                                })}
                               </span>
                             </>
                           ) : (
                             <span className="text-gray-900">
-                              {item.display_price}
+                              {formatMoney(item.price, item.currency, {
+                                unitPrice: true,
+                              })}
                             </span>
                           )}
                         </div>
@@ -239,13 +249,17 @@ export function CartDrawer() {
                 <div className="space-y-2">
                   <div className="flex justify-between items-center">
                     <span>{tc("subtotal")}</span>
-                    <span>{cart?.display_item_total}</span>
+                    <span>
+                      {formatMoney(cart?.item_total, cart?.currency ?? "")}
+                    </span>
                   </div>
                   {cart?.discount_total &&
                     parseFloat(cart.discount_total) < 0 && (
                       <div className="flex justify-between items-center text-sm text-green-600">
                         <span>{tc("discount")}</span>
-                        <span>{cart.display_discount_total}</span>
+                        <span>
+                          {formatMoney(cart.discount_total, cart.currency)}
+                        </span>
                       </div>
                     )}
                   <div className="flex justify-between items-center">

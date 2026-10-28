@@ -8,7 +8,7 @@ import {
 import { getSortOptionLabel } from "@/lib/utils/filters";
 
 interface SortDropdownContentProps {
-  sortOptions: { id: string; label?: string }[];
+  sortOptions: { id: string; label?: string | null }[];
   activeSortBy?: string;
   onSortChange: (sortBy: string) => void;
 }

@@ -1,4 +1,9 @@
-import type { Cart, Fulfillment } from "@spree/sdk";
+import type {
+  Cart,
+  CartAddressParams,
+  CountryCode,
+  Fulfillment,
+} from "@spree/sdk";
 
 /**
  * Stripe zero-decimal currencies where the amount is already in the smallest unit.
@@ -120,7 +125,7 @@ export function buildSpreeAddress(
     state: string | null;
   },
   phone?: string,
-) {
+): CartAddressParams {
   return {
     first_name: name.firstname,
     last_name: name.lastname,
@@ -128,7 +133,8 @@ export function buildSpreeAddress(
     address2: address.line2 || undefined,
     city: address.city,
     postal_code: address.postal_code,
-    country_code: address.country,
+    // A wallet sends any country; the API refuses one the store does not serve.
+    country_code: address.country as CountryCode,
     state_name: address.state || undefined,
     phone: phone || undefined,
   };
@@ -160,11 +166,22 @@ export function buildShippingRateMap(
     Array<{ fulfillmentId: string; rateId: string }>
   >();
 
+  // A rate without a price yet (a freight quote, for example) cannot be shown
+  // in a wallet sheet, so its delivery method is left out everywhere.
+  const unpricedMethodIds = new Set(
+    shipments.flatMap((shipment) =>
+      (shipment.delivery_rates ?? [])
+        .filter((rate) => rate.cost == null)
+        .map((rate) => rate.delivery_method_id),
+    ),
+  );
+
   for (const shipment of shipments) {
     const rates = shipment.delivery_rates ?? [];
 
     for (const rate of rates) {
       const methodId = rate.delivery_method_id;
+      if (rate.cost == null || unpricedMethodIds.has(methodId)) continue;
 
       if (!rateMap.has(methodId)) {
         const id = isGooglePay

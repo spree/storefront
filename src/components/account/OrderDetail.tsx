@@ -1,4 +1,5 @@
 import type { Order } from "@spree/sdk";
+import { formatMoney } from "@spree/sdk";
 import { ChevronLeft } from "lucide-react";
 import Link from "next/link";
 import { getTranslations } from "next-intl/server";
@@ -105,9 +106,13 @@ export async function OrderDetail({
                 .filter((p) => p.status !== "void" && p.status !== "invalid")
                 .map((payment) => (
                   <div key={payment.id} className="mb-3 last:mb-0">
-                    <PaymentInfo payment={payment} />
+                    <PaymentInfo
+                      payment={payment}
+                      currency={order.currency}
+                      giftCardTotal={order.gift_card_total}
+                    />
                     <p className="text-sm text-gray-500 mt-1">
-                      {payment.display_amount}
+                      {formatMoney(payment.amount, order.currency, locale)}
                     </p>
                   </div>
                 ))}

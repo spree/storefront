@@ -1,4 +1,4 @@
-import type { ProductListParams } from "@spree/sdk";
+import type { ProductListParams, ProductSort } from "@spree/sdk";
 import type { ActiveFilters } from "@/types/filters";
 
 /**
@@ -17,11 +17,11 @@ export function buildProductQueryParams(
   }
 
   if (filters.priceMin !== undefined) {
-    params.price_gte = filters.priceMin;
+    params.price_gte = String(filters.priceMin);
   }
 
   if (filters.priceMax !== undefined) {
-    params.price_lte = filters.priceMax;
+    params.price_lte = String(filters.priceMax);
   }
 
   if (filters.optionValues.length > 0) {
@@ -35,7 +35,8 @@ export function buildProductQueryParams(
   }
 
   if (filters.sortBy && filters.sortBy !== "manual") {
-    params.sort = filters.sortBy;
+    // Read from the URL as text; the API validates the value.
+    params.sort = filters.sortBy as ProductSort;
   }
 
   return params;

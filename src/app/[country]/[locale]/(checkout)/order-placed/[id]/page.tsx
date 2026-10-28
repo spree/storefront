@@ -1,21 +1,22 @@
 "use client";
 
-import type { Cart } from "@spree/sdk";
 import { CircleCheckBig, Package } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useTranslations } from "next-intl";
-import { use, useEffect, useRef, useState } from "react";
+import { use, useEffect, useMemo, useRef, useState } from "react";
 import { AddressBlock } from "@/components/order/AddressBlock";
 import { OrderTotals } from "@/components/order/OrderTotals";
 import { PaymentInfo } from "@/components/order/PaymentInfo";
 import { Button } from "@/components/ui/button";
 import { ProductImage } from "@/components/ui/product-image";
 import { useCheckout } from "@/contexts/CheckoutContext";
+import { useFormatMoney } from "@/hooks/useFormatMoney";
 import { trackPurchase } from "@/lib/analytics/gtm";
 import { getCompletedOrder } from "@/lib/data/checkout";
 import { getCachedCompletedOrder } from "@/lib/utils/completed-order-cache";
 import { extractBasePath } from "@/lib/utils/path";
+import { type CompletedPurchase, toPurchase } from "@/lib/utils/purchase";
 
 interface OrderPlacedPageProps {
   params: Promise<{
@@ -32,8 +33,9 @@ export default function OrderPlacedPage({ params }: OrderPlacedPageProps) {
   const { setSummaryContent } = useCheckout();
   const t = useTranslations("orderPlaced");
   const tc = useTranslations("common");
+  const formatMoney = useFormatMoney();
 
-  const [order, setOrder] = useState<Cart | null>(null);
+  const [result, setResult] = useState<CompletedPurchase | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<"orderNotFound" | "failedToLoad" | null>(
     null,
@@ -56,14 +58,16 @@ export default function OrderPlacedPage({ params }: OrderPlacedPageProps) {
       try {
         // Try cached order first (from the completion response),
         // fall back to API for page refreshes.
-        const cached = getCachedCompletedOrder(cartId) as Cart | null;
+        const cached = getCachedCompletedOrder(
+          cartId,
+        ) as CompletedPurchase | null;
         const orderData = cached ?? (await getCompletedOrder(cartId));
         if (cancelled) return;
 
         loadedRef.current = true;
 
         if (orderData) {
-          setOrder(orderData);
+          setResult(orderData);
           try {
             trackPurchase(orderData);
           } catch {
@@ -89,6 +93,12 @@ export default function OrderPlacedPage({ params }: OrderPlacedPageProps) {
     };
   }, [cartId]);
 
+  // One checkout, whether it produced one order or one per seller.
+  const purchase = useMemo(
+    () => (result ? toPurchase(result) : null),
+    [result],
+  );
+
   if (loading) {
     return (
       <div className="animate-pulse space-y-6 py-12">
@@ -100,7 +110,7 @@ export default function OrderPlacedPage({ params }: OrderPlacedPageProps) {
     );
   }
 
-  if (error || !order) {
+  if (error || !purchase) {
     return (
       <div className="text-center py-12">
         <h1 className="text-2xl font-bold text-gray-900 mb-4">
@@ -114,7 +124,9 @@ export default function OrderPlacedPage({ params }: OrderPlacedPageProps) {
   }
 
   const customerName =
-    order.billing_address?.full_name || order.shipping_address?.full_name || "";
+    purchase.billing_address?.full_name ||
+    purchase.shipping_address?.full_name ||
+    "";
 
   return (
     <div className="py-8 max-w-2xl mx-auto">
@@ -127,9 +139,14 @@ export default function OrderPlacedPage({ params }: OrderPlacedPageProps) {
             : t("thanksForOrderAnonymous")}
         </h1>
         <p className="text-gray-500">
-          {t("orderNumber", { number: order.number })}
+          {t("orderNumber", { number: purchase.number })}
         </p>
         <p className="text-sm text-gray-400 mt-2">{t("emailConfirmation")}</p>
+        {purchase.split && (
+          <p className="text-sm text-gray-500 mt-2">
+            {t("splitDeliveries", { count: purchase.segments.length })}
+          </p>
+        )}
       </div>
 
       {/* Order Items */}
@@ -139,39 +156,59 @@ export default function OrderPlacedPage({ params }: OrderPlacedPageProps) {
             {t("orderItems")}
           </h2>
         </div>
-        <ul className="divide-y divide-gray-200">
-          {order.items?.map((item) => (
-            <li key={item.id} className="px-6 py-4 flex gap-4">
-              <div className="relative w-14 h-14 bg-gray-100 rounded-xl flex-shrink-0 overflow-hidden">
-                <ProductImage
-                  src={item.thumbnail_url}
-                  alt={item.name}
-                  fill
-                  className="object-cover"
-                  iconClassName="w-6 h-6"
-                />
-              </div>
-              <div className="flex-1 min-w-0">
-                <h3 className="text-sm font-medium text-gray-900">
-                  {item.name}
+
+        {/* One block per order the checkout produced — a single-seller checkout
+            has exactly one, so it reads as a plain list. */}
+        {purchase.segments.map((segment, index) => (
+          <div key={segment.id}>
+            {purchase.split && (
+              <div className="px-6 py-3 bg-gray-50 border-y border-gray-200 flex items-baseline justify-between gap-4">
+                <h3 className="text-sm font-semibold text-gray-900">
+                  {t("deliveryOf", {
+                    index: index + 1,
+                    count: purchase.segments.length,
+                  })}
                 </h3>
-                {item.options_text && (
-                  <p className="text-sm text-gray-500">{item.options_text}</p>
-                )}
-                <p className="text-sm text-gray-500">
-                  {t("qty", { quantity: item.quantity })}
-                </p>
+                <span className="text-xs text-gray-500">{segment.number}</span>
               </div>
-              <div className="text-sm font-medium text-gray-900">
-                {item.display_total}
-              </div>
-            </li>
-          ))}
-        </ul>
+            )}
+            <ul className="divide-y divide-gray-200">
+              {segment.items.map((item) => (
+                <li key={item.id} className="px-6 py-4 flex gap-4">
+                  <div className="relative w-14 h-14 bg-gray-100 rounded-xl flex-shrink-0 overflow-hidden">
+                    <ProductImage
+                      src={item.thumbnail_url}
+                      alt={item.name}
+                      fill
+                      className="object-cover"
+                      iconClassName="w-6 h-6"
+                    />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <h3 className="text-sm font-medium text-gray-900">
+                      {item.name}
+                    </h3>
+                    {item.options_text && (
+                      <p className="text-sm text-gray-500">
+                        {item.options_text}
+                      </p>
+                    )}
+                    <p className="text-sm text-gray-500">
+                      {t("qty", { quantity: item.quantity })}
+                    </p>
+                  </div>
+                  <div className="text-sm font-medium text-gray-900">
+                    {formatMoney(item.total, item.currency)}
+                  </div>
+                </li>
+              ))}
+            </ul>
+          </div>
+        ))}
 
         {/* Totals */}
         <div className="px-6 py-4 border-t border-gray-200">
-          <OrderTotals order={order} />
+          <OrderTotals order={purchase.totals} />
         </div>
       </div>
 
@@ -179,12 +216,12 @@ export default function OrderPlacedPage({ params }: OrderPlacedPageProps) {
       <div className="bg-white rounded-xl border border-gray-200 overflow-hidden mb-6">
         <div className="grid grid-cols-1 lg:grid-cols-2 divide-y lg:divide-y-0 lg:divide-x divide-gray-200">
           {/* Shipping Method */}
-          {order.fulfillments && order.fulfillments.length > 0 && (
+          {purchase.fulfillments.length > 0 && (
             <div className="px-6 py-4">
               <h3 className="text-sm font-semibold text-gray-900 mb-3">
                 {t("shippingMethod")}
               </h3>
-              {order.fulfillments.map((fulfillment) => (
+              {purchase.fulfillments.map((fulfillment) => (
                 <div
                   key={fulfillment.id}
                   className="flex items-start gap-3 mb-2 last:mb-0"
@@ -196,7 +233,7 @@ export default function OrderPlacedPage({ params }: OrderPlacedPageProps) {
                         t("standardShipping")}
                     </p>
                     <p className="text-xs text-gray-500">
-                      {fulfillment.display_cost}
+                      {formatMoney(fulfillment.cost, purchase.currency)}
                     </p>
                   </div>
                 </div>
@@ -205,20 +242,19 @@ export default function OrderPlacedPage({ params }: OrderPlacedPageProps) {
           )}
 
           {/* Payment Information */}
-          {order.payments && order.payments.length > 0 && (
+          {purchase.payments.length > 0 && (
             <div className="px-6 py-4">
               <h3 className="text-sm font-semibold text-gray-900 mb-3">
                 {t("payment")}
               </h3>
-              {order.payments
+              {purchase.payments
                 .filter((p) => p.status !== "void" && p.status !== "invalid")
                 .map((payment) => (
                   <div key={payment.id} className="mb-3 last:mb-0">
                     <PaymentInfo
                       payment={payment}
-                      storeCreditLabel={
-                        order.gift_card ? t("giftCard") : undefined
-                      }
+                      currency={purchase.currency}
+                      giftCardTotal={purchase.totals.gift_card_total}
                     />
                   </div>
                 ))}
@@ -230,30 +266,32 @@ export default function OrderPlacedPage({ params }: OrderPlacedPageProps) {
       {/* Contact & Addresses */}
       <div className="bg-white rounded-xl border border-gray-200 overflow-hidden mb-6">
         <div className="grid grid-cols-1 sm:grid-cols-2 divide-y sm:divide-y-0 sm:divide-x divide-gray-200">
-          {order.shipping_address && (
+          {purchase.shipping_address && (
             <div className="px-6 py-4">
               <h3 className="text-sm font-semibold text-gray-900 mb-2">
                 {t("shippingAddress")}
               </h3>
-              <AddressBlock address={order.shipping_address} />
+              <AddressBlock address={purchase.shipping_address} />
             </div>
           )}
 
-          {order.billing_address && (
+          {purchase.billing_address && (
             <div className="px-6 py-4">
               <h3 className="text-sm font-semibold text-gray-900 mb-2">
                 {t("billingAddress")}
               </h3>
-              <AddressBlock address={order.billing_address} />
+              <AddressBlock address={purchase.billing_address} />
             </div>
           )}
         </div>
 
-        {order.email && (
+        {purchase.email && (
           <div className="px-6 py-3 border-t border-gray-200">
             <p className="text-sm text-gray-500">
               {t("confirmationSentTo")}{" "}
-              <span className="font-medium text-gray-700">{order.email}</span>
+              <span className="font-medium text-gray-700">
+                {purchase.email}
+              </span>
             </p>
           </div>
         )}

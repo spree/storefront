@@ -1,14 +1,15 @@
 "use client";
 
-import type { Country, Market } from "@spree/sdk";
+import type { Country, CurrencyCode, LocaleCode, Market } from "@spree/sdk";
 import { createContext, type ReactNode, useContext, useMemo } from "react";
 import { getStoreName } from "@/lib/store";
+import { sortByCountryName } from "@/lib/utils/format";
 
 /** Country enriched with market info (currency, locale, etc.) */
 export interface CountryWithMarket extends Country {
-  currency: string;
-  default_locale: string;
-  supported_locales: string[];
+  currency: CurrencyCode;
+  default_locale: LocaleCode;
+  supported_locales: LocaleCode[];
   marketId: string | null;
 }
 
@@ -33,7 +34,10 @@ interface StoreProviderProps {
 }
 
 /** Build a flat country list from markets, enriching each country with market info. */
-function buildCountriesFromMarkets(markets: Market[]): CountryWithMarket[] {
+function buildCountriesFromMarkets(
+  markets: Market[],
+  locale: string,
+): CountryWithMarket[] {
   const seen = new Set<string>();
   const result: CountryWithMarket[] = [];
 
@@ -55,7 +59,7 @@ function buildCountriesFromMarkets(markets: Market[]): CountryWithMarket[] {
     }
   }
 
-  return result.sort((a, b) => a.name.localeCompare(b.name));
+  return sortByCountryName(result, locale);
 }
 
 /** Find a country by ISO code in the flat countries list. */
@@ -75,8 +79,8 @@ export function StoreProvider({
   initialMarkets,
 }: StoreProviderProps) {
   const countries = useMemo(
-    () => buildCountriesFromMarkets(initialMarkets),
-    [initialMarkets],
+    () => buildCountriesFromMarkets(initialMarkets, initialLocale),
+    [initialMarkets, initialLocale],
   );
 
   const selectedCountry = useMemo(

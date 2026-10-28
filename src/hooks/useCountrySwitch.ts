@@ -4,6 +4,7 @@ import { usePathname } from "next/navigation";
 import { useState } from "react";
 import { useCart } from "@/contexts/CartContext";
 import type { CountryWithMarket } from "@/contexts/StoreContext";
+import { matchLocale } from "@/i18n/normalize";
 import { updateCartMarket } from "@/lib/data/checkout";
 import { rebaseAccountRedirectSearch } from "@/lib/utils/account-redirect";
 import { setStoreCookies } from "@/lib/utils/cookies";
@@ -39,7 +40,10 @@ export function useCountrySwitch({
   ): Promise<boolean> => {
     const nextCountry = entry.iso.toLowerCase();
     const activeCountry = currentCountry.toLowerCase();
-    const newLocale = locale || entry.default_locale || "en";
+    const matchedLocale = matchLocale(locale, entry.supported_locales);
+    const newLocale =
+      entry.supported_locales.find((code) => code === matchedLocale) ??
+      entry.default_locale;
 
     if (isCountryNavigating) {
       return false;

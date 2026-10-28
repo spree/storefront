@@ -5,13 +5,13 @@ import { CircleAlert, Wallet, X } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
+import { useFormatMoney } from "@/hooks/useFormatMoney";
 import {
   applyStoreCredit,
   getStoreCreditBalance,
   removeStoreCredit,
   type StoreCreditBalance,
 } from "@/lib/data/store-credits";
-import { unsignedAmount } from "@/lib/utils/format";
 
 interface StoreCreditSectionProps {
   cart: Cart;
@@ -34,6 +34,7 @@ export function StoreCreditSection({
   processing = false,
 }: StoreCreditSectionProps) {
   const t = useTranslations("storeCredit");
+  const formatMoney = useFormatMoney();
   const [balance, setBalance] = useState(initialBalance);
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -92,7 +93,7 @@ export function StoreCreditSection({
               <div className="min-w-0 flex-1">
                 <p className="text-sm font-medium text-gray-900">
                   {t("appliedAmount", {
-                    amount: unsignedAmount(cart.display_store_credit_total),
+                    amount: formatMoney(cart.store_credit_total, cart.currency),
                   })}
                 </p>
                 <p className="mt-0.5 text-xs text-gray-500">

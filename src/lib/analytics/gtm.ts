@@ -1,5 +1,12 @@
 import { sendGTMEvent } from "@next/third-parties/google";
-import type { Cart, LineItem, Order, Product, Variant } from "@spree/sdk";
+import type {
+  Cart,
+  LineItem,
+  Order,
+  OrderGroup,
+  Product,
+  Variant,
+} from "@spree/sdk";
 
 interface GA4Item {
   item_id: string;
@@ -216,19 +223,23 @@ export function trackViewCart(order: Cart | Order): void {
 }
 
 function buildOrderEcommercePayload(
-  order: Cart | Order,
+  order: Cart | Order | OrderGroup,
   extras?: Record<string, unknown>,
 ): Record<string, unknown> {
-  const coupon = order.discounts?.find((d) => d.code)?.code;
+  // A marketplace checkout that reached several sellers is one purchase made
+  // of several orders: report it once, with every order's items.
+  const orders = "orders" in order ? order.orders : [order];
+  const coupon = orders
+    .flatMap((o) => o.discounts ?? [])
+    .find((d) => d.code)?.code;
   return {
     currency: order.currency,
     value: safeParseFloat(order.total),
     ...(coupon && { coupon }),
     ...extras,
-    items:
-      order.items?.map((item, index) =>
-        mapLineItemToGA4Item(item, { index }),
-      ) ?? [],
+    items: orders
+      .flatMap((o) => o.items ?? [])
+      .map((item, index) => mapLineItemToGA4Item(item, { index })),
   };
 }
 
@@ -260,7 +271,7 @@ export function trackAddPaymentInfo(
   );
 }
 
-export function trackPurchase(order: Cart | Order): void {
+export function trackPurchase(order: Order | OrderGroup): void {
   const key = `gtm_purchase_${order.number}`;
   try {
     if (typeof window !== "undefined" && localStorage.getItem(key)) {

@@ -300,7 +300,8 @@
     "edit": "Editar",
     "failedToDeleteAddress": "Error al eliminar la direccion. Por favor, intenta de nuevo.",
     "addFirstAddress": "Agrega tu primera direccion",
-    "addAddress": "Agregar direccion"
+    "addAddress": "Agregar direccion",
+    "yourAddresses": "Tus direcciones"
   },
   "account": {
     "myAccount": "Mi cuenta",
@@ -387,6 +388,16 @@
     "shipment": "Envio",
     "shipped": "Enviado",
     "partiallyShipped": "Parcialmente enviado",
+    "unfulfilled": "Sin preparar",
+    "fulfilled": "Preparado",
+    "partial": "Parcialmente preparado",
+    "none": "Sin pagar",
+    "authorized": "Autorizado",
+    "partiallyPaid": "Parcialmente pagado",
+    "partiallyRefunded": "Parcialmente reembolsado",
+    "refunded": "Reembolsado",
+    "overcharged": "Pagado en exceso",
+    "voided": "Anulado",
     "delivered": "Entregado",
     "ready": "Listo",
     "pending": "Pendiente",
@@ -409,6 +420,8 @@
     "thanksForOrderAnonymous": "¡Gracias por tu pedido!",
     "orderNumber": "Pedido #{number}",
     "emailConfirmation": "Recibiras una confirmacion por correo electronico en breve.",
+    "splitDeliveries": "Tu pedido llegara en {count} entregas separadas.",
+    "deliveryOf": "Entrega {index} de {count}",
     "orderItems": "Articulos del pedido",
     "contactInformation": "Informacion de contacto",
     "shippingAddress": "Direccion de envio",
@@ -548,6 +561,39 @@
     "successDescription": "Tu contrasena ha sido actualizada. Ahora puedes iniciar sesion con tu nueva contrasena.",
     "signIn": "Iniciar sesion"
   },
+  "dataRequestConfirmation": {
+    "loading": "Comprobando tu enlace...",
+    "invalidLink": "Enlace no válido",
+    "invalidLinkDescription": "Este enlace de confirmación no es válido o ha caducado. Vuelve a hacer la solicitud desde tu cuenta.",
+    "confirming": "Confirmando...",
+    "confirmed": "Solicitud confirmada",
+    "ignore": "Si no has hecho esta solicitud, cierra esta página y no ocurrirá nada.",
+    "genericError": "Algo salió mal. Inténtalo de nuevo.",
+    "backToStore": "Volver a la tienda",
+    "loadError": "No pudimos comprobar tu enlace",
+    "loadErrorDescription": "Algo salió mal por nuestra parte. Inténtalo de nuevo en un momento.",
+    "retry": "Intentar de nuevo",
+    "failed": "No se pudo completar la solicitud",
+    "failedDescription": "No pudimos completar esta solicitud. Vuelve a hacerla desde tu cuenta o ponte en contacto con nosotros.",
+    "access": {
+      "title": "Confirma tu solicitud de datos",
+      "description": "Has pedido una copia de los datos personales que esta tienda guarda sobre ti. Confirma la solicitud y vuelve a esta página cuando el archivo esté listo para descargarlo.",
+      "confirm": "Confirmar solicitud",
+      "confirmedDescription": "Estamos preparando tus datos. Vuelve a abrir esta página más tarde para descargarlos.",
+      "readyTitle": "Tus datos están listos",
+      "readyDescription": "Descarga el archivo antes de que caduque el enlace.",
+      "download": "Descargar mis datos",
+      "expiredDescription": "El enlace de descarga de esta solicitud ha caducado. Vuelve a hacer la solicitud desde tu cuenta."
+    },
+    "erasure": {
+      "title": "Confirma tu solicitud de eliminación",
+      "description": "Nos has pedido eliminar de forma permanente los datos personales que esta tienda guarda sobre ti, incluidos los nombres y direcciones de tus pedidos anteriores.",
+      "warning": "Esta acción no se puede deshacer.",
+      "confirm": "Eliminar mis datos",
+      "confirmedDescription": "Tus datos personales se eliminarán en breve.",
+      "completedDescription": "Tus datos personales se han eliminado."
+    }
+  },
   "policies": {
     "policyNotFound": "Politica no encontrada",
     "noContent": "No hay contenido disponible para esta politica.",
@@ -643,5 +689,11 @@
       "signInForPricing": "Inicia sesión para ver precios",
       "signInToOrder": "Inicia sesión para pedir"
     }
+  },
+  "notFound": {
+    "title": "Página no encontrada",
+    "description": "La página que buscas no existe o ya no está disponible.",
+    "backHome": "Ir a la página de inicio",
+    "browseProducts": "Ver todos los productos"
   }
 }

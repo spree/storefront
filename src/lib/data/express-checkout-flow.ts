@@ -1,6 +1,6 @@
 "use server";
 
-import type { AddressParams, Cart } from "@spree/sdk";
+import type { Cart, CartAddressParams, CountryCode } from "@spree/sdk";
 import {
   getCheckoutOrder,
   selectDeliveryRate,
@@ -16,7 +16,7 @@ import { actionResult } from "@/lib/data/utils";
 export interface ExpressCheckoutPartialAddress {
   city: string;
   postal_code: string;
-  country_code: string;
+  country_code: CountryCode;
   state_name?: string;
 }
 
@@ -76,8 +76,8 @@ export async function expressCheckoutPreparePayment(
   cartId: string,
   params: {
     email: string;
-    shipAddress: AddressParams;
-    billAddress: AddressParams;
+    shipAddress: CartAddressParams;
+    billAddress: CartAddressParams;
   },
 ): Promise<{ success: true; cart: Cart } | { success: false; error: string }> {
   return actionResult(async () => {

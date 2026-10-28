@@ -1,6 +1,6 @@
 "use client";
 
-import type { Cart } from "@spree/sdk";
+import type { Cart, CountryCode } from "@spree/sdk";
 import {
   Elements,
   ExpressCheckoutElement,
@@ -121,7 +121,8 @@ function ExpressCheckoutInner({
         const result = await expressCheckoutResolveShipping(cart.id, {
           city: address.city,
           postal_code: address.postal_code,
-          country_code: address.country,
+          // A wallet sends any country; the API refuses one the store does not serve.
+          country_code: address.country as CountryCode,
           state_name: address.state || undefined,
         });
 

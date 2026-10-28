@@ -7,7 +7,7 @@ import { AddressBlock } from "@/components/order/AddressBlock";
 import { LineItemCard } from "@/components/order/LineItemCard";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
-import { getFulfillmentStatusColor } from "@/lib/utils/format";
+import { getFulfillmentStatusColor, getStatusLabel } from "@/lib/utils/format";
 
 interface FulfillmentBlockProps {
   fulfillment: Fulfillment;
@@ -15,6 +15,15 @@ interface FulfillmentBlockProps {
   basePath: string;
   lineItems: Order["items"];
 }
+
+// Statuses that no longer wait for tracking details; the 5.6 `shipped` too,
+// for orders saved before the upgrade.
+const HANDED_OVER_STATUSES = new Set([
+  "canceled",
+  "fulfilled",
+  "delivered",
+  "shipped",
+]);
 
 export function FulfillmentBlock({
   fulfillment,
@@ -53,11 +62,11 @@ export function FulfillmentBlock({
               <span
                 className={`inline-flex items-center mt-2 px-2.5 py-0.5 rounded-lg text-xs font-medium capitalize ${getFulfillmentStatusColor(fulfillment.status)}`}
               >
-                {fulfillment.status}
+                {getStatusLabel(fulfillment.status, t)}
               </span>
             </div>
             <div className="mt-4 lg:mt-0">
-              {fulfillment.status === "shipped" && fulfillment.tracking_url ? (
+              {fulfillment.status !== "canceled" && fulfillment.tracking_url ? (
                 <Button size="sm" asChild>
                   <a
                     href={fulfillment.tracking_url}
@@ -82,8 +91,7 @@ export function FulfillmentBlock({
             <AlertDescription>{t("shipmentCanceledRefund")}</AlertDescription>
           </Alert>
         )}
-        {fulfillment.status !== "canceled" &&
-          fulfillment.status !== "shipped" &&
+        {!HANDED_OVER_STATUSES.has(fulfillment.status) &&
           !fulfillment.tracking && (
             <div className="mt-3 p-3 bg-gray-50 rounded-xl text-sm text-gray-500 text-center">
               {t("noTrackingInfo")}

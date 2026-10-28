@@ -300,7 +300,8 @@
     "edit": "Edytuj",
     "failedToDeleteAddress": "Nie udało się usunąć adresu. Spróbuj ponownie.",
     "addFirstAddress": "Dodaj swój pierwszy adres",
-    "addAddress": "Dodaj adres"
+    "addAddress": "Dodaj adres",
+    "yourAddresses": "Twoje adresy"
   },
   "account": {
     "myAccount": "Moje konto",
@@ -387,6 +388,16 @@
     "shipment": "Przesyłka",
     "shipped": "Wysłano",
     "partiallyShipped": "Częściowo wysłano",
+    "unfulfilled": "Niezrealizowane",
+    "fulfilled": "Zrealizowane",
+    "partial": "Częściowo zrealizowane",
+    "none": "Nieopłacone",
+    "authorized": "Autoryzowane",
+    "partiallyPaid": "Częściowo opłacone",
+    "partiallyRefunded": "Częściowo zwrócone",
+    "refunded": "Zwrócone",
+    "overcharged": "Nadpłacone",
+    "voided": "Unieważnione",
     "delivered": "Dostarczono",
     "ready": "Gotowe",
     "pending": "Oczekujące",
@@ -409,6 +420,8 @@
     "thanksForOrderAnonymous": "Dziękujemy za zamówienie!",
     "orderNumber": "Zamówienie #{number}",
     "emailConfirmation": "Wkrótce otrzymasz potwierdzenie e-mailem.",
+    "splitDeliveries": "Twoje zamówienie dotrze w {count} osobnych dostawach.",
+    "deliveryOf": "Dostawa {index} z {count}",
     "orderItems": "Pozycje zamówienia",
     "contactInformation": "Dane kontaktowe",
     "shippingAddress": "Adres wysyłki",
@@ -548,6 +561,39 @@
     "successDescription": "Twoje hasło zostało zaktualizowane. Możesz się teraz zalogować nowym hasłem.",
     "signIn": "Zaloguj się"
   },
+  "dataRequestConfirmation": {
+    "loading": "Sprawdzamy Twój link...",
+    "invalidLink": "Nieprawidłowy link",
+    "invalidLinkDescription": "Ten link potwierdzający jest nieprawidłowy lub wygasł. Złóż wniosek ponownie na swoim koncie.",
+    "confirming": "Potwierdzanie...",
+    "confirmed": "Wniosek potwierdzony",
+    "ignore": "Jeśli to nie Ty złożyłeś ten wniosek, zamknij tę stronę. Nic się nie stanie.",
+    "genericError": "Coś poszło nie tak. Spróbuj ponownie.",
+    "backToStore": "Wróć do sklepu",
+    "loadError": "Nie udało się sprawdzić linku",
+    "loadErrorDescription": "Coś poszło nie tak po naszej stronie. Spróbuj ponownie za chwilę.",
+    "retry": "Spróbuj ponownie",
+    "failed": "Nie udało się zrealizować wniosku",
+    "failedDescription": "Nie udało się zrealizować tego wniosku. Złóż go ponownie na swoim koncie lub skontaktuj się z nami.",
+    "access": {
+      "title": "Potwierdź wniosek o dane",
+      "description": "Poprosiłeś o kopię danych osobowych, które ten sklep przechowuje na Twój temat. Potwierdź wniosek i wróć na tę stronę, gdy plik będzie gotowy do pobrania.",
+      "confirm": "Potwierdź wniosek",
+      "confirmedDescription": "Przygotowujemy Twoje dane. Otwórz tę stronę ponownie później, aby je pobrać.",
+      "readyTitle": "Twoje dane są gotowe",
+      "readyDescription": "Pobierz plik, zanim link wygaśnie.",
+      "download": "Pobierz moje dane",
+      "expiredDescription": "Link do pobrania dla tego wniosku wygasł. Złóż wniosek ponownie na swoim koncie."
+    },
+    "erasure": {
+      "title": "Potwierdź wniosek o usunięcie danych",
+      "description": "Poprosiłeś o trwałe usunięcie danych osobowych, które ten sklep przechowuje na Twój temat, w tym imion, nazwisk i adresów z Twoich wcześniejszych zamówień.",
+      "warning": "Tej operacji nie można cofnąć.",
+      "confirm": "Usuń moje dane",
+      "confirmedDescription": "Twoje dane osobowe zostaną wkrótce usunięte.",
+      "completedDescription": "Twoje dane osobowe zostały usunięte."
+    }
+  },
   "policies": {
     "policyNotFound": "Nie znaleziono regulaminu",
     "noContent": "Brak treści dla tego regulaminu.",
@@ -643,5 +689,11 @@
       "signInForPricing": "Zaloguj się, aby zobaczyć ceny",
       "signInToOrder": "Zaloguj się, aby zamówić"
     }
+  },
+  "notFound": {
+    "title": "Nie znaleziono strony",
+    "description": "Strona, której szukasz, nie istnieje lub nie jest już dostępna.",
+    "backHome": "Przejdź do strony głównej",
+    "browseProducts": "Zobacz wszystkie produkty"
   }
 }

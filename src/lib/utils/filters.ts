@@ -68,7 +68,7 @@ export function getSortLabel(key: string, t?: (key: string) => string): string {
 }
 
 export function getSortOptionLabel(
-  option: { id: string; label?: string },
+  option: { id: string; label?: string | null },
   t?: (key: string) => string,
 ): string {
   if (option.label) return option.label;

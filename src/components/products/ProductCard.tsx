@@ -6,7 +6,9 @@ import { useTranslations } from "next-intl";
 import { memo } from "react";
 import { HiddenPricePrompt } from "@/components/products/HiddenPricePrompt";
 import { ProductImage } from "@/components/ui/product-image";
+import { useFormatMoney } from "@/hooks/useFormatMoney";
 import { trackSelectItem } from "@/lib/analytics/gtm";
+import { strikethroughAmount } from "@/lib/utils/price";
 
 interface ProductCardProps {
   product: Product;
@@ -33,26 +35,17 @@ export const ProductCard = memo(function ProductCard({
   const t = useTranslations("products");
   const imageUrl = product.thumbnail_url || null;
 
-  // Current display price
-  const displayPrice = product.price?.display_amount;
-
-  const currentAmountCents = product.price?.amount_in_cents;
-  const originalAmountCents = product.original_price?.amount_in_cents;
-  const compareAtAmountCents = product.price?.compare_at_amount_in_cents;
-  const onSale =
-    (currentAmountCents != null &&
-      originalAmountCents != null &&
-      currentAmountCents < originalAmountCents) ||
-    (compareAtAmountCents != null &&
-      currentAmountCents != null &&
-      currentAmountCents < compareAtAmountCents);
-
-  const strikethroughPrice = onSale
-    ? ((product.original_price?.display_amount &&
-      product.original_price.display_amount !== displayPrice
-        ? product.original_price.display_amount
-        : product.price?.display_compare_at_amount) ?? null)
+  const formatMoney = useFormatMoney();
+  const price = product.price;
+  const displayPrice = price
+    ? formatMoney(price.amount, price.currency, { unitPrice: true })
     : null;
+  const struckAmount = strikethroughAmount(price, product.original_price);
+  const onSale = struckAmount !== null;
+  const strikethroughPrice =
+    price && struckAmount
+      ? formatMoney(struckAmount, price.currency, { unitPrice: true })
+      : null;
 
   const handleClick = () => {
     if (index != null && listId && listName && currency) {
