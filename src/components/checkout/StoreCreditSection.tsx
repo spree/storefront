@@ -15,8 +15,9 @@ import {
 
 interface StoreCreditSectionProps {
   cart: Cart;
-  /** Balance read on the server; null for guests and when it can't be read. */
-  initialBalance: StoreCreditBalance | null;
+  /** The customer's spendable credit; null for guests and when it can't be read. */
+  balance: StoreCreditBalance | null;
+  onBalanceChange: (balance: StoreCreditBalance | null) => void;
   onCartUpdate: (cart: Cart) => void;
   processing?: boolean;
 }
@@ -29,23 +30,26 @@ interface StoreCreditSectionProps {
  */
 export function StoreCreditSection({
   cart,
-  initialBalance,
+  balance,
+  onBalanceChange,
   onCartUpdate,
   processing = false,
 }: StoreCreditSectionProps) {
   const t = useTranslations("storeCredit");
   const formatMoney = useFormatMoney();
-  const [balance, setBalance] = useState(initialBalance);
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const appliedAmount = parseFloat(cart.store_credit_total ?? "0");
   const isApplied = Number.isFinite(appliedAmount) && appliedAmount > 0;
   const hasBalance = parseFloat(balance?.amount ?? "0") > 0;
+  // Spree refuses store credit on a cart that already redeems a gift card, so
+  // don't offer what can't be applied.
+  const canApply = hasBalance && !cart.gift_card;
 
   // Nothing to offer and nothing applied — stay out of the way. Guests land
   // here too, since their balance is always null.
-  if (!isApplied && !hasBalance) return null;
+  if (!isApplied && !canApply) return null;
 
   const run = async (
     action: () => Promise<
@@ -64,8 +68,10 @@ export function StoreCreditSection({
       }
       onCartUpdate(result.cart);
       // Applying/releasing credit moves the customer's balance, so re-read it
-      // rather than deriving it from the cart.
-      setBalance(await getStoreCreditBalance());
+      // rather than deriving it from the cart. The cart change already landed,
+      // so a failed re-read keeps the last balance instead of reporting an error.
+      const freshBalance = await getStoreCreditBalance().catch(() => balance);
+      onBalanceChange(freshBalance);
     } catch {
       setError(fallbackMessage);
     } finally {

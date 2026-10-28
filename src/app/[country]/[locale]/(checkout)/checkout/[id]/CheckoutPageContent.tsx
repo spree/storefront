@@ -777,7 +777,8 @@ function CheckoutPageContentInner({
         <div id="checkout-section-store-credit" className="mt-6 empty:mt-0">
           <StoreCreditSection
             cart={cart}
-            initialBalance={storeCreditBalance}
+            balance={storeCreditBalance}
+            onBalanceChange={setStoreCreditBalance}
             onCartUpdate={setCart}
             processing={processing}
           />
