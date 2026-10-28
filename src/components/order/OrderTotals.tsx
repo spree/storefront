@@ -1,11 +1,8 @@
-import type { Cart, Order } from "@spree/sdk";
+import type { Cart, Order, OrderGroup } from "@spree/sdk";
 import { useTranslations } from "next-intl";
 import { useFormatMoney } from "@/hooks/useFormatMoney";
-import type { PurchaseTotals } from "@/lib/utils/purchase";
 
-// A split checkout has no single order holding these figures, so the summary
-// passes the roll-up it built across the group's children.
-type OrderLike = Cart | Order | PurchaseTotals;
+type OrderLike = Cart | Order | OrderGroup;
 
 interface OrderTotalsProps {
   order: OrderLike;

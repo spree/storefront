@@ -52,7 +52,9 @@ describe("toPurchase", () => {
     expect(purchase.split).toBe(false);
     expect(purchase.number).toBe("R1033-1");
     expect(purchase.segments).toHaveLength(1);
-    expect(purchase.items.map((item) => item.name)).toEqual(["Apple"]);
+    expect(
+      purchase.segments.flatMap((segment) => segment.items).map((i) => i.name),
+    ).toEqual(["Apple"]);
     // The order's own figures, untouched — no re-derivation when there is
     // nothing to roll up.
     expect(purchase.totals).toBe(single);
@@ -98,10 +100,9 @@ describe("toPurchase", () => {
 
     expect(purchase.split).toBe(true);
     expect(purchase.number).toBe("R1033");
-    expect(purchase.items.map((item) => item.name)).toEqual([
-      "Apple",
-      "Potato",
-    ]);
+    expect(
+      purchase.segments.flatMap((segment) => segment.items).map((i) => i.name),
+    ).toEqual(["Apple", "Potato"]);
     expect(purchase.segments.map((segment) => segment.number)).toEqual([
       "R1033-1",
       "R1033-2",
@@ -109,31 +110,12 @@ describe("toPurchase", () => {
     expect(purchase.fulfillments).toHaveLength(2);
   });
 
-  it("takes the group's own roll-ups and sums the rest from its children", () => {
+  // The group rolls its children's figures up itself — and the payment-side
+  // ones (gift card, store credit, amount due) exist only on the group.
+  it("takes the totals from the group itself", () => {
     const { totals } = toPurchase(group);
 
-    expect(totals.currency).toBe("USD");
-    expect(totals.item_total).toBe("10.5");
-    expect(totals.total).toBe("20.5");
-    // Not serialized by a backend predating the group roll-ups — summed across
-    // the orders it holds instead.
-    expect(totals.delivery_total).toBe("10");
-    expect(totals.tax_total).toBe("1.25");
-  });
-
-  // The backend rolls these up from the same children, in the currency's own
-  // rounding, so its answer wins.
-  it("prefers the figures the group itself reports", () => {
-    const served = {
-      ...group,
-      delivery_total: "10.00",
-      tax_total: "1.25",
-    } as OrderGroup;
-
-    const { totals } = toPurchase(served);
-
-    expect(totals.delivery_total).toBe("10.00");
-    expect(totals.tax_total).toBe("1.25");
+    expect(totals).toBe(group);
   });
 
   // A split checkout's payment belongs to the group; each child serializes an
