@@ -131,13 +131,7 @@ export async function getCompletedOrder(
 ): Promise<Order | OrderGroup | null> {
   const surface = knownSurface ?? (await resolveSurfaceForCart(cartId));
 
-  // Typed Order by the installed SDK, but a current backend answers a split
-  // checkout here with its group — which is exactly what the caller wants.
-  const order: Order | OrderGroup | null = await getOrder(
-    cartId,
-    undefined,
-    surface,
-  );
+  const order = await getOrder(cartId, undefined, surface);
   if (order) return order;
 
   return withFallback(async () => {
