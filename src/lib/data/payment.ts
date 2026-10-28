@@ -111,9 +111,10 @@ export async function completeCheckoutPaymentSession(
 }
 
 /**
- * Completes the order. Treats 403 and 422 as success:
- * - 403 = cart already completed (e.g. webhook handler completed it)
- * - 422 = state_lock_version conflict (concurrent request)
+ * Completes the order. A 403 means the cart was already completed (e.g. by a
+ * webhook handler), so it counts as success. A 422 counts as success only when
+ * the order exists: it is also how the API refuses a cart that cannot be
+ * placed (out of stock, undeliverable), and that refusal must reach the buyer.
  *
  * When the order was already completed (403/422), fetch it from the API
  * so the caller always gets the order data for caching on the thank-you page.
@@ -122,6 +123,9 @@ export async function completeCheckoutPaymentSession(
  * OrderGroup rather than a single Order. Both come back untouched — the group
  * is what the customer bought, and taking one order out of it would drop the
  * other sellers' items from the confirmation.
+ *
+ * Either way the order is fetched so the caller has it to cache for the
+ * thank-you page.
  */
 export async function completeCheckoutOrder(
   cartId: string,
@@ -143,10 +147,20 @@ export async function completeCheckoutOrder(
         // Order already completed — try to fetch it so the thank-you page
         // can cache and display it without a second round-trip.
         const completedOrder = await getCompletedOrder(cartId, surface).catch(
+        const completedOrder = await getOrder(cartId, undefined, surface).catch(
           () => null,
         );
         updateTag(checkoutTag(surface));
         updateTag(cartTag(surface));
+        if (status === 422 && !completedOrder) {
+          return {
+            success: false as const,
+            error:
+              error instanceof Error
+                ? error.message
+                : "Failed to complete order",
+          };
+        }
         return { success: true as const, order: completedOrder };
       }
     }

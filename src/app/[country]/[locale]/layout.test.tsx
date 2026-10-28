@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { REQUEST_PATHNAME_HEADER, REQUEST_SEARCH_HEADER } from "@/i18n/routing";
 
 const mocks = vi.hoisted(() => ({
-  getMarkets: vi.fn(),
+  getStorefrontMarkets: vi.fn(),
   headers: vi.fn(),
   notFound: vi.fn(() => {
     throw new Error("not-found");
@@ -22,7 +22,9 @@ vi.mock("next-intl", () => ({
   NextIntlClientProvider: ({ children }: { children: React.ReactNode }) =>
     children,
 }));
-vi.mock("@/lib/data/markets", () => ({ getMarkets: mocks.getMarkets }));
+vi.mock("@/lib/data/markets", () => ({
+  getStorefrontMarkets: mocks.getStorefrontMarkets,
+}));
 vi.mock("@/lib/store", () => ({
   getDefaultCountry: () => "us",
   getDefaultLocale: () => "en",
@@ -76,7 +78,7 @@ describe("CountryLocaleLayout Market fallback", () => {
   });
 
   it("redirects to the Market locale without dropping path or query", async () => {
-    mocks.getMarkets.mockResolvedValue({
+    mocks.getStorefrontMarkets.mockResolvedValue({
       data: [
         market({
           default_locale: "es",
@@ -102,14 +104,11 @@ describe("CountryLocaleLayout Market fallback", () => {
     expect(mocks.redirect).toHaveBeenCalledWith(
       "/ar/es/products/coffee?sort=price",
     );
-    expect(mocks.getMarkets).toHaveBeenCalledWith({
-      country: "us",
-      locale: "en",
-    });
+    expect(mocks.getStorefrontMarkets).toHaveBeenCalled();
   });
 
   it("redirects a storefront-supported locale that is unavailable in the Market", async () => {
-    mocks.getMarkets.mockResolvedValue({
+    mocks.getStorefrontMarkets.mockResolvedValue({
       data: [
         market(),
         market({
@@ -137,14 +136,11 @@ describe("CountryLocaleLayout Market fallback", () => {
       }),
     ).rejects.toThrow("redirect:/pl/de");
     expect(mocks.redirect).toHaveBeenCalledWith("/pl/de");
-    expect(mocks.getMarkets).toHaveBeenCalledWith({
-      country: "us",
-      locale: "en",
-    });
+    expect(mocks.getStorefrontMarkets).toHaveBeenCalled();
   });
 
   it("redirects an unknown country to the default Market and keeps the page", async () => {
-    mocks.getMarkets.mockResolvedValue({ data: [market()] });
+    mocks.getStorefrontMarkets.mockResolvedValue({ data: [market()] });
     mocks.headers.mockResolvedValue(
       new Headers({
         [REQUEST_PATHNAME_HEADER]: "/zz/en/products/coffee",
@@ -166,7 +162,7 @@ describe("CountryLocaleLayout Market fallback", () => {
       [market({ countries: [], country_codes: [] })],
     ],
   ])("does not redirect the default route to itself for %s", async (_, markets) => {
-    mocks.getMarkets.mockResolvedValue({ data: markets });
+    mocks.getStorefrontMarkets.mockResolvedValue({ data: markets });
 
     await expect(
       CountryLocaleLayoutContent({
@@ -178,7 +174,7 @@ describe("CountryLocaleLayout Market fallback", () => {
   });
 
   it("redirects a non-default route once when no Market target is available", async () => {
-    mocks.getMarkets.mockResolvedValue({ data: [] });
+    mocks.getStorefrontMarkets.mockResolvedValue({ data: [] });
     mocks.headers.mockResolvedValue(
       new Headers({
         [REQUEST_PATHNAME_HEADER]: "/zz/en/products/coffee",

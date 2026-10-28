@@ -63,9 +63,11 @@ export function buildProductJsonLd(
       url: canonicalUrl,
       priceCurrency: product.price.currency,
       price: product.price.amount,
-      availability: product.in_stock
-        ? "https://schema.org/InStock"
-        : "https://schema.org/OutOfStock",
+      // Matches the product page: stock that cannot be bought is not on offer.
+      availability:
+        product.in_stock && product.purchasable
+          ? "https://schema.org/InStock"
+          : "https://schema.org/OutOfStock",
     };
   }
 

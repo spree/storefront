@@ -21,8 +21,12 @@ vi.mock("@/contexts/CartContext", () => ({
   useCart: () => ({ addItem: vi.fn() }),
 }));
 
+const hiddenPricing = vi.hoisted(() => ({
+  value: null as { signInHref: string } | null,
+}));
+
 vi.mock("@/contexts/HiddenPricingContext", () => ({
-  useHiddenPricing: () => null,
+  useHiddenPricing: () => hiddenPricing.value,
 }));
 
 vi.mock("@/contexts/StoreContext", () => ({
@@ -83,5 +87,60 @@ describe("ProductDetails", () => {
 
     expect(screen.getByText("sku")).toBeInTheDocument();
     expect(screen.getByText("MASTER-SKU-001")).toBeInTheDocument();
+  });
+
+  // Stock with no price cannot be bought, so the status agrees with the button.
+  it("shows out of stock for a product in stock that cannot be bought", () => {
+    render(
+      <ProductDetails
+        product={{ ...productWithoutCustomVariants, purchasable: false }}
+        basePath="/us/en"
+      />,
+    );
+
+    expect(screen.getAllByText("outOfStock")).toHaveLength(2);
+    expect(screen.queryByText("inStock")).not.toBeInTheDocument();
+  });
+
+  it("reads the selected variant, not the product, when there are variants", () => {
+    const unbuyable = {
+      ...productWithoutCustomVariants.default_variant,
+      purchasable: false,
+      in_stock: true,
+    };
+
+    render(
+      <ProductDetails
+        product={
+          {
+            ...productWithoutCustomVariants,
+            default_variant: unbuyable,
+            variants: [unbuyable],
+          } as Product
+        }
+        basePath="/us/en"
+      />,
+    );
+
+    expect(screen.getAllByText("outOfStock")).toHaveLength(2);
+    expect(screen.queryByText("inStock")).not.toBeInTheDocument();
+  });
+
+  // A guest who must sign in to see prices has no cart button to agree with.
+  it("shows in stock to a guest on a store that hides prices", () => {
+    hiddenPricing.value = { signInHref: "/us/en/account" };
+
+    try {
+      render(
+        <ProductDetails
+          product={{ ...productWithoutCustomVariants, purchasable: false }}
+          basePath="/us/en"
+        />,
+      );
+
+      expect(screen.getByText("inStock")).toBeInTheDocument();
+    } finally {
+      hiddenPricing.value = null;
+    }
   });
 });
