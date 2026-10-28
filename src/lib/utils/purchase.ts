@@ -31,6 +31,11 @@ export interface PurchaseSegment {
   number: string;
   items: LineItem[];
   fulfillments: Fulfillment[];
+  /**
+   * Where this order ships. Each seller order keeps its own copy, which can be
+   * corrected after checkout without touching the group's.
+   */
+  shipping_address: Address | null;
 }
 
 export interface Purchase {
@@ -67,6 +72,7 @@ function toSegment(order: Order): PurchaseSegment {
     number: order.number,
     items: order.items ?? [],
     fulfillments: order.fulfillments ?? [],
+    shipping_address: order.shipping_address,
   };
 }
 

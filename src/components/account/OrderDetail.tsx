@@ -69,7 +69,9 @@ export async function OrderDetail({
               <FulfillmentBlock
                 key={fulfillment.id}
                 fulfillment={fulfillment}
-                shipAddress={purchase.shipping_address}
+                shipAddress={
+                  segment.shipping_address ?? purchase.shipping_address
+                }
                 basePath={basePath}
                 lineItems={fulfillmentLineItems}
               />
