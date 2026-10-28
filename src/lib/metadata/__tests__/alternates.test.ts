@@ -1,7 +1,7 @@
 import type { Country, Market } from "@spree/sdk";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type { MarketLocaleTarget } from "@/i18n/markets";
-import { getMarkets } from "@/lib/data/markets";
+import { getStorefrontMarkets } from "@/lib/data/markets";
 import {
   buildHreflangLanguages,
   buildLocalizedAlternates,
@@ -9,7 +9,7 @@ import {
 } from "@/lib/metadata/alternates";
 
 vi.mock("@/lib/data/markets", () => ({
-  getMarkets: vi.fn(),
+  getStorefrontMarkets: vi.fn(),
 }));
 
 vi.mock("@/lib/store", async (importOriginal) => {
@@ -52,7 +52,7 @@ describe("buildHreflangLanguages", () => {
   });
 
   it("builds a self-referencing language cluster for a single-country Market", async () => {
-    vi.mocked(getMarkets).mockResolvedValue({ data: [market()] });
+    vi.mocked(getStorefrontMarkets).mockResolvedValue({ data: [market()] });
 
     const languages = await buildHreflangLanguages({
       storeUrl: "https://store.example/",
@@ -69,7 +69,7 @@ describe("buildHreflangLanguages", () => {
   });
 
   it("links every country in the current Market with regional codes", async () => {
-    vi.mocked(getMarkets).mockResolvedValue({
+    vi.mocked(getStorefrontMarkets).mockResolvedValue({
       data: [market({ countries: [country("US"), country("CA")] })],
     });
 
@@ -90,7 +90,7 @@ describe("buildHreflangLanguages", () => {
   });
 
   it("links localized routes across every Market in the storefront", async () => {
-    vi.mocked(getMarkets).mockResolvedValue({
+    vi.mocked(getStorefrontMarkets).mockResolvedValue({
       data: [
         market(),
         market({
@@ -119,7 +119,7 @@ describe("buildHreflangLanguages", () => {
   });
 
   it("omits resource locales that are only default-locale fallback content", async () => {
-    vi.mocked(getMarkets).mockResolvedValue({
+    vi.mocked(getStorefrontMarkets).mockResolvedValue({
       data: [market({ supported_locales: ["en", "de", "fr"] })],
     });
     const english = translationFingerprint("Coffee mug", "coffee-mug");
@@ -157,7 +157,7 @@ describe("buildHreflangLanguages", () => {
   });
 
   it("does not advertise a current resource page when it is fallback content", async () => {
-    vi.mocked(getMarkets).mockResolvedValue({ data: [market()] });
+    vi.mocked(getStorefrontMarkets).mockResolvedValue({ data: [market()] });
     const fallback = translationFingerprint("Coffee mug", "coffee-mug");
     const resolvePath = vi.fn(async () => ({
       path: "/products/coffee-mug",
@@ -183,7 +183,7 @@ describe("buildHreflangLanguages", () => {
   });
 
   it("detects Store-default fallback content in a non-default Market", async () => {
-    vi.mocked(getMarkets).mockResolvedValue({
+    vi.mocked(getStorefrontMarkets).mockResolvedValue({
       data: [
         market({
           supported_locales: ["en"],
@@ -241,7 +241,7 @@ describe("buildHreflangLanguages", () => {
   });
 
   it("keeps x-default stable when the default Market lacks the resource", async () => {
-    vi.mocked(getMarkets).mockResolvedValue({
+    vi.mocked(getStorefrontMarkets).mockResolvedValue({
       data: [
         market({
           supported_locales: ["en"],
@@ -298,7 +298,7 @@ describe("buildHreflangLanguages", () => {
   });
 
   it("starts default and alternate resource requests in parallel", async () => {
-    vi.mocked(getMarkets).mockResolvedValue({
+    vi.mocked(getStorefrontMarkets).mockResolvedValue({
       data: [market({ supported_locales: ["en", "de", "fr"] })],
     });
     let resolveDefault:
@@ -343,7 +343,7 @@ describe("buildHreflangLanguages", () => {
   });
 
   it("uses the default Market country when the configured country is unavailable", async () => {
-    vi.mocked(getMarkets).mockResolvedValue({
+    vi.mocked(getStorefrontMarkets).mockResolvedValue({
       data: [
         market({
           id: "market-eu",
@@ -369,7 +369,7 @@ describe("buildHreflangLanguages", () => {
   });
 
   it("keeps the current canonical when the resource has a real translation", async () => {
-    vi.mocked(getMarkets).mockResolvedValue({ data: [market()] });
+    vi.mocked(getStorefrontMarkets).mockResolvedValue({ data: [market()] });
     const resolvePath = vi.fn(async (target: MarketLocaleTarget) => ({
       path:
         target.locale === "en"
@@ -400,7 +400,7 @@ describe("buildHreflangLanguages", () => {
   });
 
   it("resolves each resource locale once across a multi-country Market", async () => {
-    vi.mocked(getMarkets).mockResolvedValue({
+    vi.mocked(getStorefrontMarkets).mockResolvedValue({
       data: [market({ countries: [country("US"), country("CA")] })],
     });
     const english = translationFingerprint("Coffee mug");
@@ -429,7 +429,9 @@ describe("buildHreflangLanguages", () => {
   });
 
   it("falls back to the current page when Markets are unavailable", async () => {
-    vi.mocked(getMarkets).mockRejectedValue(new Error("API unavailable"));
+    vi.mocked(getStorefrontMarkets).mockRejectedValue(
+      new Error("API unavailable"),
+    );
 
     const languages = await buildHreflangLanguages({
       storeUrl: "https://store.example",

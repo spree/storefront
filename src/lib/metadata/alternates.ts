@@ -7,7 +7,7 @@ import {
   type MarketLocaleTarget,
 } from "@/i18n/markets";
 import { canonicalizeLocale } from "@/i18n/normalize";
-import { getMarkets } from "@/lib/data/markets";
+import { getStorefrontMarkets } from "@/lib/data/markets";
 import { buildCanonicalUrl } from "@/lib/seo";
 import { getDefaultCountry, getDefaultLocale } from "@/lib/store";
 
@@ -160,7 +160,7 @@ export async function buildLocalizedAlternates({
   let cluster: StoreHreflangCluster | undefined;
 
   try {
-    const { data: markets } = await getMarkets({ country, locale });
+    const { data: markets } = await getStorefrontMarkets();
     if (currentLocale) {
       cluster = getStoreHreflangCluster(markets, country, currentLocale);
     }
