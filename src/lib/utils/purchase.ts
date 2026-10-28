@@ -51,8 +51,6 @@ export interface Purchase {
   /** Every delivery, across every order the checkout produced. */
   fulfillments: Fulfillment[];
   segments: PurchaseSegment[];
-  /** Every item bought, across every order the checkout produced. */
-  items: LineItem[];
   /** True when the checkout produced more than one order. */
   split: boolean;
   /**
@@ -95,7 +93,6 @@ export function toPurchase(result: CompletedPurchase): Purchase {
     payments: result.payments ?? [],
     fulfillments: segments.flatMap((segment) => segment.fulfillments),
     segments,
-    items: segments.flatMap((segment) => segment.items),
     split: segments.length > 1,
     totals: result,
   };

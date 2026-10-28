@@ -33,7 +33,6 @@ export async function OrderDetail({
   // One purchase, however many orders it divided into: the parcels below are
   // every seller's, and the totals are the whole checkout's.
   const purchase = toPurchase(order);
-  const hasFulfillments = purchase.fulfillments.length > 0;
 
   return (
     <div>
@@ -52,10 +51,11 @@ export async function OrderDetail({
         {t("placedOn", { date: formatDateTime(purchase.completed_at, locale) })}
       </p>
 
-      {hasFulfillments ? (
-        // Walked per seller order, so a parcel with no manifest falls back to
-        // its own seller's items rather than every seller's.
-        purchase.segments.flatMap((segment) =>
+      {/* Walked per seller order: a parcel with no manifest falls back to its
+          own seller's items, and a seller order with no parcels yet still
+          lists its items rather than vanishing behind another seller's. */}
+      {purchase.segments.map((segment) =>
+        segment.fulfillments.length > 0 ? (
           segment.fulfillments.map((fulfillment) => {
             const manifestItemIds = new Set(
               fulfillment.items?.map((i) => i.item_id) ?? [],
@@ -74,18 +74,21 @@ export async function OrderDetail({
                 lineItems={fulfillmentLineItems}
               />
             );
-          }),
-        )
-      ) : (
-        <div className="bg-white rounded-xl border border-gray-200 overflow-hidden mb-4">
-          <div className="divide-y divide-gray-200">
-            {purchase.items.map((item) => (
-              <div key={item.id} className="px-6 py-4">
-                <LineItemCard item={item} basePath={basePath} />
-              </div>
-            ))}
+          })
+        ) : (
+          <div
+            key={segment.id}
+            className="bg-white rounded-xl border border-gray-200 overflow-hidden mb-4"
+          >
+            <div className="divide-y divide-gray-200">
+              {segment.items.map((item) => (
+                <div key={item.id} className="px-6 py-4">
+                  <LineItemCard item={item} basePath={basePath} />
+                </div>
+              ))}
+            </div>
           </div>
-        </div>
+        ),
       )}
 
       {purchase.customer_note && (
