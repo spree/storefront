@@ -23,10 +23,8 @@ import { actionResult } from "./utils";
  */
 
 export interface StoreCreditBalance {
-  /** Numeric balance, for "is there anything left to apply?" checks. */
-  amount: number;
-  /** Currency-formatted balance, straight from the API. */
-  displayAmount: string;
+  /** The balance in the cart's currency, as a decimal string to format. */
+  amount: string;
 }
 
 function checkoutTag(surface: Surface): string {
@@ -48,10 +46,7 @@ export async function getStoreCreditBalance(): Promise<StoreCreditBalance | null
   const amount = parseFloat(customer.available_store_credit_total ?? "");
   if (!Number.isFinite(amount)) return null;
 
-  return {
-    amount,
-    displayAmount: customer.display_available_store_credit_total,
-  };
+  return { amount: customer.available_store_credit_total };
 }
 
 /**

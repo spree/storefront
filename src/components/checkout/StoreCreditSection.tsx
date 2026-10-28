@@ -5,6 +5,7 @@ import { CircleAlert, Wallet, X } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
+import { useFormatMoney } from "@/hooks/useFormatMoney";
 import {
   applyStoreCredit,
   getStoreCreditBalance,
@@ -33,13 +34,14 @@ export function StoreCreditSection({
   processing = false,
 }: StoreCreditSectionProps) {
   const t = useTranslations("storeCredit");
+  const formatMoney = useFormatMoney();
   const [balance, setBalance] = useState(initialBalance);
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const appliedAmount = parseFloat(cart.store_credit_total ?? "0");
   const isApplied = Number.isFinite(appliedAmount) && appliedAmount > 0;
-  const hasBalance = (balance?.amount ?? 0) > 0;
+  const hasBalance = parseFloat(balance?.amount ?? "0") > 0;
 
   // Nothing to offer and nothing applied — stay out of the way. Guests land
   // here too, since their balance is always null.
@@ -91,14 +93,14 @@ export function StoreCreditSection({
               <div className="min-w-0 flex-1">
                 <p className="text-sm font-medium text-gray-900">
                   {t("appliedAmount", {
-                    amount: cart.display_store_credit_total ?? "",
+                    amount: formatMoney(cart.store_credit_total, cart.currency),
                   })}
                 </p>
                 <p className="mt-0.5 text-xs text-gray-500">
                   {coversOrder
                     ? t("coversOrder")
                     : t("partiallyCovers", {
-                        amount: cart.display_amount_due ?? "",
+                        amount: formatMoney(cart.amount_due, cart.currency),
                       })}
                 </p>
               </div>
@@ -117,7 +119,7 @@ export function StoreCreditSection({
             {hasBalance && (
               <p className="mt-2 text-xs text-gray-500">
                 {t("remainingBalance", {
-                  amount: balance?.displayAmount ?? "",
+                  amount: formatMoney(balance?.amount, cart.currency),
                 })}
               </p>
             )}
@@ -129,7 +131,9 @@ export function StoreCreditSection({
               strokeWidth={1.5}
             />
             <p className="min-w-0 flex-1 text-sm text-gray-700">
-              {t("availableBalance", { amount: balance?.displayAmount ?? "" })}
+              {t("availableBalance", {
+                amount: formatMoney(balance?.amount, cart.currency),
+              })}
             </p>
             <Button
               type="button"

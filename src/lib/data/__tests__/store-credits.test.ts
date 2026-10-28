@@ -52,13 +52,9 @@ describe("store credit server actions", () => {
       getCustomer.mockResolvedValue({
         id: "cust-1",
         available_store_credit_total: "50.0",
-        display_available_store_credit_total: "$50.00",
       });
 
-      expect(await getStoreCreditBalance()).toEqual({
-        amount: 50,
-        displayAmount: "$50.00",
-      });
+      expect(await getStoreCreditBalance()).toEqual({ amount: "50.0" });
     });
 
     it("returns null for guests", async () => {
@@ -71,7 +67,6 @@ describe("store credit server actions", () => {
       getCustomer.mockResolvedValue({
         id: "cust-1",
         available_store_credit_total: null,
-        display_available_store_credit_total: null,
       });
 
       expect(await getStoreCreditBalance()).toBeNull();
