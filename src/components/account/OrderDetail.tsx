@@ -53,25 +53,29 @@ export async function OrderDetail({
       </p>
 
       {hasFulfillments ? (
-        purchase.fulfillments.map((fulfillment) => {
-          const manifestItemIds = new Set(
-            fulfillment.items?.map((i) => i.item_id) ?? [],
-          );
-          const fulfillmentLineItems =
-            manifestItemIds.size > 0
-              ? purchase.items.filter((item) => manifestItemIds.has(item.id))
-              : purchase.items;
+        // Walked per seller order, so a parcel with no manifest falls back to
+        // its own seller's items rather than every seller's.
+        purchase.segments.flatMap((segment) =>
+          segment.fulfillments.map((fulfillment) => {
+            const manifestItemIds = new Set(
+              fulfillment.items?.map((i) => i.item_id) ?? [],
+            );
+            const fulfillmentLineItems =
+              manifestItemIds.size > 0
+                ? segment.items.filter((item) => manifestItemIds.has(item.id))
+                : segment.items;
 
-          return (
-            <FulfillmentBlock
-              key={fulfillment.id}
-              fulfillment={fulfillment}
-              shipAddress={purchase.shipping_address}
-              basePath={basePath}
-              lineItems={fulfillmentLineItems}
-            />
-          );
-        })
+            return (
+              <FulfillmentBlock
+                key={fulfillment.id}
+                fulfillment={fulfillment}
+                shipAddress={purchase.shipping_address}
+                basePath={basePath}
+                lineItems={fulfillmentLineItems}
+              />
+            );
+          }),
+        )
       ) : (
         <div className="bg-white rounded-xl border border-gray-200 overflow-hidden mb-4">
           <div className="divide-y divide-gray-200">
