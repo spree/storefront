@@ -26,6 +26,7 @@ import {
   type AdyenPaymentFormHandle,
 } from "@/components/checkout/AdyenPaymentForm";
 import {
+  type PayPalApprovalOutcome,
   PayPalPaymentForm,
   type PayPalPaymentFormHandle,
 } from "@/components/checkout/PayPalPaymentForm";
@@ -41,6 +42,7 @@ import { getCreditCards } from "@/lib/data/credit-cards";
 import {
   createCheckoutPaymentSession,
   createDirectPayment,
+  getCheckoutPaymentSession,
   updateCheckoutPaymentSession,
 } from "@/lib/data/payment";
 import {
@@ -51,7 +53,7 @@ import {
 } from "@/lib/utils/address";
 import { getCardIconType, getCardLabel } from "@/lib/utils/credit-card";
 import { extractBasePath } from "@/lib/utils/path";
-import { resolveGatewayId } from "@/lib/utils/payment-gateway";
+import { paypalClientId, resolveGatewayId } from "@/lib/utils/payment-gateway";
 
 export type PaymentCompleteResult =
   | { type: "session"; sessionId: string; sessionResult?: string }
@@ -71,7 +73,8 @@ interface PaymentSectionProps {
     billing_address?: CartAddressParams;
     use_shipping?: boolean;
   }) => Promise<boolean>;
-  onPaymentComplete: (result: PaymentCompleteResult) => Promise<void>;
+  /** Resolves true once the order is placed, false when completion failed. */
+  onPaymentComplete: (result: PaymentCompleteResult) => Promise<boolean>;
   processing: boolean;
   setProcessing: (processing: boolean) => void;
   onSessionMethodChange?: (isSessionBased: boolean) => void;
@@ -438,10 +441,14 @@ export function PaymentSection({
   };
 
   // ── Auto-complete after gateway approval (PayPal popup / Adyen sessions) ──
+  // "not_started" when completion never reached the payment (one already in
+  // flight, or the billing address could not be saved).
   const handleGatewayApproved = useCallback(
-    async (sessionResult?: string) => {
-      if (completionInFlightRef.current) return;
-      if (!paymentSessionId) return;
+    async (
+      sessionResult?: string,
+    ): Promise<"completed" | "failed" | "not_started"> => {
+      if (completionInFlightRef.current) return "not_started";
+      if (!paymentSessionId) return "not_started";
 
       completionInFlightRef.current = true;
       setProcessing(true);
@@ -465,18 +472,23 @@ export function PaymentSection({
           setProcessing(false);
           completionInFlightRef.current = false;
           setGatewayError(t("failedToSaveBilling"));
-          return;
+          return "not_started";
         }
 
-        await onPaymentComplete({
+        const completed = await onPaymentComplete({
           type: "session",
           sessionId: paymentSessionId,
           sessionResult,
         });
+        if (completed) return "completed";
+
+        completionInFlightRef.current = false;
+        return "failed";
       } catch {
         setGatewayError(t("paymentError"));
         setProcessing(false);
         completionInFlightRef.current = false;
+        return "not_started";
       }
     },
     [
@@ -489,6 +501,34 @@ export function PaymentSection({
       t,
     ],
   );
+
+  // PayPal keeps the session open when it declined the buyer's funding
+  // source, so they can pick another in the same window. A session that
+  // failed can no longer be paid, and a new one takes its place.
+  const handlePayPalApproved =
+    useCallback(async (): Promise<PayPalApprovalOutcome> => {
+      const result = await handleGatewayApproved();
+      if (result === "completed") return "completed";
+      if (result === "not_started" || !paymentSessionId || !selectedMethod) {
+        return "failed";
+      }
+
+      const current = await getCheckoutPaymentSession(
+        cart.id,
+        paymentSessionId,
+      );
+      const status = current.success ? current.session?.status : undefined;
+      if (status === "pending" || status === "processing") return "restart";
+
+      createSession(selectedCardRef.current, selectedMethod);
+      return "failed";
+    }, [
+      cart.id,
+      createSession,
+      handleGatewayApproved,
+      paymentSessionId,
+      selectedMethod,
+    ]);
 
   // ── Submit ──────────────────────────────────────────────────────────
   useImperativeHandle(
@@ -936,15 +976,27 @@ export function PaymentSection({
                               ) : null;
                             }
                             case "paypal": {
-                              const orderId = ext.id as string | undefined;
-                              return orderId ? (
+                              const orderId = ext._external_id as
+                                | string
+                                | undefined;
+                              // The client id that created the order; the
+                              // environment variable only covers older
+                              // backends that do not send one.
+                              const clientId =
+                                (ext.client_id as string | undefined) ||
+                                paypalClientId;
+                              const intent =
+                                (ext.intent as string | undefined) ?? "CAPTURE";
+                              return orderId && clientId ? (
                                 <div className="p-4">
                                   <PayPalPaymentForm
                                     key={orderId}
                                     paypalOrderId={orderId}
+                                    clientId={clientId}
+                                    intent={intent}
                                     currency={cart.currency}
                                     onReady={handleGatewayReady}
-                                    onApproved={handleGatewayApproved}
+                                    onApproved={handlePayPalApproved}
                                   />
                                 </div>
                               ) : null;

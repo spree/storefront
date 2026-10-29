@@ -262,6 +262,7 @@
     "unsupportedGateway": "Diese Zahlungsmethode wird noch nicht unterstützt.",
     "paypalApproveFirst": "Bitte genehmigen Sie die PayPal-Zahlung, bevor Sie fortfahren.",
     "paypalApproved": "PayPal-Zahlung genehmigt. Ihre Bestellung wird abgeschlossen...",
+    "paypalChooseAnother": "PayPal hat diese Zahlungsart abgelehnt. Wählen Sie eine andere, um es erneut zu versuchen.",
     "paypalCancelled": "Die PayPal-Zahlung wurde abgebrochen.",
     "paypalError": "Bei PayPal ist ein Fehler aufgetreten. Bitte versuchen Sie es erneut.",
     "policyConsentRequired": "Sie müssen den Geschäftsrichtlinien zustimmen, bevor Sie Ihre Bestellung aufgeben",
