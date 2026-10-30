@@ -503,8 +503,10 @@ export function PaymentSection({
   );
 
   // PayPal keeps the session open when it declined the buyer's funding
-  // source, so they can pick another in the same window. A session that
-  // failed can no longer be paid, and a new one takes its place.
+  // source, so they can pick another in the same window. Only a session that
+  // can no longer be paid is replaced: a completed one has already taken the
+  // money when placing the order failed, and one we could not read may have,
+  // so a new session would let the buyer pay twice.
   const handlePayPalApproved =
     useCallback(async (): Promise<PayPalApprovalOutcome> => {
       const result = await handleGatewayApproved();
@@ -520,7 +522,13 @@ export function PaymentSection({
       const status = current.success ? current.session?.status : undefined;
       if (status === "pending" || status === "processing") return "restart";
 
-      createSession(selectedCardRef.current, selectedMethod);
+      if (
+        status === "failed" ||
+        status === "canceled" ||
+        status === "expired"
+      ) {
+        createSession(selectedCardRef.current, selectedMethod);
+      }
       return "failed";
     }, [
       cart.id,
