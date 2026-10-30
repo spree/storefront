@@ -1,5 +1,8 @@
 import { describe, expect, it } from "vitest";
-import { PAYPAL_FUNDING_SOURCES } from "@/components/checkout/PayPalPaymentForm";
+import {
+  PAYPAL_ENABLE_FUNDING,
+  PAYPAL_FUNDING_SOURCES,
+} from "@/components/checkout/PayPalPaymentForm";
 
 describe("PAYPAL_FUNDING_SOURCES", () => {
   // Any other button can send the buyer to their bank, which needs the PayPal
@@ -11,5 +14,13 @@ describe("PAYPAL_FUNDING_SOURCES", () => {
       "venmo",
       "card",
     ]);
+  });
+
+  // Without it PayPal hides Pay Later outside the US, and Venmo everywhere.
+  it("asks PayPal for Pay Later and Venmo, both of them offered buttons", () => {
+    expect(PAYPAL_ENABLE_FUNDING).toEqual(["paylater", "venmo"]);
+    for (const source of PAYPAL_ENABLE_FUNDING) {
+      expect(PAYPAL_FUNDING_SOURCES).toContain(source);
+    }
   });
 });

@@ -19,6 +19,12 @@ export const PAYPAL_FUNDING_SOURCES = [
 ] as const;
 
 /**
+ * The buttons PayPal leaves out unless asked for: Pay Later outside the US,
+ * and Venmo. Each still shows only for buyers PayPal finds eligible.
+ */
+export const PAYPAL_ENABLE_FUNDING = ["paylater", "venmo"] as const;
+
+/**
  * What completing the payment after PayPal's approval came to:
  * - `completed`: the order is placed
  * - `restart`: PayPal declined the chosen funding source and the session is
@@ -137,6 +143,7 @@ export function PayPalPaymentForm({
           clientId,
           currency: currency.toUpperCase(),
           intent: intent.toLowerCase(),
+          enableFunding: [...PAYPAL_ENABLE_FUNDING],
         }}
       >
         <div className="flex flex-col gap-2">
