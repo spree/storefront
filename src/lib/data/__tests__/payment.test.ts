@@ -7,6 +7,7 @@ const mockClient = {
     complete: vi.fn(),
     paymentSessions: {
       create: vi.fn(),
+      get: vi.fn(),
       complete: vi.fn(),
     },
   },
@@ -42,6 +43,7 @@ import {
   completeCheckoutPaymentSession,
   confirmPaymentAndCompleteCart,
   createCheckoutPaymentSession,
+  getCheckoutPaymentSession,
 } from "@/lib/data/payment";
 
 const mockSession = {
@@ -106,6 +108,31 @@ describe("payment server actions", () => {
         success: false,
         error: "Gateway unavailable",
       });
+    });
+  });
+
+  describe("getCheckoutPaymentSession", () => {
+    it("returns success with session", async () => {
+      mockClient.carts.paymentSessions.get.mockResolvedValue(mockSession);
+
+      const result = await getCheckoutPaymentSession("cart-1", "session-1");
+
+      expect(mockClient.carts.paymentSessions.get).toHaveBeenCalledWith(
+        "cart-1",
+        "session-1",
+        { spreeToken: "order-token-123", token: undefined },
+      );
+      expect(result).toEqual({ success: true, session: mockSession });
+    });
+
+    it("returns error on failure", async () => {
+      mockClient.carts.paymentSessions.get.mockRejectedValue(
+        new Error("Not found"),
+      );
+
+      const result = await getCheckoutPaymentSession("cart-1", "session-1");
+
+      expect(result).toEqual({ success: false, error: "Not found" });
     });
   });
 

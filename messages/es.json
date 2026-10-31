@@ -262,6 +262,7 @@
     "unsupportedGateway": "Este método de pago aún no es compatible.",
     "paypalApproveFirst": "Por favor aprueba el pago de PayPal antes de continuar.",
     "paypalApproved": "Pago de PayPal aprobado. Completando tu pedido...",
+    "paypalChooseAnother": "PayPal rechazó ese método de pago. Elige otro para intentarlo de nuevo.",
     "paypalCancelled": "El pago de PayPal fue cancelado.",
     "paypalError": "Ocurrió un error con PayPal. Inténtalo de nuevo.",
     "policyConsentRequired": "Debes aceptar las politicas de la tienda antes de realizar tu pedido",

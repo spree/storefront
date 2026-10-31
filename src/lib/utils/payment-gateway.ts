@@ -59,12 +59,11 @@ export function resolveGatewayId(paymentMethodType: string): GatewayId {
   return GATEWAY_TYPE_MAP[paymentMethodType] ?? "unknown";
 }
 
-/** Whether PayPal is configured (client ID present in env). */
-export const isPayPalConfigured = Boolean(
-  process.env.NEXT_PUBLIC_PAYPAL_CLIENT_ID,
-);
-
-/** PayPal client ID for SDK initialization. */
+/**
+ * PayPal client ID for backends that do not send one with the payment
+ * session. The session's own client ID is preferred: it always matches the
+ * credentials that created the order.
+ */
 export const paypalClientId = process.env.NEXT_PUBLIC_PAYPAL_CLIENT_ID ?? "";
 
 /** Whether Adyen is configured (client key present in env). */

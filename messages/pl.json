@@ -262,6 +262,7 @@
     "unsupportedGateway": "Ta metoda płatności nie jest jeszcze obsługiwana.",
     "paypalApproveFirst": "Zatwierdź płatność PayPal przed kontynuowaniem.",
     "paypalApproved": "Płatność PayPal zatwierdzona. Finalizacja zamówienia...",
+    "paypalChooseAnother": "PayPal odrzucił tę metodę płatności. Wybierz inną, aby spróbować ponownie.",
     "paypalCancelled": "Płatność PayPal została anulowana.",
     "paypalError": "Wystąpił błąd z PayPal. Spróbuj ponownie.",
     "policyConsentRequired": "Musisz zaakceptować regulamin sklepu przed złożeniem zamówienia",

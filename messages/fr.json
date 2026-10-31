@@ -262,6 +262,7 @@
     "unsupportedGateway": "Ce mode de paiement n'est pas encore pris en charge.",
     "paypalApproveFirst": "Veuillez approuver le paiement PayPal avant de continuer.",
     "paypalApproved": "Paiement PayPal approuvé. Finalisation de votre commande...",
+    "paypalChooseAnother": "PayPal a refusé ce moyen de paiement. Choisissez-en un autre pour réessayer.",
     "paypalCancelled": "Le paiement PayPal a été annulé.",
     "paypalError": "Une erreur est survenue avec PayPal. Veuillez réessayer.",
     "policyConsentRequired": "Vous devez accepter les politiques du magasin avant de passer votre commande",

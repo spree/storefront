@@ -4,10 +4,34 @@ import { CircleAlert } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import {
-  isPayPalConfigured,
-  paypalClientId,
-} from "@/lib/utils/payment-gateway";
+
+/**
+ * The PayPal buttons a store offers. Each pays through the same PayPal order
+ * and is shown only when PayPal says the buyer is eligible for it. PayPal's
+ * all-eligible component would also offer methods that send the buyer to
+ * their bank, which the PayPal gateway does not support.
+ */
+export const PAYPAL_FUNDING_SOURCES = [
+  "paypal",
+  "paylater",
+  "venmo",
+  "card",
+] as const;
+
+/**
+ * The buttons PayPal leaves out unless asked for: Pay Later outside the US,
+ * and Venmo. Each still shows only for buyers PayPal finds eligible.
+ */
+export const PAYPAL_ENABLE_FUNDING = ["paylater", "venmo"] as const;
+
+/**
+ * What completing the payment after PayPal's approval came to:
+ * - `completed`: the order is placed
+ * - `restart`: PayPal declined the chosen funding source and the session is
+ *   still open, so the buyer picks another in PayPal's window
+ * - `failed`: the session cannot be paid; a new one is started
+ */
+export type PayPalApprovalOutcome = "completed" | "restart" | "failed";
 
 export interface PayPalPaymentFormHandle {
   confirmPayment: (returnUrl: string) => Promise<{ error?: string }>;
@@ -16,14 +40,20 @@ export interface PayPalPaymentFormHandle {
 
 interface PayPalPaymentFormProps {
   paypalOrderId: string;
+  /** The client id that created the order, from the payment session. */
+  clientId: string;
+  /** The order's intent, from the payment session; the SDK must match it. */
+  intent: string;
   currency: string;
   onReady: (handle: PayPalPaymentFormHandle) => void;
   /** Called when user approves payment in the PayPal popup. */
-  onApproved: () => void;
+  onApproved: () => Promise<PayPalApprovalOutcome>;
 }
 
-function PayPalPaymentFormInner({
+export function PayPalPaymentForm({
   paypalOrderId,
+  clientId,
+  intent,
   currency,
   onReady,
   onApproved,
@@ -110,35 +140,54 @@ function PayPalPaymentFormInner({
     <div>
       <PayPalScriptProvider
         options={{
-          clientId: paypalClientId,
+          clientId,
           currency: currency.toUpperCase(),
-          intent: "capture",
+          intent: intent.toLowerCase(),
+          enableFunding: [...PAYPAL_ENABLE_FUNDING],
         }}
       >
-        <PayPalButtons
-          style={{
-            shape: "rect",
-            layout: "vertical",
-            color: "gold",
-            label: "paypal",
-          }}
-          createOrder={async () => paypalOrderId}
-          onApprove={async () => {
-            approvedRef.current = true;
-            setApprovedForUI(true);
-            setError(null);
-            // Trigger payment completion directly — no need for
-            // the user to click "Place Order" again.
-            onApprovedRef.current();
-          }}
-          onError={(err) => {
-            const msg = err instanceof Error ? err.message : t("paypalError");
-            setError(msg);
-          }}
-          onCancel={() => {
-            setError(t("paypalCancelled"));
-          }}
-        />
+        <div className="flex flex-col gap-2">
+          {/* A button renders nothing when PayPal finds the buyer ineligible
+              for its funding source. */}
+          {PAYPAL_FUNDING_SOURCES.map((fundingSource) => (
+            <PayPalButtons
+              key={fundingSource}
+              fundingSource={fundingSource}
+              style={{
+                shape: "rect",
+                layout: "vertical",
+                ...(fundingSource === "paypal" || fundingSource === "paylater"
+                  ? { color: "gold" as const }
+                  : {}),
+              }}
+              createOrder={async () => paypalOrderId}
+              onApprove={async (_data, actions) => {
+                approvedRef.current = true;
+                setApprovedForUI(true);
+                setError(null);
+                // Complete the payment directly — no need for the user to
+                // click "Place Order" again.
+                const outcome = await onApprovedRef.current();
+                if (outcome === "completed") return;
+
+                approvedRef.current = false;
+                setApprovedForUI(false);
+                if (outcome === "restart") {
+                  setError(t("paypalChooseAnother"));
+                  await actions.restart();
+                }
+              }}
+              onError={(err) => {
+                const msg =
+                  err instanceof Error ? err.message : t("paypalError");
+                setError(msg);
+              }}
+              onCancel={() => {
+                setError(t("paypalCancelled"));
+              }}
+            />
+          ))}
+        </div>
       </PayPalScriptProvider>
 
       {approvedForUI && (
@@ -155,12 +204,4 @@ function PayPalPaymentFormInner({
       )}
     </div>
   );
-}
-
-export function PayPalPaymentForm(props: PayPalPaymentFormProps) {
-  if (!isPayPalConfigured) {
-    return null;
-  }
-
-  return <PayPalPaymentFormInner {...props} />;
 }

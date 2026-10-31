@@ -262,6 +262,7 @@
     "unsupportedGateway": "This payment method is not yet supported in the storefront.",
     "paypalApproveFirst": "Please approve the PayPal payment before continuing.",
     "paypalApproved": "PayPal payment approved. Completing your order...",
+    "paypalChooseAnother": "PayPal declined that payment method. Choose another to try again.",
     "paypalCancelled": "PayPal payment was cancelled.",
     "paypalError": "An error occurred with PayPal. Please try again.",
     "policyConsentRequired": "You must agree to the store policies before placing your order",

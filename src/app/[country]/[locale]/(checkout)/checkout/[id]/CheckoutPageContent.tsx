@@ -468,9 +468,9 @@ function CheckoutPageContentInner({
 
   // Handle payment completion (called by PaymentSection after payment is confirmed)
   const handlePaymentComplete = useCallback(
-    async (result: PaymentCompleteResult) => {
+    async (result: PaymentCompleteResult): Promise<boolean> => {
       const currentOrder = cartRef.current;
-      if (!currentOrder) return;
+      if (!currentOrder) return false;
 
       setError(null);
 
@@ -491,7 +491,7 @@ function CheckoutPageContentInner({
                 tRef.current("failedToCompletePaymentSession"),
             );
             setProcessing(false);
-            return;
+            return false;
           }
         }
         // For direct payments, the payment was already created in PaymentSection
@@ -510,7 +510,7 @@ function CheckoutPageContentInner({
             completeResult.error || tRef.current("failedToCompleteOrder"),
           );
           setProcessing(false);
-          return;
+          return false;
         }
 
         // Cache the completed order for the thank-you page
@@ -522,9 +522,11 @@ function CheckoutPageContentInner({
         }
 
         routerRef.current.push(`${basePath}/order-placed/${currentOrder.id}`);
+        return true;
       } catch {
         setError(tRef.current("generalError"));
         setProcessing(false);
+        return false;
       }
     },
     [basePath],
