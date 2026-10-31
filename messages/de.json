@@ -668,11 +668,20 @@
       "alreadyMember": "Sie haben bereits ein Großhandelskonto?",
       "receivedTitle": "Bewerbung eingegangen",
       "receivedDescription": "Vielen Dank für Ihre Bewerbung. Wir prüfen Ihr Konto und geben den Großhandelszugang in Kürze frei.",
-      "goToPortal": "Zum Portal"
+      "goToPortal": "Zum Portal",
+      "companyFailed": "Wir konnten Ihr Unternehmen nicht registrieren. Bitte versuchen Sie es erneut."
     },
     "hiddenPrice": {
       "signInForPricing": "Zur Preisanzeige anmelden",
-      "signInToOrder": "Zum Bestellen anmelden"
+      "signInToOrder": "Zum Bestellen anmelden",
+      "registerForPricing": "Unternehmen registrieren, um Preise zu sehen",
+      "awaitingApproval": "Preise sichtbar, sobald Ihr Unternehmen freigegeben ist"
+    },
+    "register": {
+      "title": "Unternehmen registrieren",
+      "description": "Sie haben ein Konto, aber Händlerpreise gelten für registrierte Unternehmen. Für wen kaufen Sie ein?",
+      "whatNext": "Die Registrierung dauert nur einen Moment und schaltet Händlerpreise sofort frei, sofern dieser Shop neue Unternehmen nicht zuerst prüft.",
+      "cta": "Unternehmen registrieren"
     }
   },
   "notFound": {

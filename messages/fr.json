@@ -668,11 +668,20 @@
       "alreadyMember": "Vous avez déjà un compte grossiste ?",
       "receivedTitle": "Demande reçue",
       "receivedDescription": "Merci pour votre demande. Nous examinerons votre compte et approuverons l'accès grossiste sous peu.",
-      "goToPortal": "Accéder au portail"
+      "goToPortal": "Accéder au portail",
+      "companyFailed": "Nous n'avons pas pu enregistrer votre entreprise. Veuillez réessayer."
     },
     "hiddenPrice": {
       "signInForPricing": "Connectez-vous pour voir les prix",
-      "signInToOrder": "Connectez-vous pour commander"
+      "signInToOrder": "Connectez-vous pour commander",
+      "registerForPricing": "Enregistrez votre entreprise pour voir les tarifs",
+      "awaitingApproval": "Tarifs disponibles dès que votre entreprise est approuvée"
+    },
+    "register": {
+      "title": "Enregistrez votre entreprise",
+      "description": "Vous avez un compte, mais les tarifs professionnels sont réservés aux entreprises enregistrées. Pour qui achetez-vous ?",
+      "whatNext": "L'enregistrement prend un instant et débloque immédiatement les tarifs professionnels, sauf si cette boutique examine d'abord les nouvelles entreprises.",
+      "cta": "Enregistrer mon entreprise"
     }
   },
   "notFound": {

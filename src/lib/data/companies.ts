@@ -1,8 +1,41 @@
 "use server";
 
 import type { Address, Cart, Company } from "@spree/sdk";
+import { updateTag } from "next/cache";
 import { getClient, withAuthRefresh } from "@/lib/spree";
 import { withFallback } from "./utils";
+
+/**
+ * Founds a company for the signed-in buyer, who becomes its first member.
+ *
+ * `registration` carries whatever the merchant's form asks — the API stores
+ * the answers on the company for staff to read. Whether the new company may
+ * buy immediately is the store's activation policy's answer, not this call's:
+ * out of the box it can, and a merchant running an approval process holds it
+ * pending instead. Either way the buyer is told by the posture they land on
+ * rather than by this response.
+ *
+ * At most one company per customer per store, so a second attempt is refused
+ * with the message the API returns.
+ */
+export async function registerCompany(params: {
+  name: string;
+  registration?: Record<string, unknown>;
+}): Promise<{ success: boolean; company?: Company; error?: string }> {
+  try {
+    const company = await withAuthRefresh(async (options) => {
+      return getClient().companies.create(params, options);
+    });
+    updateTag("customer");
+    return { success: true, company };
+  } catch (error) {
+    return {
+      success: false,
+      error:
+        error instanceof Error ? error.message : "Could not register company",
+    };
+  }
+}
 
 /** The buyer's company memberships in this store, each with its node. */
 export async function getCompanyMemberships() {

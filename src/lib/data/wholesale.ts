@@ -46,6 +46,28 @@ export async function getWholesaleChannel(): Promise<Channel | null> {
   return withFallback(async () => getWholesaleClient().channel.get(), null);
 }
 
+/**
+ * Why the current viewer cannot see prices on the wholesale channel, or `null`
+ * when they can.
+ *
+ * Asked of the catalog rather than worked out from the session, because the
+ * server owns the decision: the posture, the buyer's standing and the store's
+ * activation policy all feed it, and only the API sees all three. One product
+ * is enough — the code is a fact about the request, not about the product.
+ *
+ * A listing that cannot be read at all (a `login_required` channel 401s a
+ * guest) reports `login_required`, which is the same thing the buyer has to do
+ * about it.
+ */
+export async function getWholesalePricingAccess(): Promise<string | null> {
+  if (!isWholesaleEnabled()) return null;
+
+  return withFallback(async () => {
+    const { data } = await getProductsBySurface({ limit: 1 }, "wholesale");
+    return data[0]?.pricing_access ?? null;
+  }, "login_required");
+}
+
 // --- Surface-bound product fetchers for the wholesale PLP/PDP ---
 //
 // These wrap the surface-aware data functions with the `'wholesale'` surface

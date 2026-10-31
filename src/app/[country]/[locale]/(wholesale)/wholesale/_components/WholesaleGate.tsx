@@ -1,8 +1,11 @@
 import { CartDrawer } from "@/components/cart/CartDrawer";
 import { CartProvider } from "@/contexts/CartContext";
 import { getCustomer } from "@/lib/data/customer";
-import { getWholesaleChannel } from "@/lib/data/wholesale";
-import { isWholesaleApproved } from "@/lib/wholesale";
+import {
+  getWholesaleChannel,
+  getWholesalePricingAccess,
+} from "@/lib/data/wholesale";
+import { pricingRemedy } from "@/lib/wholesale";
 import { WholesaleApplicationPending } from "./WholesaleApplicationPending";
 import { WholesaleGuestBrowse } from "./WholesaleGuestBrowse";
 import { WholesaleHeader } from "./WholesaleHeader";
@@ -31,16 +34,20 @@ interface WholesaleGateProps {
 
 /**
  * Server-side gate for the portal (catalog, PDP, cart, quick order). Branches on
- * the channel's `storefront_access` posture, the session, and Wholesale-group
- * membership:
+ * the session and on the API's `pricing_access` code, which already accounts
+ * for the channel's posture, the buyer's company standing and the store's
+ * activation policy:
  *
- * - guest, `login_required` → inline sign-in / apply wall (the channel 401s the
- *   catalog fetch anyway, so nothing behind the wall would render)
- * - guest, `prices_hidden` → the catalog renders with prices replaced by a
+ * - guest, prices gated → inline sign-in / register wall (a `login_required`
+ *   channel 401s the catalog anyway, so nothing behind the wall would render)
+ * - guest, prices browsable → the catalog renders with prices replaced by a
  *   "sign in for pricing" prompt; ordering is gated behind sign-in
- * - authenticated, not approved → application-pending state (approval, not just
- *   login, unlocks trade pricing and ordering — same for both postures)
- * - approved member → the portal chrome + `children`, with the wholesale cart
+ * - signed in, `company_required` → register-your-business state: they have an
+ *   account but no company, so trade pricing and ordering stay closed
+ * - signed in, any other code → awaiting-approval state. The open-source
+ *   policy never gets here; a merchant running an approval flow supplies the
+ *   code and this is the buyer's "we are reviewing it" screen
+ * - prices visible → the portal chrome + `children`, with the wholesale cart
  *   bound via <CartProvider surface="wholesale">
  *
  * Runs per navigation, so a login (which triggers a server re-render)
@@ -52,18 +59,24 @@ export async function WholesaleGate({
   children,
   allowGuestBrowse = false,
 }: WholesaleGateProps) {
-  const [customer, channel] = await Promise.all([
+  const [customer, channel, pricingAccess] = await Promise.all([
     getCustomer(),
     getWholesaleChannel(),
+    getWholesalePricingAccess(),
   ]);
+  const remedy = pricingRemedy(pricingAccess);
 
   if (!customer) {
-    // On a prices-hidden channel the catalog is browsable by guests (the API
-    // just nulls the money fields), so render browse surfaces with
-    // sign-in-for-pricing prompts instead of the hard wall. Ordering surfaces
-    // (allowGuestBrowse=false) still wall guests off, and any other posture
-    // (login_required, or an unknown/unreachable channel) always walls.
-    if (allowGuestBrowse && channel?.storefront_access === "prices_hidden") {
+    // Browsable postures (prices_hidden, approval_required) null the money
+    // fields rather than refusing the read, so render browse surfaces with
+    // sign-in prompts instead of the hard wall. Ordering surfaces
+    // (allowGuestBrowse=false) still wall guests off, and login_required —
+    // which 401s the catalog — always walls.
+    if (
+      allowGuestBrowse &&
+      (channel?.storefront_access === "prices_hidden" ||
+        channel?.storefront_access === "approval_required")
+    ) {
       return (
         <WholesaleGuestBrowse basePath={basePath}>
           {children()}
@@ -79,7 +92,7 @@ export async function WholesaleGate({
     );
   }
 
-  if (!isWholesaleApproved(customer)) {
+  if (remedy !== "none") {
     return (
       <WholesaleApplicationPending
         basePath={basePath}
@@ -88,6 +101,7 @@ export async function WholesaleGate({
           customer.email
         }
         email={customer.email}
+        remedy={remedy}
       />
     );
   }

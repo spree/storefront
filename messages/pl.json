@@ -668,11 +668,20 @@
       "alreadyMember": "Masz już konto hurtowe?",
       "receivedTitle": "Wniosek otrzymany",
       "receivedDescription": "Dziękujemy za złożenie wniosku. Sprawdzimy Twoje konto i wkrótce zatwierdzimy dostęp hurtowy.",
-      "goToPortal": "Przejdź do portalu"
+      "goToPortal": "Przejdź do portalu",
+      "companyFailed": "Nie udało się zarejestrować firmy. Spróbuj ponownie."
     },
     "hiddenPrice": {
       "signInForPricing": "Zaloguj się, aby zobaczyć ceny",
-      "signInToOrder": "Zaloguj się, aby zamówić"
+      "signInToOrder": "Zaloguj się, aby zamówić",
+      "registerForPricing": "Zarejestruj firmę, aby zobaczyć ceny",
+      "awaitingApproval": "Ceny będą widoczne po zatwierdzeniu firmy"
+    },
+    "register": {
+      "title": "Zarejestruj swoją firmę",
+      "description": "Masz konto, ale ceny hurtowe są dla zarejestrowanych firm. Dla kogo kupujesz?",
+      "whatNext": "Rejestracja zajmuje chwilę i od razu odblokowuje ceny hurtowe, chyba że ten sklep najpierw weryfikuje nowe firmy.",
+      "cta": "Zarejestruj firmę"
     }
   },
   "notFound": {
