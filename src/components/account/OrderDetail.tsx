@@ -1,4 +1,4 @@
-import type { Order } from "@spree/sdk";
+import type { Order, OrderGroup } from "@spree/sdk";
 import { formatMoney } from "@spree/sdk";
 import { ChevronLeft } from "lucide-react";
 import Link from "next/link";
@@ -9,9 +9,14 @@ import { LineItemCard } from "@/components/order/LineItemCard";
 import { OrderTotals } from "@/components/order/OrderTotals";
 import { PaymentInfo } from "@/components/order/PaymentInfo";
 import { formatDateTime } from "@/lib/utils/format";
+import { toPurchase } from "@/lib/utils/purchase";
 
 interface OrderDetailProps {
-  order: Order;
+  /**
+   * What the checkout produced: one order, or — when the basket reached
+   * several sellers — the group holding one order per seller.
+   */
+  order: Order | OrderGroup;
   basePath: string;
   locale: string;
 }
@@ -25,7 +30,9 @@ export async function OrderDetail({
     locale: locale as Locale,
     namespace: "orders",
   });
-  const hasFulfillments = order.fulfillments && order.fulfillments.length > 0;
+  // One purchase, however many orders it divided into: the parcels below are
+  // every seller's, and the totals are the whole checkout's.
+  const purchase = toPurchase(order);
 
   return (
     <div>
@@ -38,81 +45,89 @@ export async function OrderDetail({
       </Link>
 
       <h1 className="text-2xl font-bold text-gray-900">
-        {t("orderTitle", { number: order.number })}
+        {t("orderTitle", { number: purchase.number })}
       </h1>
       <p className="text-sm text-gray-500 mt-1 mb-6">
-        {t("placedOn", { date: formatDateTime(order.completed_at, locale) })}
+        {t("placedOn", { date: formatDateTime(purchase.completed_at, locale) })}
       </p>
 
-      {hasFulfillments ? (
-        order.fulfillments.map((fulfillment) => {
-          const manifestItemIds = new Set(
-            fulfillment.items?.map((i) => i.item_id) ?? [],
-          );
-          const fulfillmentLineItems =
-            manifestItemIds.size > 0
-              ? (order.items || []).filter((item) =>
-                  manifestItemIds.has(item.id),
-                )
-              : order.items || [];
+      {/* Walked per seller order: a parcel with no manifest falls back to its
+          own seller's items, and a seller order with no parcels yet still
+          lists its items rather than vanishing behind another seller's. */}
+      {purchase.segments.map((segment) =>
+        segment.fulfillments.length > 0 ? (
+          segment.fulfillments.map((fulfillment) => {
+            const manifestItemIds = new Set(
+              fulfillment.items?.map((i) => i.item_id) ?? [],
+            );
+            const fulfillmentLineItems =
+              manifestItemIds.size > 0
+                ? segment.items.filter((item) => manifestItemIds.has(item.id))
+                : segment.items;
 
-          return (
-            <FulfillmentBlock
-              key={fulfillment.id}
-              fulfillment={fulfillment}
-              shipAddress={order.shipping_address}
-              basePath={basePath}
-              lineItems={fulfillmentLineItems}
-            />
-          );
-        })
-      ) : (
-        <div className="bg-white rounded-xl border border-gray-200 overflow-hidden mb-4">
-          <div className="divide-y divide-gray-200">
-            {order.items?.map((item) => (
-              <div key={item.id} className="px-6 py-4">
-                <LineItemCard item={item} basePath={basePath} />
-              </div>
-            ))}
+            return (
+              <FulfillmentBlock
+                key={fulfillment.id}
+                fulfillment={fulfillment}
+                shipAddress={
+                  segment.shipping_address ?? purchase.shipping_address
+                }
+                basePath={basePath}
+                lineItems={fulfillmentLineItems}
+              />
+            );
+          })
+        ) : (
+          <div
+            key={segment.id}
+            className="bg-white rounded-xl border border-gray-200 overflow-hidden mb-4"
+          >
+            <div className="divide-y divide-gray-200">
+              {segment.items.map((item) => (
+                <div key={item.id} className="px-6 py-4">
+                  <LineItemCard item={item} basePath={basePath} />
+                </div>
+              ))}
+            </div>
           </div>
-        </div>
+        ),
       )}
 
-      {order.customer_note && (
+      {purchase.customer_note && (
         <div className="bg-white rounded-xl border border-gray-200 p-6 mb-4">
           <h3 className="text-sm font-semibold text-gray-900 mb-2">
             {t("specialInstructions")}
           </h3>
-          <p className="text-sm text-gray-900">{order.customer_note}</p>
+          <p className="text-sm text-gray-900">{purchase.customer_note}</p>
         </div>
       )}
 
       <div className="bg-white rounded-xl border border-gray-200 overflow-hidden mb-4">
         <div className="grid grid-cols-1 lg:grid-cols-2 divide-y lg:divide-y-0 lg:divide-x divide-gray-200">
-          {order.billing_address && (
+          {purchase.billing_address && (
             <div className="px-6 py-4">
               <h3 className="text-sm font-semibold text-gray-900 mb-2">
                 {t("billingAddress")}
               </h3>
-              <AddressBlock address={order.billing_address} />
+              <AddressBlock address={purchase.billing_address} />
             </div>
           )}
-          {order.payments && order.payments.length > 0 && (
+          {purchase.payments.length > 0 && (
             <div className="px-6 py-4">
               <h3 className="text-sm font-semibold text-gray-900 mb-2">
                 {t("paymentInformation")}
               </h3>
-              {order.payments
+              {purchase.payments
                 .filter((p) => p.status !== "void" && p.status !== "invalid")
                 .map((payment) => (
                   <div key={payment.id} className="mb-3 last:mb-0">
                     <PaymentInfo
                       payment={payment}
-                      currency={order.currency}
-                      giftCardTotal={order.gift_card_total}
+                      currency={purchase.currency}
+                      giftCardTotal={purchase.totals.gift_card_total}
                     />
                     <p className="text-sm text-gray-500 mt-1">
-                      {formatMoney(payment.amount, order.currency, locale)}
+                      {formatMoney(payment.amount, purchase.currency, locale)}
                     </p>
                   </div>
                 ))}
@@ -122,7 +137,7 @@ export async function OrderDetail({
       </div>
 
       <div className="bg-white rounded-xl border border-gray-200 p-6">
-        <OrderTotals order={order} />
+        <OrderTotals order={purchase.totals} />
       </div>
     </div>
   );

@@ -110,6 +110,23 @@ describe("toPurchase", () => {
     expect(purchase.fulfillments).toHaveLength(2);
   });
 
+  // A seller order's address can be corrected after checkout, so each
+  // segment reads its own rather than the group's checkout-time snapshot.
+  it("keeps each seller order's own shipping address", () => {
+    const corrected = { full_name: "Corrected" } as Order["shipping_address"];
+    const purchase = toPurchase({
+      ...group,
+      orders: [
+        group.orders[0],
+        { ...group.orders[1], shipping_address: corrected },
+      ],
+    });
+
+    expect(
+      purchase.segments.map((segment) => segment.shipping_address),
+    ).toEqual([null, corrected]);
+  });
+
   // The group rolls its children's figures up itself — and the payment-side
   // ones (gift card, store credit, amount due) exist only on the group.
   it("takes the totals from the group itself", () => {
