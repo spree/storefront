@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useTranslations } from "next-intl";
 import { ProductImage } from "@/components/ui/product-image";
 import { useFormatMoney } from "@/hooks/useFormatMoney";
+import { lineItemAmount } from "@/lib/utils/price";
 
 interface LineItemCardProps {
   item: Order["items"][number];
@@ -54,7 +55,7 @@ export function LineItemCard({ item, basePath }: LineItemCardProps) {
       </div>
 
       <div className="text-sm font-medium text-gray-900">
-        {formatMoney(item.total, item.currency)}
+        {formatMoney(lineItemAmount(item), item.currency)}
       </div>
     </div>
   );
