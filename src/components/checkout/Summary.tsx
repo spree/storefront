@@ -4,6 +4,7 @@ import type { Cart } from "@spree/sdk";
 import { useTranslations } from "next-intl";
 import { ProductImage } from "@/components/ui/product-image";
 import { useFormatMoney } from "@/hooks/useFormatMoney";
+import { lineItemAmount } from "@/lib/utils/price";
 
 interface SummaryProps {
   cart: Cart;
@@ -48,7 +49,7 @@ export function Summary({ cart }: SummaryProps) {
               )}
             </div>
             <div className="text-sm text-gray-900">
-              {formatMoney(item.total, item.currency)}
+              {formatMoney(lineItemAmount(item), item.currency)}
             </div>
           </div>
         ))}

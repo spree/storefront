@@ -16,6 +16,7 @@ import { trackPurchase } from "@/lib/analytics/gtm";
 import { getCompletedOrder } from "@/lib/data/checkout";
 import { getCachedCompletedOrder } from "@/lib/utils/completed-order-cache";
 import { extractBasePath } from "@/lib/utils/path";
+import { lineItemAmount } from "@/lib/utils/price";
 import { type CompletedPurchase, toPurchase } from "@/lib/utils/purchase";
 
 interface OrderPlacedPageProps {
@@ -198,7 +199,7 @@ export default function OrderPlacedPage({ params }: OrderPlacedPageProps) {
                     </p>
                   </div>
                   <div className="text-sm font-medium text-gray-900">
-                    {formatMoney(item.total, item.currency)}
+                    {formatMoney(lineItemAmount(item), item.currency)}
                   </div>
                 </li>
               ))}

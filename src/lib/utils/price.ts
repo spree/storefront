@@ -1,4 +1,4 @@
-import { compareMoney, type Price } from "@spree/sdk";
+import { compareMoney, multiplyMoney, type Price } from "@spree/sdk";
 
 /**
  * The amount to show struck through beside a reduced price: the price before
@@ -22,4 +22,16 @@ export function strikethroughAmount(
     return price.compare_at_amount;
   }
   return null;
+}
+
+/**
+ * The line's price times quantity, before discounts, fees and added tax. This
+ * is what `cart.item_total` sums, so line amounts add up to the Subtotal row;
+ * discounts and tax have their own rows. Null when prices are hidden.
+ */
+export function lineItemAmount(item: {
+  price: string | null;
+  quantity: number;
+}): string | null {
+  return item.price ? multiplyMoney(item.price, item.quantity) : null;
 }
