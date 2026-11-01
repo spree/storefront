@@ -411,7 +411,24 @@
     "orderTitle": "Pedido #{number}",
     "shipmentCanceledRefund": "Envio cancelado — se ha emitido un reembolso.",
     "shippingMethodUnavailable": "No disponible",
-    "totalColumn": "Total"
+    "totalColumn": "Total",
+    "documents": "Facturas y documentos",
+    "documentsFor": "Facturas y documentos de {number}",
+    "noDocuments": "Aún no hay facturas ni documentos.",
+    "requestInvoice": "Solicitar factura",
+    "invoiceCompanyName": "Nombre de la empresa",
+    "invoiceTaxId": "NIF o número fiscal",
+    "sendInvoiceRequest": "Enviar solicitud",
+    "cancel": "Cancelar",
+    "invoiceRequested": "Has solicitado una factura. Aparecerá aquí cuando se emita.",
+    "documentName": "Nombre del documento",
+    "documentFile": "Archivo",
+    "addDocument": "Añadir documento",
+    "invoiceKinds": {
+      "invoice": "Factura",
+      "receipt": "Recibo",
+      "credit_note": "Nota de crédito"
+    }
   },
   "orderPlaced": {
     "thanksForOrder": "¡Gracias por tu pedido, {name}!",

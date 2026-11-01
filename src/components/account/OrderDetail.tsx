@@ -6,6 +6,7 @@ import { getTranslations } from "next-intl/server";
 import { AddressBlock } from "@/components/order/AddressBlock";
 import { FulfillmentBlock } from "@/components/order/FulfillmentBlock";
 import { LineItemCard } from "@/components/order/LineItemCard";
+import { OrderPaperwork } from "@/components/order/OrderPaperwork";
 import { OrderTotals } from "@/components/order/OrderTotals";
 import { PaymentInfo } from "@/components/order/PaymentInfo";
 import { formatDateTime } from "@/lib/utils/format";
@@ -92,6 +93,15 @@ export async function OrderDetail({
           </div>
         ),
       )}
+
+      {purchase.segments.map((segment) => (
+        <OrderPaperwork
+          key={`paperwork-${segment.id}`}
+          orderId={segment.id}
+          orderNumber={purchase.split ? segment.number : undefined}
+          locale={locale}
+        />
+      ))}
 
       {purchase.customer_note && (
         <div className="bg-white rounded-xl border border-gray-200 p-6 mb-4">

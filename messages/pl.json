@@ -411,7 +411,24 @@
     "orderTitle": "Zamówienie #{number}",
     "shipmentCanceledRefund": "Przesyłka anulowana — zwrot został wystawiony.",
     "shippingMethodUnavailable": "Niedostępna",
-    "totalColumn": "Suma"
+    "totalColumn": "Suma",
+    "documents": "Faktury i dokumenty",
+    "documentsFor": "Faktury i dokumenty dla {number}",
+    "noDocuments": "Brak faktur i dokumentów.",
+    "requestInvoice": "Poproś o fakturę",
+    "invoiceCompanyName": "Nazwa firmy",
+    "invoiceTaxId": "NIP lub numer VAT",
+    "sendInvoiceRequest": "Wyślij prośbę",
+    "cancel": "Anuluj",
+    "invoiceRequested": "Poprosiłeś o fakturę. Pojawi się tutaj po wystawieniu.",
+    "documentName": "Nazwa dokumentu",
+    "documentFile": "Plik",
+    "addDocument": "Dodaj dokument",
+    "invoiceKinds": {
+      "invoice": "Faktura",
+      "receipt": "Paragon",
+      "credit_note": "Faktura korygująca"
+    }
   },
   "orderPlaced": {
     "thanksForOrder": "Dziękujemy za zamówienie, {name}!",

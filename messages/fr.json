@@ -411,7 +411,24 @@
     "orderTitle": "Commande #{number}",
     "shipmentCanceledRefund": "Expedition annulee — un remboursement a ete emis.",
     "shippingMethodUnavailable": "Indisponible",
-    "totalColumn": "Total"
+    "totalColumn": "Total",
+    "documents": "Factures et documents",
+    "documentsFor": "Factures et documents de {number}",
+    "noDocuments": "Aucune facture ni document pour le moment.",
+    "requestInvoice": "Demander une facture",
+    "invoiceCompanyName": "Nom de l'entreprise",
+    "invoiceTaxId": "Numéro de TVA ou fiscal",
+    "sendInvoiceRequest": "Envoyer la demande",
+    "cancel": "Annuler",
+    "invoiceRequested": "Vous avez demandé une facture. Elle apparaîtra ici dès son émission.",
+    "documentName": "Nom du document",
+    "documentFile": "Fichier",
+    "addDocument": "Ajouter un document",
+    "invoiceKinds": {
+      "invoice": "Facture",
+      "receipt": "Reçu",
+      "credit_note": "Avoir"
+    }
   },
   "orderPlaced": {
     "thanksForOrder": "Merci pour votre commande, {name} !",
