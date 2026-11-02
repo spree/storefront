@@ -1,4 +1,5 @@
 import { CartDrawer } from "@/components/cart/CartDrawer";
+import { MainContent, SkipLink } from "@/components/layout/SkipLink";
 import { CartProvider } from "@/contexts/CartContext";
 import { getCustomer } from "@/lib/data/customer";
 import { getWholesaleChannel } from "@/lib/data/wholesale";
@@ -72,23 +73,34 @@ export async function WholesaleGate({
     }
 
     return (
-      <WholesaleSignInWall
-        basePath={basePath}
-        storefrontAccess={channel?.storefront_access}
-      />
+      <>
+        <SkipLink />
+        <MainContent>
+          <WholesaleSignInWall
+            basePath={basePath}
+            storefrontAccess={channel?.storefront_access}
+          />
+        </MainContent>
+      </>
     );
   }
 
   if (!isWholesaleApproved(customer)) {
     return (
-      <WholesaleApplicationPending
-        basePath={basePath}
-        customerName={
-          [customer.first_name, customer.last_name].filter(Boolean).join(" ") ||
-          customer.email
-        }
-        email={customer.email}
-      />
+      <>
+        <SkipLink />
+        <MainContent>
+          <WholesaleApplicationPending
+            basePath={basePath}
+            customerName={
+              [customer.first_name, customer.last_name]
+                .filter(Boolean)
+                .join(" ") || customer.email
+            }
+            email={customer.email}
+          />
+        </MainContent>
+      </>
     );
   }
 
@@ -98,8 +110,9 @@ export async function WholesaleGate({
 
   return (
     <CartProvider surface="wholesale">
+      <SkipLink />
       <WholesaleHeader basePath={basePath} customerName={displayName} />
-      <main>{children()}</main>
+      <MainContent>{children()}</MainContent>
       {/* The wholesale portal needs its own drawer bound to THIS provider —
           the root layout's <CartDrawer /> reads the outer DTC context, so
           wholesale add-to-cart / quick-order opens would never reach it. */}

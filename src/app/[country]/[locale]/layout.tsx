@@ -1,5 +1,5 @@
 import type { Market } from "@spree/sdk";
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { headers } from "next/headers";
 import { notFound, redirect } from "next/navigation";
 import { NextIntlClientProvider } from "next-intl";
@@ -30,6 +30,7 @@ import {
 } from "@/i18n/routing";
 import { getStorefrontMarkets } from "@/lib/data/markets";
 import { generateStoreMetadata } from "@/lib/metadata/store";
+import { storeViewport } from "@/lib/metadata/viewport";
 import { buildOrganizationJsonLd } from "@/lib/seo";
 import { getDefaultCountry, getDefaultLocale } from "@/lib/store";
 
@@ -69,6 +70,8 @@ export function generateStaticParams() {
     },
   ];
 }
+
+export const viewport: Viewport = storeViewport;
 
 export async function generateMetadata({
   params,

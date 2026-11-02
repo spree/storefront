@@ -31,13 +31,25 @@ export interface PurchaseSegment {
   number: string;
   items: LineItem[];
   fulfillments: Fulfillment[];
+  /**
+   * Where this order ships. Each seller order keeps its own copy, which can be
+   * corrected after checkout without touching the group's.
+   */
+  shipping_address: Address | null;
 }
 
 export interface Purchase {
   /** The number the customer was given — the group's when the checkout split. */
   number: string;
+  /** When the checkout was placed. */
+  completed_at: string | null;
   email: string | null;
   currency: string;
+  /**
+   * What the customer asked for at checkout. A group holds none of its own —
+   * the split copies the note onto every child, so one of them carries it.
+   */
+  customer_note: string | null;
   billing_address: Address | null;
   shipping_address: Address | null;
   payments: Payment[];
@@ -60,6 +72,7 @@ function toSegment(order: Order): PurchaseSegment {
     number: order.number,
     items: order.items ?? [],
     fulfillments: order.fulfillments ?? [],
+    shipping_address: order.shipping_address,
   };
 }
 
@@ -74,8 +87,11 @@ export function toPurchase(result: CompletedPurchase): Purchase {
 
   return {
     number: result.number,
+    completed_at: result.completed_at,
     email: result.email,
     currency: result.currency,
+    customer_note:
+      orders.find((order) => order.customer_note)?.customer_note ?? null,
     billing_address: result.billing_address,
     shipping_address: result.shipping_address,
     // The payment is made once, against the group — a child serializes an

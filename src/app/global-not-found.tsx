@@ -1,5 +1,5 @@
 import "./globals.css";
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { headers } from "next/headers";
 import { getTranslations } from "next-intl/server";
 import { Suspense } from "react";
@@ -15,6 +15,7 @@ import {
 import { findMarketForCountry } from "@/i18n/markets";
 import { REQUEST_PATHNAME_HEADER } from "@/i18n/routing";
 import { getStorefrontMarkets } from "@/lib/data/markets";
+import { storeViewport } from "@/lib/metadata/viewport";
 import { getDefaultCountry, getDefaultLocale, getStoreName } from "@/lib/store";
 
 /**
@@ -42,6 +43,8 @@ async function getRequestContext() {
 
   return { country, locale, markets };
 }
+
+export const viewport: Viewport = storeViewport;
 
 export async function generateMetadata(): Promise<Metadata> {
   const { locale } = await getRequestContext();

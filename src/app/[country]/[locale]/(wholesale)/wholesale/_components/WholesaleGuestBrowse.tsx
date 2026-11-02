@@ -2,6 +2,7 @@
 
 import { usePathname, useSearchParams } from "next/navigation";
 import { useMemo } from "react";
+import { MainContent, SkipLink } from "@/components/layout/SkipLink";
 import { HiddenPricingProvider } from "@/contexts/HiddenPricingContext";
 import { wholesaleSignInHref } from "@/lib/wholesale";
 import { WholesaleHeader } from "./WholesaleHeader";
@@ -39,12 +40,13 @@ export function WholesaleGuestBrowse({
 
   return (
     <HiddenPricingProvider value={hiddenPricing}>
+      <SkipLink />
       <WholesaleHeader
         basePath={basePath}
         authenticated={false}
         signInHref={signInHref}
       />
-      <main>{children}</main>
+      <MainContent>{children}</MainContent>
     </HiddenPricingProvider>
   );
 }

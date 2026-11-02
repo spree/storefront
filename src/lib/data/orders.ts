@@ -1,6 +1,11 @@
 "use server";
 
-import type { OrderListParams } from "@spree/sdk";
+import type {
+  Order,
+  OrderGroup,
+  OrderListParams,
+  PaginatedResponse,
+} from "@spree/sdk";
 import {
   DEFAULT_SURFACE,
   getCartOptions,
@@ -11,7 +16,18 @@ import {
 } from "@/lib/spree";
 import { withFallback } from "./utils";
 
-export async function getOrders(params?: OrderListParams) {
+/**
+ * The customer's purchase history — one row per checkout.
+ *
+ * A checkout that reached several sellers divided into one order per seller,
+ * and the backend lists the group holding them rather than the orders inside
+ * it, so the customer sees the single purchase they made. Typed as the union
+ * the endpoint can answer with; the installed SDK still describes it as orders
+ * alone.
+ */
+export async function getOrders(
+  params?: OrderListParams,
+): Promise<PaginatedResponse<Order | OrderGroup>> {
   return withFallback(
     async () => {
       return withAuthRefresh(async (options) => {

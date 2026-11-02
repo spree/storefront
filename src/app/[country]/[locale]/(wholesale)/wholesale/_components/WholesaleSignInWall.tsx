@@ -114,6 +114,7 @@ export function WholesaleSignInWall({
               <FieldLabel htmlFor="wholesale-email">{ta("email")}</FieldLabel>
               <Input
                 type="email"
+                spellCheck={false}
                 id="wholesale-email"
                 autoComplete="email"
                 value={email}

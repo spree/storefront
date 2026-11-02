@@ -85,6 +85,7 @@ interface AddressSelectorProps {
   onEditAddress?: (address: Address) => void;
   onFieldBlur?: () => void;
   idPrefix: string;
+  autoCompleteSection?: "shipping" | "billing";
   user?: User | null;
 }
 
@@ -99,6 +100,7 @@ export function AddressSelector({
   onEditAddress,
   onFieldBlur,
   idPrefix,
+  autoCompleteSection,
   user,
 }: AddressSelectorProps) {
   const t = useTranslations("address");
@@ -304,6 +306,7 @@ export function AddressSelector({
             loadingStates={loadingStates}
             onChange={onChange}
             idPrefix={idPrefix}
+            autoCompleteSection={autoCompleteSection}
           />
         </div>
       )}

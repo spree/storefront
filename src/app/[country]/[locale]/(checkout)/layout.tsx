@@ -6,6 +6,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { useState } from "react";
+import { MainContent, SkipLink } from "@/components/layout/SkipLink";
 import {
   CheckoutProvider,
   CheckoutSummary,
@@ -114,6 +115,7 @@ interface CheckoutLayoutProps {
 function CheckoutLayoutContent({ children }: CheckoutLayoutProps) {
   return (
     <div className="min-h-screen flex flex-col bg-white">
+      <SkipLink />
       {/* Mobile header */}
       <div className="lg:hidden border-b border-gray-200">
         <div className="px-5">
@@ -133,7 +135,7 @@ function CheckoutLayoutContent({ children }: CheckoutLayoutProps) {
             <div className="hidden lg:block mb-8">
               <CheckoutHeader />
             </div>
-            {children}
+            <MainContent>{children}</MainContent>
           </div>
           <div className="px-5 lg:pl-10 lg:pr-12 pb-4">
             <CheckoutFooter />

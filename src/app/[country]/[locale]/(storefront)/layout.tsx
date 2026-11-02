@@ -4,6 +4,7 @@ import { connection } from "next/server";
 import { cache, Suspense } from "react";
 import { Footer, FooterCategoryLinks } from "@/components/layout/Footer";
 import { Header, HeaderMobileMenu } from "@/components/layout/Header";
+import { MainContent, SkipLink } from "@/components/layout/SkipLink";
 import { getCategories } from "@/lib/data/categories";
 
 interface StorefrontLayoutProps {
@@ -132,6 +133,7 @@ export default async function StorefrontLayout({
 
   return (
     <>
+      <SkipLink />
       <Header
         basePath={basePath}
         locale={locale as Locale}
@@ -152,7 +154,7 @@ export default async function StorefrontLayout({
           locale={locale}
         />
       </Suspense>
-      <main className="flex-1">{children}</main>
+      <MainContent className="flex-1">{children}</MainContent>
       <Footer
         basePath={basePath}
         locale={locale as Locale}
