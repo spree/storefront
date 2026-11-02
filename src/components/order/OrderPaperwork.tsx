@@ -50,7 +50,10 @@ export async function OrderPaperwork({
                 className="inline-flex items-center gap-2 text-primary hover:underline"
               >
                 <FileText className="w-4 h-4" />
-                {t(`invoiceKinds.${invoice.kind}`)} {invoice.number}
+                {t.has(`invoiceKinds.${invoice.kind}`)
+                  ? t(`invoiceKinds.${invoice.kind}`)
+                  : invoice.kind}{" "}
+                {invoice.number}
               </a>
               <span className="text-gray-500">
                 {invoice.issued_on} ·{" "}

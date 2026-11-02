@@ -2,6 +2,7 @@ import { type NextRequest, NextResponse } from "next/server";
 import { getAuthOptions, getConfig } from "@/lib/spree";
 
 const KINDS = new Set(["invoices", "documents"]);
+const PREFIXED_ID = /^[A-Za-z0-9_]+$/;
 
 /**
  * Streams an invoice or order document to the signed-in customer. The Store
@@ -15,20 +16,28 @@ export async function GET(
   }: { params: Promise<{ orderId: string; kind: string; id: string }> },
 ) {
   const { orderId, kind, id } = await params;
-  if (!KINDS.has(kind)) return new NextResponse(null, { status: 404 });
+  if (!KINDS.has(kind) || !PREFIXED_ID.test(orderId) || !PREFIXED_ID.test(id)) {
+    return new NextResponse(null, { status: 404 });
+  }
 
   const { token } = await getAuthOptions();
   if (!token) return new NextResponse(null, { status: 401 });
 
   const { baseUrl, publishableKey } = getConfig();
-  const path = `/api/v3/store/orders/${encodeURIComponent(orderId)}/${kind}/${encodeURIComponent(id)}/download`;
-  const upstream = await fetch(new URL(path, baseUrl), {
-    headers: {
-      "X-Spree-Api-Key": publishableKey,
-      Authorization: `Bearer ${token}`,
-    },
-    cache: "no-store",
-  });
+  // Appended rather than resolved, so an API mounted under a path keeps it.
+  const url = `${baseUrl.replace(/\/$/, "")}/api/v3/store/orders/${orderId}/${kind}/${id}/download`;
+  let upstream: Response;
+  try {
+    upstream = await fetch(url, {
+      headers: {
+        "X-Spree-Api-Key": publishableKey,
+        Authorization: `Bearer ${token}`,
+      },
+      cache: "no-store",
+    });
+  } catch {
+    return new NextResponse(null, { status: 502 });
+  }
   if (!upstream.ok || !upstream.body) {
     return new NextResponse(null, { status: upstream.status || 502 });
   }

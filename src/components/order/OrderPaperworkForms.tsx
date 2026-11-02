@@ -25,7 +25,11 @@ export function InvoiceRequestForm({ orderId }: { orderId: string }) {
   return (
     <form
       className="flex flex-col gap-3 mt-3"
-      action={(formData) =>
+      // onSubmit rather than action: React clears an action form, losing the
+      // customer's input when the request fails.
+      onSubmit={(event) => {
+        event.preventDefault();
+        const formData = new FormData(event.currentTarget);
         startTransition(async () => {
           setError(null);
           const result = await requestInvoice(orderId, {
@@ -33,8 +37,8 @@ export function InvoiceRequestForm({ orderId }: { orderId: string }) {
             tax_id: String(formData.get("tax_id") ?? ""),
           });
           if (!result.success) setError(result.error);
-        })
-      }
+        });
+      }}
     >
       <div className="grid gap-1.5">
         <Label htmlFor={`company-${orderId}`}>{t("invoiceCompanyName")}</Label>
@@ -75,13 +79,17 @@ export function DocumentUploadForm({ orderId }: { orderId: string }) {
   return (
     <form
       className="flex flex-col gap-3 sm:flex-row sm:items-end mt-3"
-      action={(formData) =>
+      onSubmit={(event) => {
+        event.preventDefault();
+        const form = event.currentTarget;
+        const formData = new FormData(form);
         startTransition(async () => {
           setError(null);
           const result = await uploadOrderDocument(orderId, formData);
-          if (!result.success) setError(result.error);
-        })
-      }
+          if (result.success) form.reset();
+          else setError(result.error);
+        });
+      }}
     >
       <div className="grid gap-1.5 flex-1">
         <Label htmlFor={`doc-label-${orderId}`}>{t("documentName")}</Label>

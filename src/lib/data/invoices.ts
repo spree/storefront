@@ -5,6 +5,9 @@ import { revalidatePath } from "next/cache";
 import { getClient, withAuthRefresh } from "@/lib/spree";
 import { actionResult, withFallback } from "./utils";
 
+const ORDER_PAGE =
+  "/[country]/[locale]/(storefront)/account/(authenticated)/orders/[id]";
+
 export interface OrderPaperwork {
   invoices: Invoice[];
   documents: OrderDocument[];
@@ -54,7 +57,7 @@ export async function requestInvoice(
         options,
       ),
     );
-    revalidatePath("/[country]/[locale]/account/orders/[id]", "page");
+    revalidatePath(ORDER_PAGE, "page");
     return {};
   }, "Could not request an invoice");
 }
@@ -68,21 +71,24 @@ export async function uploadOrderDocument(orderId: string, formData: FormData) {
       throw new Error("Choose a file to upload");
     }
 
-    await withAuthRefresh(async (options) => {
-      const client = getClient();
-      const upload = await client.orders.documents.upload(
+    // Two calls, so a token refresh before `create` doesn't store the file twice.
+    const client = getClient();
+    const upload = await withAuthRefresh((options) =>
+      client.orders.documents.upload(
         orderId,
         file,
         { filename: file.name, contentType: file.type },
         options,
-      );
-      await client.orders.documents.create(
+      ),
+    );
+    await withAuthRefresh((options) =>
+      client.orders.documents.create(
         orderId,
         { label: label || file.name, file_signed_id: upload.signed_id },
         options,
-      );
-    });
-    revalidatePath("/[country]/[locale]/account/orders/[id]", "page");
+      ),
+    );
+    revalidatePath(ORDER_PAGE, "page");
     return {};
   }, "Could not upload the document");
 }

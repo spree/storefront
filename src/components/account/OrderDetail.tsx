@@ -3,6 +3,7 @@ import { formatMoney } from "@spree/sdk";
 import { ChevronLeft } from "lucide-react";
 import Link from "next/link";
 import { getTranslations } from "next-intl/server";
+import { Suspense } from "react";
 import { AddressBlock } from "@/components/order/AddressBlock";
 import { FulfillmentBlock } from "@/components/order/FulfillmentBlock";
 import { LineItemCard } from "@/components/order/LineItemCard";
@@ -95,12 +96,13 @@ export async function OrderDetail({
       )}
 
       {purchase.segments.map((segment) => (
-        <OrderPaperwork
-          key={`paperwork-${segment.id}`}
-          orderId={segment.id}
-          orderNumber={purchase.split ? segment.number : undefined}
-          locale={locale}
-        />
+        <Suspense key={`paperwork-${segment.id}`} fallback={null}>
+          <OrderPaperwork
+            orderId={segment.id}
+            orderNumber={purchase.split ? segment.number : undefined}
+            locale={locale}
+          />
+        </Suspense>
       ))}
 
       {purchase.customer_note && (
