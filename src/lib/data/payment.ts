@@ -93,6 +93,22 @@ export async function createDirectPayment(
   }, "Failed to create payment");
 }
 
+/** Reads a payment session, e.g. to see whether it is still open after a failed completion. */
+export async function getCheckoutPaymentSession(
+  cartId: string,
+  sessionId: string,
+) {
+  return actionResult(async () => {
+    const surface = await resolveSurfaceForCart(cartId);
+    const options = await getCartOptions(surface);
+    const id = await requireCartId(surface);
+    const session = await getClientForSurface(
+      surface,
+    ).carts.paymentSessions.get(id, sessionId, options);
+    return { session };
+  }, "Failed to load payment session");
+}
+
 export async function completeCheckoutPaymentSession(
   cartId: string,
   sessionId: string,
