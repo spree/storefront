@@ -135,6 +135,7 @@ export default function WholesaleApplyPage() {
                 <FieldLabel htmlFor="apply-first">{tr("firstName")}</FieldLabel>
                 <Input
                   id="apply-first"
+                  autoComplete="given-name"
                   value={firstName}
                   onChange={(e) => setFirstName(e.target.value)}
                   required
@@ -145,6 +146,7 @@ export default function WholesaleApplyPage() {
                 <FieldLabel htmlFor="apply-last">{tr("lastName")}</FieldLabel>
                 <Input
                   id="apply-last"
+                  autoComplete="family-name"
                   value={lastName}
                   onChange={(e) => setLastName(e.target.value)}
                   required
@@ -159,6 +161,7 @@ export default function WholesaleApplyPage() {
               </FieldLabel>
               <Input
                 id="apply-company"
+                autoComplete="organization"
                 value={company}
                 onChange={(e) => setCompany(e.target.value)}
                 required
@@ -172,6 +175,7 @@ export default function WholesaleApplyPage() {
               </FieldLabel>
               <Input
                 id="apply-phone"
+                autoComplete="tel"
                 type="tel"
                 value={phone}
                 onChange={(e) => setPhone(e.target.value)}
@@ -183,6 +187,7 @@ export default function WholesaleApplyPage() {
               <FieldLabel htmlFor="apply-email">{ta("email")}</FieldLabel>
               <Input
                 id="apply-email"
+                spellCheck={false}
                 type="email"
                 autoComplete="email"
                 value={email}

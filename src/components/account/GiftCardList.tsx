@@ -146,7 +146,7 @@ function GiftCardItem({ card }: { card: GiftCard }) {
         </div>
         <div className="w-full bg-gray-200 rounded-lg h-2">
           <div
-            className={`h-2 rounded-lg transition-all ${
+            className={`h-2 rounded-lg transition-[width,background-color] ${
               usagePercentage >= 100 ? "bg-gray-400" : "bg-primary"
             }`}
             style={{ width: `${Math.min(usagePercentage, 100)}%` }}

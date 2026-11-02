@@ -156,7 +156,7 @@ export function MobileMenu({
         <div className="hidden md:flex items-center justify-between px-4 h-16 border-b border-gray-200 relative overflow-hidden">
           {/* "Menu" title — visible when on main panel */}
           <span
-            className={`text-base font-semibold transition-all duration-300 ease-in-out absolute left-4 ${
+            className={`text-base font-semibold transition-[opacity,transform] duration-300 ease-in-out absolute left-4 ${
               currentPanel.kind === "main"
                 ? "translate-x-0 opacity-100"
                 : "-translate-x-8 opacity-0 pointer-events-none"
@@ -168,7 +168,7 @@ export function MobileMenu({
           <button
             type="button"
             onClick={popPanel}
-            className={`flex items-center gap-2 text-gray-700 hover:text-gray-900 text-base font-semibold cursor-pointer transition-all duration-300 ease-in-out absolute left-4 ${
+            className={`flex items-center gap-2 text-gray-700 hover:text-gray-900 text-base font-semibold cursor-pointer transition-[color,opacity,transform] duration-300 ease-in-out absolute left-4 ${
               currentPanel.kind !== "main"
                 ? "translate-x-0 opacity-100"
                 : "translate-x-8 opacity-0 pointer-events-none"

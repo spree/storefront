@@ -87,6 +87,7 @@ function ProfileForm({
                 <Input
                   type="text"
                   id="first_name"
+                  autoComplete="given-name"
                   value={formData.first_name}
                   onChange={(e) =>
                     setFormData({ ...formData, first_name: e.target.value })
@@ -99,6 +100,7 @@ function ProfileForm({
                 <Input
                   type="text"
                   id="last_name"
+                  autoComplete="family-name"
                   value={formData.last_name}
                   onChange={(e) =>
                     setFormData({ ...formData, last_name: e.target.value })
@@ -111,6 +113,8 @@ function ProfileForm({
               <FieldLabel htmlFor="email">{t("emailAddress")}</FieldLabel>
               <Input
                 type="email"
+                autoComplete="email"
+                spellCheck={false}
                 id="email"
                 required
                 value={formData.email}

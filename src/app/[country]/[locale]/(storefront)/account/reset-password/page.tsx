@@ -2,7 +2,7 @@
 
 import { CircleAlert, CircleCheck, Eye, EyeOff } from "lucide-react";
 import Link from "next/link";
-import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { useState } from "react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -23,7 +23,6 @@ import { extractBasePath } from "@/lib/utils/path";
 export default function ResetPasswordPage() {
   const t = useTranslations("resetPassword");
   const ta = useTranslations("account");
-  const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const basePath = extractBasePath(pathname);
@@ -104,12 +103,8 @@ export default function ResetPasswordPage() {
           </CardHeader>
 
           <CardContent>
-            <Button
-              size="lg"
-              className="w-full"
-              onClick={() => router.push(`${basePath}/account`)}
-            >
-              {t("signIn")}
+            <Button size="lg" className="w-full" asChild>
+              <Link href={`${basePath}/account`}>{t("signIn")}</Link>
             </Button>
           </CardContent>
         </Card>

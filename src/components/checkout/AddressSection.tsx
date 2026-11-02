@@ -310,6 +310,8 @@ export function AddressSection({
         </div>
         <Input
           type="email"
+          autoComplete="email"
+          spellCheck={false}
           id="email"
           required
           value={email}
@@ -354,6 +356,7 @@ export function AddressSection({
             }
             onFieldBlur={handleFieldBlur}
             idPrefix="ship"
+            autoCompleteSection="shipping"
             user={user}
           />
         ) : (
@@ -365,6 +368,7 @@ export function AddressSection({
               loadingStates={isPendingShip}
               onChange={updateShipAddress}
               idPrefix="ship"
+              autoCompleteSection="shipping"
             />
           </div>
         )}

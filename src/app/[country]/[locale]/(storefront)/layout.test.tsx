@@ -13,6 +13,10 @@ vi.mock("@/components/layout/Header", () => ({
   Header: () => null,
   HeaderMobileMenu: () => null,
 }));
+vi.mock("@/components/layout/SkipLink", () => ({
+  MainContent: () => null,
+  SkipLink: () => null,
+}));
 vi.mock("@/components/layout/Footer", () => ({
   Footer: () => null,
   FooterCategoryLinks: () => null,
@@ -20,6 +24,7 @@ vi.mock("@/components/layout/Footer", () => ({
 
 import { Footer } from "@/components/layout/Footer";
 import { Header } from "@/components/layout/Header";
+import { MainContent, SkipLink } from "@/components/layout/SkipLink";
 import StorefrontLayout from "./layout";
 
 interface LayoutElementProps {
@@ -30,7 +35,7 @@ interface LayoutElementProps {
 }
 
 describe("StorefrontLayout", () => {
-  it("keeps page chrome outside the category navigation Suspense boundaries", async () => {
+  it("renders a skip link first and keeps page chrome outside the category navigation Suspense boundaries", async () => {
     const content = <section>Storefront content</section>;
     const layout = (await StorefrontLayout({
       children: content,
@@ -39,13 +44,14 @@ describe("StorefrontLayout", () => {
 
     expect(layout.type).toBe(Fragment);
 
-    const [header, hiddenNavigation, main, footer] = Children.toArray(
+    const [skipLink, header, hiddenNavigation, main, footer] = Children.toArray(
       layout.props.children,
     ) as ReactElement<LayoutElementProps>[];
 
+    expect(skipLink.type).toBe(SkipLink);
     expect(header.type).toBe(Header);
     expect(hiddenNavigation.type).toBe(Suspense);
-    expect(main.type).toBe("main");
+    expect(main.type).toBe(MainContent);
     expect(main.props.children).toBe(content);
     expect(footer.type).toBe(Footer);
 
