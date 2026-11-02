@@ -14,7 +14,7 @@ vi.mock("@/components/layout/Header", () => ({
   HeaderMobileMenu: () => null,
 }));
 vi.mock("@/components/layout/SkipLink", () => ({
-  MAIN_CONTENT_ID: "main-content",
+  MainContent: () => null,
   SkipLink: () => null,
 }));
 vi.mock("@/components/layout/Footer", () => ({
@@ -24,7 +24,7 @@ vi.mock("@/components/layout/Footer", () => ({
 
 import { Footer } from "@/components/layout/Footer";
 import { Header } from "@/components/layout/Header";
-import { MAIN_CONTENT_ID, SkipLink } from "@/components/layout/SkipLink";
+import { MainContent, SkipLink } from "@/components/layout/SkipLink";
 import StorefrontLayout from "./layout";
 
 interface LayoutElementProps {
@@ -32,7 +32,6 @@ interface LayoutElementProps {
   mobileNavigation?: ReactElement<{ fallback: ReactNode }>;
   categoryLinks?: ReactElement<{ fallback: ReactNode }>;
   fallback?: ReactNode;
-  id?: string;
 }
 
 describe("StorefrontLayout", () => {
@@ -52,8 +51,7 @@ describe("StorefrontLayout", () => {
     expect(skipLink.type).toBe(SkipLink);
     expect(header.type).toBe(Header);
     expect(hiddenNavigation.type).toBe(Suspense);
-    expect(main.type).toBe("main");
-    expect(main.props.id).toBe(MAIN_CONTENT_ID);
+    expect(main.type).toBe(MainContent);
     expect(main.props.children).toBe(content);
     expect(footer.type).toBe(Footer);
 

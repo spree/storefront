@@ -15,6 +15,7 @@ import {
 import { findMarketForCountry } from "@/i18n/markets";
 import { REQUEST_PATHNAME_HEADER } from "@/i18n/routing";
 import { getStorefrontMarkets } from "@/lib/data/markets";
+import { storeViewport } from "@/lib/metadata/viewport";
 import { getDefaultCountry, getDefaultLocale, getStoreName } from "@/lib/store";
 
 /**
@@ -43,11 +44,7 @@ async function getRequestContext() {
   return { country, locale, markets };
 }
 
-/** Matches the page background so mobile browser chrome blends in. */
-export const viewport: Viewport = {
-  themeColor: "#ffffff",
-  colorScheme: "light",
-};
+export const viewport: Viewport = storeViewport;
 
 export async function generateMetadata(): Promise<Metadata> {
   const { locale } = await getRequestContext();

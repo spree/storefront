@@ -4,7 +4,7 @@ import { connection } from "next/server";
 import { cache, Suspense } from "react";
 import { Footer, FooterCategoryLinks } from "@/components/layout/Footer";
 import { Header, HeaderMobileMenu } from "@/components/layout/Header";
-import { MAIN_CONTENT_ID, SkipLink } from "@/components/layout/SkipLink";
+import { MainContent, SkipLink } from "@/components/layout/SkipLink";
 import { getCategories } from "@/lib/data/categories";
 
 interface StorefrontLayoutProps {
@@ -154,9 +154,7 @@ export default async function StorefrontLayout({
           locale={locale}
         />
       </Suspense>
-      <main id={MAIN_CONTENT_ID} tabIndex={-1} className="flex-1 outline-none">
-        {children}
-      </main>
+      <MainContent className="flex-1">{children}</MainContent>
       <Footer
         basePath={basePath}
         locale={locale as Locale}

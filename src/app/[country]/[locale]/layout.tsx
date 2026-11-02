@@ -30,6 +30,7 @@ import {
 } from "@/i18n/routing";
 import { getStorefrontMarkets } from "@/lib/data/markets";
 import { generateStoreMetadata } from "@/lib/metadata/store";
+import { storeViewport } from "@/lib/metadata/viewport";
 import { buildOrganizationJsonLd } from "@/lib/seo";
 import { getDefaultCountry, getDefaultLocale } from "@/lib/store";
 
@@ -70,11 +71,7 @@ export function generateStaticParams() {
   ];
 }
 
-/** Matches the page background so mobile browser chrome blends in. */
-export const viewport: Viewport = {
-  themeColor: "#ffffff",
-  colorScheme: "light",
-};
+export const viewport: Viewport = storeViewport;
 
 export async function generateMetadata({
   params,

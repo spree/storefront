@@ -694,6 +694,7 @@ export function PaymentSection({
                 loadingStates={isPendingBill}
                 onChange={updateBillAddress}
                 idPrefix="bill"
+                autoCompleteSection="billing"
               />
             </div>
           )}
@@ -1005,6 +1006,7 @@ export function PaymentSection({
               loadingStates={isPendingBill}
               onChange={updateBillAddress}
               idPrefix="bill"
+              autoCompleteSection="billing"
             />
           </div>
         )}

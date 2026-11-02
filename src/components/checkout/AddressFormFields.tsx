@@ -18,6 +18,11 @@ interface AddressFormFieldsProps {
   loadingStates: boolean;
   onChange: (field: keyof AddressFormData, value: string) => void;
   idPrefix: string;
+  /**
+   * Autofill section for pages that show more than one address form, so the
+   * browser fills shipping and billing from the right saved address.
+   */
+  autoCompleteSection?: "shipping" | "billing";
 }
 
 export function AddressFormFields({
@@ -27,7 +32,10 @@ export function AddressFormFields({
   loadingStates,
   onChange,
   idPrefix,
+  autoCompleteSection,
 }: AddressFormFieldsProps) {
+  const autoComplete = (token: string): string =>
+    autoCompleteSection ? `${autoCompleteSection} ${token}` : token;
   const t = useTranslations("address");
   const locale = useLocale();
   const sortedCountries = useMemo(
@@ -44,7 +52,7 @@ export function AddressFormFields({
         <NativeSelect
           id={`${idPrefix}-country`}
           name="country"
-          autoComplete="country"
+          autoComplete={autoComplete("country")}
           aria-label={t("country")}
           className="w-full"
           value={address.country_code}
@@ -68,7 +76,7 @@ export function AddressFormFields({
           type="text"
           id={`${idPrefix}-first_name`}
           name="first_name"
-          autoComplete="given-name"
+          autoComplete={autoComplete("given-name")}
           aria-label={t("firstName")}
           value={address.first_name}
           onChange={(e) => onChange("first_name", e.target.value)}
@@ -78,7 +86,7 @@ export function AddressFormFields({
           type="text"
           id={`${idPrefix}-last_name`}
           name="last_name"
-          autoComplete="family-name"
+          autoComplete={autoComplete("family-name")}
           aria-label={t("lastName")}
           required
           value={address.last_name}
@@ -92,7 +100,7 @@ export function AddressFormFields({
         type="text"
         id={`${idPrefix}-company`}
         name="company"
-        autoComplete="organization"
+        autoComplete={autoComplete("organization")}
         aria-label={t("company")}
         value={address.company}
         onChange={(e) => onChange("company", e.target.value)}
@@ -104,7 +112,7 @@ export function AddressFormFields({
         type="text"
         id={`${idPrefix}-address1`}
         name="address1"
-        autoComplete="address-line1"
+        autoComplete={autoComplete("address-line1")}
         aria-label={t("address")}
         required
         value={address.address1}
@@ -117,7 +125,7 @@ export function AddressFormFields({
         type="text"
         id={`${idPrefix}-address2`}
         name="address2"
-        autoComplete="address-line2"
+        autoComplete={autoComplete("address-line2")}
         aria-label={t("apartment")}
         value={address.address2}
         onChange={(e) => onChange("address2", e.target.value)}
@@ -130,7 +138,7 @@ export function AddressFormFields({
           type="text"
           id={`${idPrefix}-city`}
           name="city"
-          autoComplete="address-level2"
+          autoComplete={autoComplete("address-level2")}
           aria-label={t("city")}
           required
           value={address.city}
@@ -141,7 +149,7 @@ export function AddressFormFields({
           <NativeSelect
             id={`${idPrefix}-state`}
             name="state"
-            autoComplete="address-level1"
+            autoComplete={autoComplete("address-level1")}
             aria-label={t("stateProvince")}
             className="w-full"
             disabled
@@ -152,7 +160,7 @@ export function AddressFormFields({
           <NativeSelect
             id={`${idPrefix}-state`}
             name="state"
-            autoComplete="address-level1"
+            autoComplete={autoComplete("address-level1")}
             aria-label={t("stateProvince")}
             className="w-full"
             value={address.state_code}
@@ -173,7 +181,7 @@ export function AddressFormFields({
             type="text"
             id={`${idPrefix}-state`}
             name="state"
-            autoComplete="address-level1"
+            autoComplete={autoComplete("address-level1")}
             aria-label={t("stateProvince")}
             value={address.state_name}
             onChange={(e) => onChange("state_name", e.target.value)}
@@ -184,7 +192,7 @@ export function AddressFormFields({
           type="text"
           id={`${idPrefix}-postal_code`}
           name="postal_code"
-          autoComplete="postal-code"
+          autoComplete={autoComplete("postal-code")}
           aria-label={t("zipCode")}
           required
           value={address.postal_code}
@@ -198,7 +206,7 @@ export function AddressFormFields({
         type="tel"
         id={`${idPrefix}-phone`}
         name="phone"
-        autoComplete="tel"
+        autoComplete={autoComplete("tel")}
         aria-label={t("phone")}
         value={address.phone}
         onChange={(e) => onChange("phone", e.target.value)}

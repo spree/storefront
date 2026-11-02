@@ -6,7 +6,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { useState } from "react";
-import { MAIN_CONTENT_ID, SkipLink } from "@/components/layout/SkipLink";
+import { MainContent, SkipLink } from "@/components/layout/SkipLink";
 import {
   CheckoutProvider,
   CheckoutSummary,
@@ -135,9 +135,7 @@ function CheckoutLayoutContent({ children }: CheckoutLayoutProps) {
             <div className="hidden lg:block mb-8">
               <CheckoutHeader />
             </div>
-            <main id={MAIN_CONTENT_ID} tabIndex={-1} className="outline-none">
-              {children}
-            </main>
+            <MainContent>{children}</MainContent>
           </div>
           <div className="px-5 lg:pl-10 lg:pr-12 pb-4">
             <CheckoutFooter />
