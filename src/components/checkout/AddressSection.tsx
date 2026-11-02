@@ -310,6 +310,8 @@ export function AddressSection({
         </div>
         <Input
           type="email"
+          autoComplete="email"
+          spellCheck={false}
           id="email"
           required
           value={email}

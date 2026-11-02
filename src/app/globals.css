@@ -254,15 +254,27 @@ input[type="search"]::-webkit-search-cancel-button {
     outline: 1px solid black;
     border-radius: 2px;
   }
-  @media (prefers-color-scheme: dark) {
-    :focus-visible {
-      outline-color: white;
-    }
+  .dark :focus-visible {
+    outline-color: white;
   }
   body {
     @apply bg-background text-foreground;
   }
   html {
     @apply font-sans;
+    color-scheme: light;
+  }
+  .dark {
+    color-scheme: dark;
+  }
+  a,
+  button,
+  input,
+  label,
+  select,
+  summary,
+  textarea,
+  [role="button"] {
+    touch-action: manipulation;
   }
 }

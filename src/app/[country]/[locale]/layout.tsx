@@ -1,5 +1,5 @@
 import type { Market } from "@spree/sdk";
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { headers } from "next/headers";
 import { notFound, redirect } from "next/navigation";
 import { NextIntlClientProvider } from "next-intl";
@@ -69,6 +69,12 @@ export function generateStaticParams() {
     },
   ];
 }
+
+/** Matches the page background so mobile browser chrome blends in. */
+export const viewport: Viewport = {
+  themeColor: "#ffffff",
+  colorScheme: "light",
+};
 
 export async function generateMetadata({
   params,

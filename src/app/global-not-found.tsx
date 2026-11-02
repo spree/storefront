@@ -1,5 +1,5 @@
 import "./globals.css";
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { headers } from "next/headers";
 import { getTranslations } from "next-intl/server";
 import { Suspense } from "react";
@@ -42,6 +42,12 @@ async function getRequestContext() {
 
   return { country, locale, markets };
 }
+
+/** Matches the page background so mobile browser chrome blends in. */
+export const viewport: Viewport = {
+  themeColor: "#ffffff",
+  colorScheme: "light",
+};
 
 export async function generateMetadata(): Promise<Metadata> {
   const { locale } = await getRequestContext();

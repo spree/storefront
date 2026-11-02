@@ -6,11 +6,9 @@
 
 A production-ready, headless ecommerce storefront for [Spree Commerce](https://spreecommerce.org), built with Next.js 16, React 19, and the [Spree REST API](https://spreecommerce.org/docs/api-reference). Open source (MIT) and free to customize.
 
-[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/spree/storefront)
+[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2Fspree%2Fstorefront&env=SPREE_API_URL%2CSPREE_PUBLISHABLE_KEY&envDescription=Address+of+your+Spree+server+and+the+publishable+API+key+from+your+Spree+admin&envLink=https%3A%2F%2Fgithub.com%2Fspree%2Fstorefront%2Fblob%2Fmain%2F.env.example&project-name=spree-storefront&repository-name=spree-storefront)
 
 [Live Demo](https://demo.spreecommerce.org) | [Quickstart Docs](https://spreecommerce.org/docs/developer/storefront/nextjs/quickstart) | [TypeScript SDK](https://www.npmjs.com/package/@spree/sdk)
-
-> **You are on `6-0-dev`.** This branch tracks the unreleased Spree 6.0 Store API and SDK, so it can break as those change. For a stable storefront to fork or deploy, use `main`. This branch merges into `main` at the 6.0 release.
 
 ## Why This Storefront
 

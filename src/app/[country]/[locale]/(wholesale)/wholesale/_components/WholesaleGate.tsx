@@ -1,4 +1,5 @@
 import { CartDrawer } from "@/components/cart/CartDrawer";
+import { MAIN_CONTENT_ID, SkipLink } from "@/components/layout/SkipLink";
 import { CartProvider } from "@/contexts/CartContext";
 import { getCustomer } from "@/lib/data/customer";
 import { getWholesaleChannel } from "@/lib/data/wholesale";
@@ -98,8 +99,11 @@ export async function WholesaleGate({
 
   return (
     <CartProvider surface="wholesale">
+      <SkipLink />
       <WholesaleHeader basePath={basePath} customerName={displayName} />
-      <main>{children()}</main>
+      <main id={MAIN_CONTENT_ID} tabIndex={-1} className="outline-none">
+        {children()}
+      </main>
       {/* The wholesale portal needs its own drawer bound to THIS provider —
           the root layout's <CartDrawer /> reads the outer DTC context, so
           wholesale add-to-cart / quick-order opens would never reach it. */}

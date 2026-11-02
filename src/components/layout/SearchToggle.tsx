@@ -51,7 +51,7 @@ export function SearchToggle({
     <header className="sticky top-0 z-50 bg-white border-b border-gray-200 h-16 relative">
       {/* Normal header content */}
       <div
-        className={`absolute inset-0 transition-all duration-300 ease-in-out ${
+        className={`absolute inset-0 transition-[opacity,transform] duration-300 ease-in-out ${
           searchOpen
             ? "translate-y-4 opacity-0 pointer-events-none"
             : "translate-y-0 opacity-100"
@@ -104,7 +104,7 @@ export function SearchToggle({
         onKeyDown={(e) => {
           if (e.key === "Escape") closeSearch();
         }}
-        className={`absolute inset-0 z-50 transition-all duration-300 ease-in-out ${
+        className={`absolute inset-0 z-50 transition-[opacity,transform] duration-300 ease-in-out ${
           searchOpen
             ? "translate-y-0 opacity-100"
             : "-translate-y-4 opacity-0 pointer-events-none"

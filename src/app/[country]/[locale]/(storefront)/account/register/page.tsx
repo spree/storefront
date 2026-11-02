@@ -122,6 +122,7 @@ export default function RegisterPage() {
                 <Input
                   type="text"
                   id="firstName"
+                  autoComplete="given-name"
                   value={firstName}
                   onChange={(e) => setFirstName(e.target.value)}
                   required
@@ -134,6 +135,7 @@ export default function RegisterPage() {
                 <Input
                   type="text"
                   id="lastName"
+                  autoComplete="family-name"
                   value={lastName}
                   onChange={(e) => setLastName(e.target.value)}
                   required
@@ -146,6 +148,8 @@ export default function RegisterPage() {
               <FieldLabel htmlFor="email">{ta("email")}</FieldLabel>
               <Input
                 type="email"
+                autoComplete="email"
+                spellCheck={false}
                 id="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
@@ -160,6 +164,7 @@ export default function RegisterPage() {
                 <Input
                   type={showPassword ? "text" : "password"}
                   id="password"
+                  autoComplete="new-password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   required
@@ -195,6 +200,7 @@ export default function RegisterPage() {
                 <Input
                   type={showPasswordConfirmation ? "text" : "password"}
                   id="passwordConfirmation"
+                  autoComplete="new-password"
                   value={passwordConfirmation}
                   onChange={(e) => setPasswordConfirmation(e.target.value)}
                   required

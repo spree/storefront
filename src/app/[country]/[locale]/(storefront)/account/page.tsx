@@ -103,6 +103,7 @@ export default function AccountPage() {
                 <FieldLabel htmlFor="email">{t("email")}</FieldLabel>
                 <Input
                   type="email"
+                  spellCheck={false}
                   id="email"
                   name="email"
                   autoComplete="email"
