@@ -419,11 +419,12 @@
     "invoiceCompanyName": "Firmenname",
     "invoiceTaxId": "USt-IdNr. oder Steuernummer",
     "sendInvoiceRequest": "Anfrage senden",
-    "cancel": "Abbrechen",
     "invoiceRequested": "Sie haben eine Rechnung angefordert. Sie erscheint hier, sobald sie ausgestellt ist.",
     "documentName": "Name des Dokuments",
     "documentFile": "Datei",
     "addDocument": "Dokument hinzufügen",
+    "documentTooLarge": "Wählen Sie eine Datei bis 10 MB.",
+    "paperworkError": "Etwas ist schiefgelaufen. Bitte versuchen Sie es erneut.",
     "invoiceKinds": {
       "invoice": "Rechnung",
       "receipt": "Quittung",

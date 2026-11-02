@@ -16,11 +16,13 @@ export interface OrderPaperwork {
 
 /**
  * One order's invoices, the documents the merchant made visible or the
- * customer added, and whether an invoice request is waiting.
+ * customer added, and whether an invoice request is waiting. Null when they
+ * could not be loaded, so the page doesn't offer to request an invoice the
+ * order may already have.
  */
 export async function getOrderPaperwork(
   orderId: string,
-): Promise<OrderPaperwork> {
+): Promise<OrderPaperwork | null> {
   return withFallback(
     () =>
       withAuthRefresh(async (options) => {
@@ -37,7 +39,7 @@ export async function getOrderPaperwork(
             requests.data.find((request) => request.status === "open") ?? null,
         };
       }),
-    { invoices: [], documents: [], openRequest: null },
+    null,
   );
 }
 

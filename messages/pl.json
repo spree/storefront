@@ -419,11 +419,12 @@
     "invoiceCompanyName": "Nazwa firmy",
     "invoiceTaxId": "NIP lub numer VAT",
     "sendInvoiceRequest": "Wyślij prośbę",
-    "cancel": "Anuluj",
     "invoiceRequested": "Poprosiłeś o fakturę. Pojawi się tutaj po wystawieniu.",
     "documentName": "Nazwa dokumentu",
     "documentFile": "Plik",
     "addDocument": "Dodaj dokument",
+    "documentTooLarge": "Wybierz plik o rozmiarze do 10 MB.",
+    "paperworkError": "Coś poszło nie tak. Spróbuj ponownie.",
     "invoiceKinds": {
       "invoice": "Faktura",
       "receipt": "Paragon",

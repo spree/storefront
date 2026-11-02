@@ -419,11 +419,12 @@
     "invoiceCompanyName": "Nom de l'entreprise",
     "invoiceTaxId": "Numéro de TVA ou fiscal",
     "sendInvoiceRequest": "Envoyer la demande",
-    "cancel": "Annuler",
     "invoiceRequested": "Vous avez demandé une facture. Elle apparaîtra ici dès son émission.",
     "documentName": "Nom du document",
     "documentFile": "Fichier",
     "addDocument": "Ajouter un document",
+    "documentTooLarge": "Choisissez un fichier de 10 Mo maximum.",
+    "paperworkError": "Une erreur est survenue. Veuillez réessayer.",
     "invoiceKinds": {
       "invoice": "Facture",
       "receipt": "Reçu",

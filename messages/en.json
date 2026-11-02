@@ -419,11 +419,12 @@
     "invoiceCompanyName": "Company name",
     "invoiceTaxId": "VAT or tax number",
     "sendInvoiceRequest": "Send request",
-    "cancel": "Cancel",
     "invoiceRequested": "You asked for an invoice. It will appear here once it is issued.",
     "documentName": "Document name",
     "documentFile": "File",
     "addDocument": "Add document",
+    "documentTooLarge": "Choose a file up to 10 MB.",
+    "paperworkError": "Something went wrong. Please try again.",
     "invoiceKinds": {
       "invoice": "Invoice",
       "receipt": "Receipt",

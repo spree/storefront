@@ -7,9 +7,13 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { requestInvoice, uploadOrderDocument } from "@/lib/data/invoices";
 
+// Spree's limit for an order document.
+const MAX_DOCUMENT_BYTES = 10 * 1024 * 1024;
+
 /** Asks the seller for an invoice, with the company details to print on it. */
 export function InvoiceRequestForm({ orderId }: { orderId: string }) {
   const t = useTranslations("orders");
+  const tCommon = useTranslations("common");
   const [open, setOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
@@ -32,11 +36,15 @@ export function InvoiceRequestForm({ orderId }: { orderId: string }) {
         const formData = new FormData(event.currentTarget);
         startTransition(async () => {
           setError(null);
-          const result = await requestInvoice(orderId, {
-            company_name: String(formData.get("company_name") ?? ""),
-            tax_id: String(formData.get("tax_id") ?? ""),
-          });
-          if (!result.success) setError(result.error);
+          try {
+            const result = await requestInvoice(orderId, {
+              company_name: String(formData.get("company_name") ?? ""),
+              tax_id: String(formData.get("tax_id") ?? ""),
+            });
+            if (!result.success) setError(result.error);
+          } catch {
+            setError(t("paperworkError"));
+          }
         });
       }}
     >
@@ -63,7 +71,7 @@ export function InvoiceRequestForm({ orderId }: { orderId: string }) {
           size="sm"
           onClick={() => setOpen(false)}
         >
-          {t("cancel")}
+          {tCommon("cancel")}
         </Button>
       </div>
     </form>
@@ -83,11 +91,21 @@ export function DocumentUploadForm({ orderId }: { orderId: string }) {
         event.preventDefault();
         const form = event.currentTarget;
         const formData = new FormData(form);
+        const file = formData.get("file");
+        // Checked here because a larger file fails Next's body limit before the action runs.
+        if (file instanceof File && file.size > MAX_DOCUMENT_BYTES) {
+          setError(t("documentTooLarge"));
+          return;
+        }
         startTransition(async () => {
           setError(null);
-          const result = await uploadOrderDocument(orderId, formData);
-          if (result.success) form.reset();
-          else setError(result.error);
+          try {
+            const result = await uploadOrderDocument(orderId, formData);
+            if (result.success) form.reset();
+            else setError(result.error);
+          } catch {
+            setError(t("paperworkError"));
+          }
         });
       }}
     >

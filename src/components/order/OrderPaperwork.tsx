@@ -2,6 +2,7 @@ import { formatMoney } from "@spree/sdk";
 import { FileText } from "lucide-react";
 import { getTranslations } from "next-intl/server";
 import { getOrderPaperwork } from "@/lib/data/invoices";
+import { formatDate } from "@/lib/utils/format";
 import { DocumentUploadForm, InvoiceRequestForm } from "./OrderPaperworkForms";
 
 /**
@@ -23,7 +24,10 @@ export async function OrderPaperwork({
     locale: locale as Locale,
     namespace: "orders",
   });
-  const { invoices, documents, openRequest } = await getOrderPaperwork(orderId);
+  const paperwork = await getOrderPaperwork(orderId);
+  if (!paperwork) return null;
+
+  const { invoices, documents, openRequest } = paperwork;
   const hasInvoice = invoices.some((invoice) => invoice.kind === "invoice");
   const fileUrl = (kind: "invoices" | "documents", id: string) =>
     `/api/orders/${orderId}/files/${kind}/${id}`;
@@ -56,7 +60,7 @@ export async function OrderPaperwork({
                 {invoice.number}
               </a>
               <span className="text-gray-500">
-                {invoice.issued_on} ·{" "}
+                {formatDate(invoice.issued_on, "-", locale, "UTC")} ·{" "}
                 {formatMoney(invoice.total, invoice.currency, locale)}
               </span>
             </li>
