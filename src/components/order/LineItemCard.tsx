@@ -3,6 +3,7 @@
 import type { Order } from "@spree/sdk";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
+import { LineItemGiftCardDetails } from "@/components/gift-cards/LineItemGiftCardDetails";
 import { ProductImage } from "@/components/ui/product-image";
 import { useFormatMoney } from "@/hooks/useFormatMoney";
 import { lineItemAmount } from "@/lib/utils/price";
@@ -43,6 +44,7 @@ export function LineItemCard({ item, basePath }: LineItemCardProps) {
         {item.options_text && (
           <p className="mt-1 text-xs text-gray-500">{item.options_text}</p>
         )}
+        <LineItemGiftCardDetails item={item} />
         <p className="mt-1 text-xs text-gray-500">
           {t("qty", { quantity: item.quantity })}
         </p>

@@ -6,6 +6,12 @@ import Link from "next/link";
 import { useTranslations } from "next-intl";
 import { useEffect, useMemo, useState } from "react";
 import { QuantityPickerField } from "@/components/cart/QuantityPickerField";
+import {
+  EMPTY_RECIPIENT_DRAFT,
+  GiftCardRecipientFields,
+  isRecipientDraftComplete,
+  recipientFromDraft,
+} from "@/components/gift-cards/GiftCardRecipientFields";
 import { HiddenPricePrompt } from "@/components/products/HiddenPricePrompt";
 import { MediaGallery } from "@/components/products/MediaGallery";
 import { ProductCustomFields } from "@/components/products/ProductCustomFields";
@@ -56,6 +62,9 @@ export function ProductDetails({ product, basePath }: ProductDetailsProps) {
 
   const [quantity, setQuantity] = useState(1);
   const [loading, setLoading] = useState(false);
+  const [recipientDraft, setRecipientDraft] = useState(EMPTY_RECIPIENT_DRAFT);
+  const recipientReady =
+    !product.gift_card || isRecipientDraftComplete(recipientDraft);
 
   // Track product view (analytics - client-only side effect)
   useEffect(() => {
@@ -108,8 +117,14 @@ export function ProductDetails({ product, basePath }: ProductDetailsProps) {
     }
 
     setLoading(true);
-    await addItem(variantId, quantity);
+    await addItem(
+      variantId,
+      quantity,
+      product.gift_card ? recipientFromDraft(recipientDraft) : undefined,
+    );
     setLoading(false);
+    // A second card is usually for someone else, so the form starts over.
+    setRecipientDraft(EMPTY_RECIPIENT_DRAFT);
     trackAddToCart(product, selectedVariant, quantity, currency);
   };
 
@@ -177,6 +192,15 @@ export function ProductDetails({ product, basePath }: ProductDetailsProps) {
             </div>
           )}
 
+          {product.gift_card && !pricesHidden && (
+            <div className="mt-8">
+              <GiftCardRecipientFields
+                draft={recipientDraft}
+                onChange={setRecipientDraft}
+              />
+            </div>
+          )}
+
           {/* Quantity & Add to Cart */}
           <div className="mt-8">
             {pricesHidden ? (
@@ -199,7 +223,7 @@ export function ProductDetails({ product, basePath }: ProductDetailsProps) {
                 <Button
                   size="lg"
                   onClick={handleAddToCart}
-                  disabled={loading || !isPurchasable}
+                  disabled={loading || !isPurchasable || !recipientReady}
                 >
                   {loading ? (
                     <>
