@@ -2,6 +2,7 @@
 
 import type { Invoice, InvoiceRequest, OrderDocument } from "@spree/sdk";
 import { revalidatePath } from "next/cache";
+import { MAX_ORDER_DOCUMENT_BYTES } from "@/lib/constants/order-documents";
 import { getClient, withAuthRefresh } from "@/lib/spree";
 import { actionResult, withFallback } from "./utils";
 
@@ -71,6 +72,9 @@ export async function uploadOrderDocument(orderId: string, formData: FormData) {
     const label = String(formData.get("label") ?? "").trim();
     if (!(file instanceof File) || file.size === 0) {
       throw new Error("Choose a file to upload");
+    }
+    if (file.size > MAX_ORDER_DOCUMENT_BYTES) {
+      throw new Error("Choose a file up to 10 MB");
     }
 
     // Two calls, so a token refresh before `create` doesn't store the file twice.

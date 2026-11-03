@@ -423,6 +423,7 @@
     "documentName": "Nazwa dokumentu",
     "documentFile": "Plik",
     "addDocument": "Dodaj dokument",
+    "documentEmpty": "Wybierz plik do przesłania.",
     "documentTooLarge": "Wybierz plik o rozmiarze do 10 MB.",
     "paperworkError": "Coś poszło nie tak. Spróbuj ponownie.",
     "invoiceKinds": {

@@ -423,6 +423,7 @@
     "documentName": "Name des Dokuments",
     "documentFile": "Datei",
     "addDocument": "Dokument hinzufügen",
+    "documentEmpty": "Wählen Sie eine Datei zum Hochladen.",
     "documentTooLarge": "Wählen Sie eine Datei bis 10 MB.",
     "paperworkError": "Etwas ist schiefgelaufen. Bitte versuchen Sie es erneut.",
     "invoiceKinds": {

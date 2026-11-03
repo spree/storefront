@@ -5,10 +5,8 @@ import { useState, useTransition } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { MAX_ORDER_DOCUMENT_BYTES } from "@/lib/constants/order-documents";
 import { requestInvoice, uploadOrderDocument } from "@/lib/data/invoices";
-
-// Spree's limit for an order document.
-const MAX_DOCUMENT_BYTES = 10 * 1024 * 1024;
 
 /** Asks the seller for an invoice, with the company details to print on it. */
 export function InvoiceRequestForm({ orderId }: { orderId: string }) {
@@ -92,8 +90,13 @@ export function DocumentUploadForm({ orderId }: { orderId: string }) {
         const form = event.currentTarget;
         const formData = new FormData(form);
         const file = formData.get("file");
+        // An empty file passes `required`.
+        if (!(file instanceof File) || file.size === 0) {
+          setError(t("documentEmpty"));
+          return;
+        }
         // Checked here because a larger file fails Next's body limit before the action runs.
-        if (file instanceof File && file.size > MAX_DOCUMENT_BYTES) {
+        if (file.size > MAX_ORDER_DOCUMENT_BYTES) {
           setError(t("documentTooLarge"));
           return;
         }

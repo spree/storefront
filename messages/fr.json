@@ -423,6 +423,7 @@
     "documentName": "Nom du document",
     "documentFile": "Fichier",
     "addDocument": "Ajouter un document",
+    "documentEmpty": "Choisissez un fichier à téléverser.",
     "documentTooLarge": "Choisissez un fichier de 10 Mo maximum.",
     "paperworkError": "Une erreur est survenue. Veuillez réessayer.",
     "invoiceKinds": {

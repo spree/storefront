@@ -423,6 +423,7 @@
     "documentName": "Nombre del documento",
     "documentFile": "Archivo",
     "addDocument": "Añadir documento",
+    "documentEmpty": "Elige un archivo para subir.",
     "documentTooLarge": "Elige un archivo de hasta 10 MB.",
     "paperworkError": "Algo salió mal. Inténtalo de nuevo.",
     "invoiceKinds": {
