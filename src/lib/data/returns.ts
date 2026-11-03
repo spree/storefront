@@ -68,6 +68,7 @@ export async function getOrderForReturns(
 export async function getReturnReasons(): Promise<ReturnReason[]> {
   return withFallback(async () => {
     const response = await getClient().returnReasons.list(
+      undefined,
       await getLocaleOptions(),
     );
     return response.data;
