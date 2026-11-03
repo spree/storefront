@@ -682,5 +682,89 @@
     "description": "Strona, której szukasz, nie istnieje lub nie jest już dostępna.",
     "backHome": "Przejdź do strony głównej",
     "browseProducts": "Zobacz wszystkie produkty"
+  },
+  "returns": {
+    "sectionTitle": "Zwroty i wymiany",
+    "orderLabel": "Zamówienie {number}",
+    "start": "Zwróć lub wymień produkty",
+    "withdrawalDeadline": "Możesz odstąpić od tego zakupu do {date}.",
+    "withdrawalPending": "Twoje 14-dniowe prawo odstąpienia zaczyna się, gdy otrzymasz zamówienie.",
+    "returnWindow": "Zwroty przyjmujemy do {date}.",
+    "policyLink": "Przeczytaj naszą politykę zwrotów",
+    "returnNumber": "Zwrot {number}",
+    "exchangeNumber": "Wymiana {number}",
+    "refundTotal": "Zwrot środków {amount}",
+    "downloadLabel": "Pobierz etykietę zwrotną",
+    "track": "Śledź przesyłkę",
+    "withdraw": "Wycofaj zgłoszenie",
+    "withdrawConfirm": "Wycofać to zgłoszenie? Możesz później złożyć nowe.",
+    "withdrawn": "Zgłoszenie wycofane",
+    "status": {
+      "requested": "Zgłoszony",
+      "approved": "Zaakceptowany: odeślij produkty",
+      "received": "Produkty otrzymane",
+      "refunded": "Zwrócono środki",
+      "fulfilled": "Wysłano wymianę",
+      "canceled": "Wycofany"
+    },
+    "nonReturnable": {
+      "already_returned": "Już zwrócony",
+      "not_returnable": "Wyprzedaż: bez zwrotu",
+      "digital_content": "Treści cyfrowych nie można zwrócić",
+      "not_shipped": "Jeszcze nie wysłano",
+      "outside_return_window": "Termin zwrotu minął",
+      "order_canceled": "Zamówienie anulowane",
+      "default": "Nie podlega zwrotowi"
+    },
+    "form": {
+      "title": "Zwróć lub wymień produkty",
+      "subtitle": "Zamówienie {number}",
+      "backToOrder": "Wróć do zamówienia",
+      "notFound": "Nie udało się otworzyć zamówienia",
+      "findOrder": "Znajdź zamówienie",
+      "nothingToReturn": "Z tego zamówienia nie można teraz niczego zwrócić.",
+      "progress": "Postęp",
+      "step": {
+        "items": "Wybierz produkty",
+        "reason": "Podaj powód",
+        "review": "Sprawdź"
+      },
+      "quantity": "Ilość",
+      "mode": {
+        "return": "Zwrot ze zwrotem pieniędzy",
+        "exchange": "Wymiana na inny wariant"
+      },
+      "loading": "Wczytywanie opcji…",
+      "noVariants": "Inny wariant nie jest teraz dostępny. Możesz zamiast tego zwrócić produkt.",
+      "chooseVariant": "Wymień na",
+      "chooseVariantPlaceholder": "Wybierz wariant",
+      "noneSelected": "Wybierz co najmniej jeden produkt.",
+      "reason": "Powód",
+      "reasonPlaceholder": "Wybierz powód (opcjonalnie)",
+      "note": "Czy chcesz nam coś przekazać? (opcjonalnie)",
+      "reviewReturn": "Zwracasz {quantity} × {name}",
+      "reviewExchange": "Wymieniasz {quantity} × {name} na {variant}",
+      "refundMethod": "Pieniądze wracają na użytą metodę płatności, w ciągu 14 dni od otrzymania produktów lub dowodu ich odesłania.",
+      "shippingCost": "Jeśli nie wyślemy Ci opłaconej etykiety, koszt odesłania produktów ponosisz Ty.",
+      "cancel": "Anuluj",
+      "back": "Wstecz",
+      "next": "Dalej",
+      "submit": "Wyślij zgłoszenie",
+      "submitting": "Wysyłanie…",
+      "doneTitle": "Zgłoszenie wysłane",
+      "doneNumbers": "Numer zgłoszenia: {numbers}",
+      "doneBody": "Wysłaliśmy potwierdzenie e-mailem. Poinformujemy Cię, dokąd odesłać produkty.",
+      "viewRequest": "Zobacz zgłoszenie w zamówieniu"
+    },
+    "find": {
+      "title": "Znajdź zamówienie",
+      "description": "Podaj numer zamówienia i adres e-mail użyty przy zakupie. Wyślemy Ci link do zamówienia.",
+      "number": "Numer zamówienia",
+      "email": "E-mail",
+      "submit": "Wyślij mi link",
+      "sent": "Jeśli znaleźliśmy zamówienie o tych danych, wysłaliśmy do niego link. Sprawdź skrzynkę odbiorczą i folder spam.",
+      "failed": "Coś poszło nie tak. Spróbuj ponownie za chwilę.",
+      "linkExpired": "Link może być niepełny. Poproś poniżej o nowy."
+    }
   }
 }

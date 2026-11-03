@@ -682,5 +682,89 @@
     "description": "The page you are looking for does not exist or is no longer available.",
     "backHome": "Go to the home page",
     "browseProducts": "Browse all products"
+  },
+  "returns": {
+    "sectionTitle": "Returns & exchanges",
+    "orderLabel": "Order {number}",
+    "start": "Return or exchange items",
+    "withdrawalDeadline": "You can withdraw from this purchase until {date}.",
+    "withdrawalPending": "Your 14-day right to withdraw starts when your order arrives.",
+    "returnWindow": "Returns are accepted until {date}.",
+    "policyLink": "Read our return policy",
+    "returnNumber": "Return {number}",
+    "exchangeNumber": "Exchange {number}",
+    "refundTotal": "Refund {amount}",
+    "downloadLabel": "Download return label",
+    "track": "Track parcel",
+    "withdraw": "Withdraw request",
+    "withdrawConfirm": "Withdraw this request? You can open a new one later.",
+    "withdrawn": "Request withdrawn",
+    "status": {
+      "requested": "Requested",
+      "approved": "Approved: send the items",
+      "received": "Items received",
+      "refunded": "Refunded",
+      "fulfilled": "Replacement sent",
+      "canceled": "Withdrawn"
+    },
+    "nonReturnable": {
+      "already_returned": "Already returned",
+      "not_returnable": "Final sale: not returnable",
+      "digital_content": "Digital content cannot be returned",
+      "not_shipped": "Not shipped yet",
+      "outside_return_window": "Return window closed",
+      "order_canceled": "Order canceled",
+      "default": "Not returnable"
+    },
+    "form": {
+      "title": "Return or exchange items",
+      "subtitle": "Order {number}",
+      "backToOrder": "Back to order",
+      "notFound": "We could not open this order",
+      "findOrder": "Find your order",
+      "nothingToReturn": "There is nothing on this order you can send back right now.",
+      "progress": "Progress",
+      "step": {
+        "items": "Choose items",
+        "reason": "Tell us why",
+        "review": "Review"
+      },
+      "quantity": "Quantity",
+      "mode": {
+        "return": "Return for a refund",
+        "exchange": "Exchange for another option"
+      },
+      "loading": "Loading options…",
+      "noVariants": "No other option is available right now. You can return it instead.",
+      "chooseVariant": "Exchange for",
+      "chooseVariantPlaceholder": "Choose an option",
+      "noneSelected": "Choose at least one item to continue.",
+      "reason": "Reason",
+      "reasonPlaceholder": "Choose a reason (optional)",
+      "note": "Anything we should know? (optional)",
+      "reviewReturn": "Returning {quantity} × {name}",
+      "reviewExchange": "Exchanging {quantity} × {name} for {variant}",
+      "refundMethod": "Refunds go back to the payment method you used, within 14 days of us receiving the items or proof that you sent them.",
+      "shippingCost": "Unless we send you a prepaid label, you pay for sending the items back.",
+      "cancel": "Cancel",
+      "back": "Back",
+      "next": "Continue",
+      "submit": "Send request",
+      "submitting": "Sending…",
+      "doneTitle": "Request sent",
+      "doneNumbers": "Your request number: {numbers}",
+      "doneBody": "We have emailed you a confirmation. We will let you know where to send the items.",
+      "viewRequest": "See your request on the order"
+    },
+    "find": {
+      "title": "Find your order",
+      "description": "Enter your order number and the email you ordered with. We will email you a link to the order, where you can follow it and return items.",
+      "number": "Order number",
+      "email": "Email",
+      "submit": "Email me a link",
+      "sent": "If we found an order for these details, we have emailed a link to it. Check your inbox and your spam folder, and make sure you used the email from your order.",
+      "failed": "Something went wrong. Please try again in a moment.",
+      "linkExpired": "The link may be incomplete. Ask for a new one below."
+    }
   }
 }

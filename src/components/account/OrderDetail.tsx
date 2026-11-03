@@ -1,5 +1,5 @@
 import type { Order, OrderGroup } from "@spree/sdk";
-import { formatMoney } from "@spree/sdk";
+import { formatMoney, isOrderGroup } from "@spree/sdk";
 import { ChevronLeft } from "lucide-react";
 import Link from "next/link";
 import { getTranslations } from "next-intl/server";
@@ -8,6 +8,8 @@ import { FulfillmentBlock } from "@/components/order/FulfillmentBlock";
 import { LineItemCard } from "@/components/order/LineItemCard";
 import { OrderTotals } from "@/components/order/OrderTotals";
 import { PaymentInfo } from "@/components/order/PaymentInfo";
+import { ReturnsSection } from "@/components/returns/ReturnsSection";
+import type { OrderAccess } from "@/lib/data/returns";
 import { formatDateTime } from "@/lib/utils/format";
 import { toPurchase } from "@/lib/utils/purchase";
 
@@ -19,12 +21,18 @@ interface OrderDetailProps {
   order: Order | OrderGroup;
   basePath: string;
   locale: string;
+  /**
+   * Set for a guest who opened the order from an emailed link: the order
+   * token stands in for a login, and there is no account to go back to.
+   */
+  access?: OrderAccess;
 }
 
 export async function OrderDetail({
   order,
   basePath,
   locale,
+  access,
 }: OrderDetailProps) {
   const t = await getTranslations({
     locale: locale as Locale,
@@ -36,13 +44,15 @@ export async function OrderDetail({
 
   return (
     <div>
-      <Link
-        href={`${basePath}/account/orders`}
-        className="text-sm text-gray-500 hover:text-gray-700 mb-4 inline-flex items-center gap-1"
-      >
-        <ChevronLeft className="w-4 h-4" />
-        {t("backToOrders")}
-      </Link>
+      {!access && (
+        <Link
+          href={`${basePath}/account/orders`}
+          className="text-sm text-gray-500 hover:text-gray-700 mb-4 inline-flex items-center gap-1"
+        >
+          <ChevronLeft className="w-4 h-4" />
+          {t("backToOrders")}
+        </Link>
+      )}
 
       <h1 className="text-2xl font-bold text-gray-900">
         {t("orderTitle", { number: purchase.number })}
@@ -136,9 +146,21 @@ export async function OrderDetail({
         </div>
       </div>
 
-      <div className="bg-white rounded-xl border border-gray-200 p-6">
+      <div className="bg-white rounded-xl border border-gray-200 p-6 mb-4">
         <OrderTotals order={purchase.totals} />
       </div>
+
+      <ReturnsSection
+        orders={isOrderGroup(order) ? order.orders : [order]}
+        basePath={basePath}
+        locale={locale}
+        access={access}
+        requestHref={(sellerOrder) =>
+          access?.orderToken
+            ? `${basePath}/orders/${sellerOrder.id}/return?token=${encodeURIComponent(access.orderToken)}`
+            : `${basePath}/account/orders/${sellerOrder.id}/return`
+        }
+      />
     </div>
   );
 }

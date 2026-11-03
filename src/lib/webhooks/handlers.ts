@@ -4,7 +4,9 @@ import { createElement } from "react";
 import { DataRequestConfirmationEmail } from "@/lib/emails/data-request-confirmation";
 import { OrderCanceledEmail } from "@/lib/emails/order-canceled";
 import { OrderConfirmationEmail } from "@/lib/emails/order-confirmation";
+import { OrderLookupEmail } from "@/lib/emails/order-lookup";
 import { PasswordResetEmail } from "@/lib/emails/password-reset";
+import { ReturnRequestedEmail } from "@/lib/emails/return-requested";
 import { sendEmail } from "@/lib/emails/send";
 import { ShipmentShippedEmail } from "@/lib/emails/shipment-shipped";
 import { getStoreName, getStoreUrl } from "@/lib/store";
@@ -264,6 +266,152 @@ export async function handleDataRequestConfirmation(
     react: createElement(DataRequestConfirmationEmail, {
       confirmUrl: url.toString(),
       kind: erasure ? "erasure" : "access",
+    }),
+  });
+
+  markProcessed(event.id);
+}
+
+/**
+ * Where a returns email sends the customer. The webhook carries no order
+ * token — it is a credential — so the email links to the account's order page
+ * and, for a guest, to "Find your order" with the number filled in.
+ */
+function returnLinks(order: Order): { orderUrl: string; findUrl: string } {
+  if (!SITE_URL) {
+    throw new Error(
+      "Missing NEXT_PUBLIC_SITE_URL configuration — cannot build order link",
+    );
+  }
+  const findUrl = new URL("/orders/find", SITE_URL);
+  findUrl.searchParams.set("number", order.number);
+  return {
+    orderUrl: new URL(`/account/orders/${order.id}`, SITE_URL).toString(),
+    findUrl: findUrl.toString(),
+  };
+}
+
+/** The order's own line, which carries the name the customer bought. */
+function lineOf(order: Order, lineItemId: string | null) {
+  return (order.items ?? []).find((item) => item.id === lineItemId);
+}
+
+/** A guest's order page, opened with the order token from "find my order". */
+function guestOrderUrl(orderId: string, token: string): string {
+  if (!SITE_URL) {
+    throw new Error(
+      "Missing NEXT_PUBLIC_SITE_URL configuration — cannot build order link",
+    );
+  }
+  const url = new URL(`/orders/${orderId}`, SITE_URL);
+  url.searchParams.set("token", token);
+  return url.toString();
+}
+
+function policyUrl(): string {
+  return new URL(
+    "/policies/return-policy",
+    SITE_URL ?? "http://localhost",
+  ).toString();
+}
+
+function customerNameOf(order: Order): string {
+  return (
+    order.shipping_address?.full_name || order.billing_address?.full_name || ""
+  );
+}
+
+/**
+ * Handle return.requested webhook — acknowledge a return request. The EU
+ * Consumer Rights Directive asks for this confirmation without delay; the
+ * payload carries the order and the lines so nothing else is fetched.
+ */
+export async function handleReturnRequested(
+  event: WebhookEvent<"return.requested">,
+) {
+  if (isAlreadyProcessed(event.id)) return;
+  const record = event.data;
+  const order = record.order;
+  if (!order?.email) return;
+
+  await sendEmail({
+    to: order.email,
+    subject: `${STORE_NAME} Return request ${record.number} received`,
+    react: createElement(ReturnRequestedEmail, {
+      kind: "return",
+      requestNumber: record.number,
+      orderNumber: order.number,
+      orderDate: new Date(order.completed_at ?? Date.now()).toLocaleDateString(
+        order.locale ?? "en",
+      ),
+      customerName: customerNameOf(order),
+      lines: (record.return_line_items ?? []).map((line) => ({
+        name: lineOf(order, line.line_item_id)?.name ?? "",
+        options_text: lineOf(order, line.line_item_id)?.options_text,
+        quantity: line.quantity,
+      })),
+      reason: record.reason?.name,
+      ...returnLinks(order),
+      policyUrl: policyUrl(),
+    }),
+  });
+
+  markProcessed(event.id);
+}
+
+/** Handle exchange.requested webhook — acknowledge an exchange request. */
+export async function handleExchangeRequested(
+  event: WebhookEvent<"exchange.requested">,
+) {
+  if (isAlreadyProcessed(event.id)) return;
+  const record = event.data;
+  const order = record.order;
+  if (!order?.email) return;
+
+  await sendEmail({
+    to: order.email,
+    subject: `${STORE_NAME} Exchange request ${record.number} received`,
+    react: createElement(ReturnRequestedEmail, {
+      kind: "exchange",
+      requestNumber: record.number,
+      orderNumber: order.number,
+      orderDate: new Date(order.completed_at ?? Date.now()).toLocaleDateString(
+        order.locale ?? "en",
+      ),
+      customerName: customerNameOf(order),
+      lines: (record.exchange_line_items ?? []).map((line) => ({
+        name: lineOf(order, line.line_item_id)?.name ?? "",
+        options_text: lineOf(order, line.line_item_id)?.options_text,
+        quantity: line.quantity,
+        replacement: line.new_variant?.options_text,
+      })),
+      reason: record.reason?.name,
+      ...returnLinks(order),
+      policyUrl: policyUrl(),
+    }),
+  });
+
+  markProcessed(event.id);
+}
+
+/**
+ * Handle order.lookup_requested webhook — email a guest the link to their
+ * order. Spree sends this only when the number and email matched, and only to
+ * the order's own address.
+ */
+export async function handleOrderLookup(
+  event: WebhookEvent<"order.lookup_requested">,
+) {
+  if (isAlreadyProcessed(event.id)) return;
+  const { email, number, order_token, id } = event.data;
+  if (!email || !order_token || !id) return;
+
+  await sendEmail({
+    to: email,
+    subject: `${STORE_NAME} Your order ${number}`,
+    react: createElement(OrderLookupEmail, {
+      orderNumber: number,
+      orderUrl: guestOrderUrl(id, order_token),
     }),
   });
 

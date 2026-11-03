@@ -682,5 +682,89 @@
     "description": "Die gesuchte Seite existiert nicht oder ist nicht mehr verfügbar.",
     "backHome": "Zur Startseite",
     "browseProducts": "Alle Produkte ansehen"
+  },
+  "returns": {
+    "sectionTitle": "Rücksendungen & Umtausch",
+    "orderLabel": "Bestellung {number}",
+    "start": "Artikel zurücksenden oder umtauschen",
+    "withdrawalDeadline": "Sie können bis zum {date} von diesem Kauf zurücktreten.",
+    "withdrawalPending": "Ihr 14-tägiges Widerrufsrecht beginnt, sobald Ihre Bestellung ankommt.",
+    "returnWindow": "Rücksendungen sind bis zum {date} möglich.",
+    "policyLink": "Unsere Rückgabebedingungen lesen",
+    "returnNumber": "Rücksendung {number}",
+    "exchangeNumber": "Umtausch {number}",
+    "refundTotal": "Erstattung {amount}",
+    "downloadLabel": "Rücksendeetikett herunterladen",
+    "track": "Sendung verfolgen",
+    "withdraw": "Anfrage zurückziehen",
+    "withdrawConfirm": "Diese Anfrage zurückziehen? Sie können später eine neue stellen.",
+    "withdrawn": "Anfrage zurückgezogen",
+    "status": {
+      "requested": "Angefragt",
+      "approved": "Genehmigt: Artikel zurücksenden",
+      "received": "Artikel erhalten",
+      "refunded": "Erstattet",
+      "fulfilled": "Ersatz versendet",
+      "canceled": "Zurückgezogen"
+    },
+    "nonReturnable": {
+      "already_returned": "Bereits zurückgesendet",
+      "not_returnable": "Vom Umtausch ausgeschlossen",
+      "digital_content": "Digitale Inhalte können nicht zurückgegeben werden",
+      "not_shipped": "Noch nicht versendet",
+      "outside_return_window": "Rückgabefrist abgelaufen",
+      "order_canceled": "Bestellung storniert",
+      "default": "Nicht rücksendbar"
+    },
+    "form": {
+      "title": "Artikel zurücksenden oder umtauschen",
+      "subtitle": "Bestellung {number}",
+      "backToOrder": "Zurück zur Bestellung",
+      "notFound": "Wir konnten diese Bestellung nicht öffnen",
+      "findOrder": "Bestellung finden",
+      "nothingToReturn": "Aus dieser Bestellung kann derzeit nichts zurückgesendet werden.",
+      "progress": "Fortschritt",
+      "step": {
+        "items": "Artikel wählen",
+        "reason": "Grund angeben",
+        "review": "Prüfen"
+      },
+      "quantity": "Menge",
+      "mode": {
+        "return": "Gegen Erstattung zurücksenden",
+        "exchange": "Gegen eine andere Variante tauschen"
+      },
+      "loading": "Optionen werden geladen…",
+      "noVariants": "Derzeit ist keine andere Variante verfügbar. Sie können den Artikel stattdessen zurücksenden.",
+      "chooseVariant": "Tauschen gegen",
+      "chooseVariantPlaceholder": "Variante wählen",
+      "noneSelected": "Wählen Sie mindestens einen Artikel aus.",
+      "reason": "Grund",
+      "reasonPlaceholder": "Grund wählen (optional)",
+      "note": "Möchten Sie uns etwas mitteilen? (optional)",
+      "reviewReturn": "Rücksendung: {quantity} × {name}",
+      "reviewExchange": "Umtausch: {quantity} × {name} gegen {variant}",
+      "refundMethod": "Die Erstattung erfolgt auf das verwendete Zahlungsmittel, innerhalb von 14 Tagen nach Eingang der Artikel oder eines Versandnachweises.",
+      "shippingCost": "Sofern wir Ihnen kein vorfrankiertes Etikett senden, tragen Sie die Kosten der Rücksendung.",
+      "cancel": "Abbrechen",
+      "back": "Zurück",
+      "next": "Weiter",
+      "submit": "Anfrage senden",
+      "submitting": "Wird gesendet…",
+      "doneTitle": "Anfrage gesendet",
+      "doneNumbers": "Ihre Anfragenummer: {numbers}",
+      "doneBody": "Wir haben Ihnen eine Bestätigung per E-Mail gesendet und teilen Ihnen mit, wohin Sie die Artikel schicken.",
+      "viewRequest": "Anfrage in der Bestellung ansehen"
+    },
+    "find": {
+      "title": "Bestellung finden",
+      "description": "Geben Sie Ihre Bestellnummer und die bei der Bestellung verwendete E-Mail-Adresse ein. Wir senden Ihnen einen Link zu Ihrer Bestellung.",
+      "number": "Bestellnummer",
+      "email": "E-Mail",
+      "submit": "Link senden",
+      "sent": "Wenn wir eine passende Bestellung gefunden haben, haben wir Ihnen einen Link gesendet. Prüfen Sie Ihren Posteingang und den Spam-Ordner.",
+      "failed": "Etwas ist schiefgelaufen. Bitte versuchen Sie es gleich noch einmal.",
+      "linkExpired": "Der Link ist möglicherweise unvollständig. Fordern Sie unten einen neuen an."
+    }
   }
 }

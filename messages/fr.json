@@ -682,5 +682,89 @@
     "description": "La page que vous recherchez n'existe pas ou n'est plus disponible.",
     "backHome": "Aller à la page d'accueil",
     "browseProducts": "Voir tous les produits"
+  },
+  "returns": {
+    "sectionTitle": "Retours et échanges",
+    "orderLabel": "Commande {number}",
+    "start": "Retourner ou échanger des articles",
+    "withdrawalDeadline": "Vous pouvez vous rétracter de cet achat jusqu'au {date}.",
+    "withdrawalPending": "Votre droit de rétractation de 14 jours commence à la réception de votre commande.",
+    "returnWindow": "Les retours sont acceptés jusqu'au {date}.",
+    "policyLink": "Lire notre politique de retour",
+    "returnNumber": "Retour {number}",
+    "exchangeNumber": "Échange {number}",
+    "refundTotal": "Remboursement {amount}",
+    "downloadLabel": "Télécharger l'étiquette de retour",
+    "track": "Suivre le colis",
+    "withdraw": "Retirer la demande",
+    "withdrawConfirm": "Retirer cette demande ? Vous pourrez en créer une autre plus tard.",
+    "withdrawn": "Demande retirée",
+    "status": {
+      "requested": "Demandé",
+      "approved": "Accepté : renvoyez les articles",
+      "received": "Articles reçus",
+      "refunded": "Remboursé",
+      "fulfilled": "Remplacement expédié",
+      "canceled": "Retiré"
+    },
+    "nonReturnable": {
+      "already_returned": "Déjà retourné",
+      "not_returnable": "Vente finale : non retournable",
+      "digital_content": "Le contenu numérique ne peut pas être retourné",
+      "not_shipped": "Pas encore expédié",
+      "outside_return_window": "Délai de retour dépassé",
+      "order_canceled": "Commande annulée",
+      "default": "Non retournable"
+    },
+    "form": {
+      "title": "Retourner ou échanger des articles",
+      "subtitle": "Commande {number}",
+      "backToOrder": "Retour à la commande",
+      "notFound": "Nous n'avons pas pu ouvrir cette commande",
+      "findOrder": "Retrouver votre commande",
+      "nothingToReturn": "Rien sur cette commande ne peut être retourné pour le moment.",
+      "progress": "Progression",
+      "step": {
+        "items": "Choisir les articles",
+        "reason": "Dites-nous pourquoi",
+        "review": "Vérifier"
+      },
+      "quantity": "Quantité",
+      "mode": {
+        "return": "Retourner pour un remboursement",
+        "exchange": "Échanger contre une autre option"
+      },
+      "loading": "Chargement des options…",
+      "noVariants": "Aucune autre option n'est disponible pour le moment. Vous pouvez le retourner.",
+      "chooseVariant": "Échanger contre",
+      "chooseVariantPlaceholder": "Choisir une option",
+      "noneSelected": "Choisissez au moins un article pour continuer.",
+      "reason": "Motif",
+      "reasonPlaceholder": "Choisir un motif (facultatif)",
+      "note": "Quelque chose à nous signaler ? (facultatif)",
+      "reviewReturn": "Retour de {quantity} × {name}",
+      "reviewExchange": "Échange de {quantity} × {name} contre {variant}",
+      "refundMethod": "Le remboursement est effectué sur le moyen de paiement utilisé, dans les 14 jours suivant la réception des articles ou d'une preuve d'expédition.",
+      "shippingCost": "Sauf si nous vous envoyons une étiquette prépayée, les frais de retour sont à votre charge.",
+      "cancel": "Annuler",
+      "back": "Retour",
+      "next": "Continuer",
+      "submit": "Envoyer la demande",
+      "submitting": "Envoi…",
+      "doneTitle": "Demande envoyée",
+      "doneNumbers": "Votre numéro de demande : {numbers}",
+      "doneBody": "Nous vous avons envoyé une confirmation par e-mail. Nous vous indiquerons où envoyer les articles.",
+      "viewRequest": "Voir votre demande dans la commande"
+    },
+    "find": {
+      "title": "Retrouver votre commande",
+      "description": "Saisissez votre numéro de commande et l'e-mail utilisé lors de l'achat. Nous vous enverrons un lien vers la commande.",
+      "number": "Numéro de commande",
+      "email": "E-mail",
+      "submit": "M'envoyer un lien",
+      "sent": "Si nous avons trouvé une commande correspondante, nous vous avons envoyé un lien. Vérifiez votre boîte de réception et vos spams.",
+      "failed": "Une erreur est survenue. Réessayez dans un instant.",
+      "linkExpired": "Le lien est peut-être incomplet. Demandez-en un nouveau ci-dessous."
+    }
   }
 }

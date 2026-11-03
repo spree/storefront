@@ -2,7 +2,9 @@ import { createElement, type ReactElement } from "react";
 import { DataRequestConfirmationEmail } from "@/lib/emails/data-request-confirmation";
 import { OrderCanceledEmail } from "@/lib/emails/order-canceled";
 import { OrderConfirmationEmail } from "@/lib/emails/order-confirmation";
+import { OrderLookupEmail } from "@/lib/emails/order-lookup";
 import { PasswordResetEmail } from "@/lib/emails/password-reset";
+import { ReturnRequestedEmail } from "@/lib/emails/return-requested";
 import { ShipmentShippedEmail } from "@/lib/emails/shipment-shipped";
 
 interface EmailFixture {
@@ -154,6 +156,62 @@ export const emailFixtures: EmailFixture[] = [
         confirmUrl:
           "https://example.com/account/data-requests/confirm?token=preview",
         kind: "erasure",
+      }),
+  },
+  {
+    slug: "return-requested",
+    label: "Return Request Received",
+    render: () =>
+      createElement(ReturnRequestedEmail, {
+        kind: "return",
+        requestNumber: "RET123456",
+        orderNumber: "R987654321",
+        orderDate: "October 28, 2026",
+        customerName: "Jane Smith",
+        lines: [
+          {
+            name: "Classic Tote Bag",
+            options_text: "Color: Black",
+            quantity: 1,
+          },
+        ],
+        reason: "Too small",
+        note: "Lovely bag, just not big enough.",
+        orderUrl: "https://example.com/account/orders/or_1",
+        findUrl: "https://example.com/orders/find?number=R987654321",
+        policyUrl: "https://example.com/policies/return-policy",
+      }),
+  },
+  {
+    slug: "exchange-requested",
+    label: "Exchange Request Received",
+    render: () =>
+      createElement(ReturnRequestedEmail, {
+        kind: "exchange",
+        requestNumber: "EXC123456",
+        orderNumber: "R987654321",
+        orderDate: "October 28, 2026",
+        customerName: "Jane Smith",
+        lines: [
+          {
+            name: "Organic Cotton T-Shirt",
+            options_text: "Size: M",
+            quantity: 1,
+            replacement: "Size: L",
+          },
+        ],
+        orderUrl: "https://example.com/account/orders/or_1",
+        findUrl: "https://example.com/orders/find?number=R987654321",
+        policyUrl: "https://example.com/policies/return-policy",
+      }),
+  },
+  {
+    slug: "order-lookup",
+    label: "Order Link",
+    render: () =>
+      createElement(OrderLookupEmail, {
+        orderNumber: "R987654321",
+        orderUrl: "https://example.com/orders/or_1?token=preview",
       }),
   },
 ];

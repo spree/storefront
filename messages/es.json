@@ -682,5 +682,89 @@
     "description": "La página que buscas no existe o ya no está disponible.",
     "backHome": "Ir a la página de inicio",
     "browseProducts": "Ver todos los productos"
+  },
+  "returns": {
+    "sectionTitle": "Devoluciones y cambios",
+    "orderLabel": "Pedido {number}",
+    "start": "Devolver o cambiar artículos",
+    "withdrawalDeadline": "Puedes desistir de esta compra hasta el {date}.",
+    "withdrawalPending": "Tu derecho de desistimiento de 14 días empieza cuando recibas el pedido.",
+    "returnWindow": "Aceptamos devoluciones hasta el {date}.",
+    "policyLink": "Leer nuestra política de devoluciones",
+    "returnNumber": "Devolución {number}",
+    "exchangeNumber": "Cambio {number}",
+    "refundTotal": "Reembolso {amount}",
+    "downloadLabel": "Descargar etiqueta de devolución",
+    "track": "Seguir envío",
+    "withdraw": "Retirar solicitud",
+    "withdrawConfirm": "¿Retirar esta solicitud? Puedes abrir otra más adelante.",
+    "withdrawn": "Solicitud retirada",
+    "status": {
+      "requested": "Solicitada",
+      "approved": "Aprobada: envía los artículos",
+      "received": "Artículos recibidos",
+      "refunded": "Reembolsada",
+      "fulfilled": "Reemplazo enviado",
+      "canceled": "Retirada"
+    },
+    "nonReturnable": {
+      "already_returned": "Ya devuelto",
+      "not_returnable": "Venta final: sin devolución",
+      "digital_content": "El contenido digital no se puede devolver",
+      "not_shipped": "Aún no enviado",
+      "outside_return_window": "Plazo de devolución vencido",
+      "order_canceled": "Pedido cancelado",
+      "default": "No se puede devolver"
+    },
+    "form": {
+      "title": "Devolver o cambiar artículos",
+      "subtitle": "Pedido {number}",
+      "backToOrder": "Volver al pedido",
+      "notFound": "No pudimos abrir este pedido",
+      "findOrder": "Buscar tu pedido",
+      "nothingToReturn": "Ahora mismo no hay nada en este pedido que puedas devolver.",
+      "progress": "Progreso",
+      "step": {
+        "items": "Elegir artículos",
+        "reason": "Cuéntanos por qué",
+        "review": "Revisar"
+      },
+      "quantity": "Cantidad",
+      "mode": {
+        "return": "Devolver con reembolso",
+        "exchange": "Cambiar por otra opción"
+      },
+      "loading": "Cargando opciones…",
+      "noVariants": "No hay otra opción disponible ahora mismo. Puedes devolverlo.",
+      "chooseVariant": "Cambiar por",
+      "chooseVariantPlaceholder": "Elige una opción",
+      "noneSelected": "Elige al menos un artículo para continuar.",
+      "reason": "Motivo",
+      "reasonPlaceholder": "Elige un motivo (opcional)",
+      "note": "¿Algo que debamos saber? (opcional)",
+      "reviewReturn": "Devuelves {quantity} × {name}",
+      "reviewExchange": "Cambias {quantity} × {name} por {variant}",
+      "refundMethod": "El reembolso se hace al método de pago que usaste, en un plazo de 14 días desde que recibamos los artículos o la prueba del envío.",
+      "shippingCost": "Salvo que te enviemos una etiqueta prepagada, el envío de la devolución corre de tu cuenta.",
+      "cancel": "Cancelar",
+      "back": "Atrás",
+      "next": "Continuar",
+      "submit": "Enviar solicitud",
+      "submitting": "Enviando…",
+      "doneTitle": "Solicitud enviada",
+      "doneNumbers": "Tu número de solicitud: {numbers}",
+      "doneBody": "Te hemos enviado una confirmación por correo. Te diremos dónde enviar los artículos.",
+      "viewRequest": "Ver tu solicitud en el pedido"
+    },
+    "find": {
+      "title": "Buscar tu pedido",
+      "description": "Introduce tu número de pedido y el correo con el que compraste. Te enviaremos un enlace al pedido.",
+      "number": "Número de pedido",
+      "email": "Correo electrónico",
+      "submit": "Enviarme un enlace",
+      "sent": "Si encontramos un pedido con estos datos, te hemos enviado un enlace. Revisa tu bandeja de entrada y la carpeta de spam.",
+      "failed": "Algo salió mal. Inténtalo de nuevo en un momento.",
+      "linkExpired": "Puede que el enlace esté incompleto. Pide uno nuevo abajo."
+    }
   }
 }
