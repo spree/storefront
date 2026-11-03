@@ -1,13 +1,11 @@
 "use client";
 
-import type { AddLineItemParams } from "@spree/sdk";
+import type { GiftCardRecipientParams } from "@spree/sdk";
 import { useTranslations } from "next-intl";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-
-export type GiftCardRecipient = NonNullable<AddLineItemParams["recipient"]>;
 
 export interface GiftCardRecipientDraft {
   sendToSomeoneElse: boolean;
@@ -37,7 +35,7 @@ const MAX_MESSAGE_LENGTH = 500;
  */
 export function recipientFromDraft(
   draft: GiftCardRecipientDraft,
-): GiftCardRecipient | undefined {
+): GiftCardRecipientParams | undefined {
   if (!draft.sendToSomeoneElse) return undefined;
 
   return {

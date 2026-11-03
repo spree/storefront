@@ -1,6 +1,6 @@
 "use client";
 
-import type { AddLineItemParams, Cart, LineItem } from "@spree/sdk";
+import type { Cart, GiftCardRecipientParams, LineItem } from "@spree/sdk";
 import { usePathname, useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import {
@@ -32,7 +32,7 @@ interface CartContextType {
   addItem: (
     variantId: string,
     quantity?: number,
-    recipient?: AddLineItemParams["recipient"],
+    recipient?: GiftCardRecipientParams,
   ) => Promise<void>;
   updateItem: (lineItemId: string, quantity: number) => Promise<void>;
   removeItem: (lineItemId: string) => Promise<void>;
@@ -104,7 +104,7 @@ export function CartProvider({
     async (
       variantId: string,
       quantity = 1,
-      recipient?: AddLineItemParams["recipient"],
+      recipient?: GiftCardRecipientParams,
     ) => {
       await mutateCart(
         () => addToCartAction(variantId, quantity, surface, recipient),
