@@ -60,6 +60,7 @@
     "learnMore": "En savoir plus sur Spree Commerce",
     "shop": "Boutique",
     "allProducts": "Tous les produits",
+    "collections": "Collections",
     "categories": "Categories",
     "account": "Compte",
     "myAccount": "Mon compte",
@@ -116,6 +117,12 @@
     "failedToAddItem": "Impossible d'ajouter cet article a votre panier. Veuillez reessayer.",
     "failedToUpdateItem": "Impossible de mettre a jour votre panier. Veuillez reessayer.",
     "failedToRemoveItem": "Impossible de retirer cet article de votre panier. Veuillez reessayer."
+  },
+  "collections": {
+    "title": "Collections",
+    "description": "Découvrez nos collections sélectionnées.",
+    "empty": "Aucune collection disponible.",
+    "noProducts": "Cette collection ne contient pas encore de produits."
   },
   "products": {
     "allProducts": "Tous les produits",

@@ -102,6 +102,14 @@ export async function Footer({ basePath, locale, categoryLinks }: FooterProps) {
                   {t("allProducts")}
                 </Link>
               </li>
+              <li>
+                <Link
+                  href={`${basePath}/collections`}
+                  className="text-sm text-neutral-400 hover:text-neutral-200 transition-colors"
+                >
+                  {t("collections")}
+                </Link>
+              </li>
               {categoryLinks}
             </ul>
           </div>

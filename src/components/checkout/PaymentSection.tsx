@@ -1036,6 +1036,14 @@ export function PaymentSection({
                       <p className="text-sm text-gray-500">
                         {t("manualPaymentInfo")}
                       </p>
+                      {gatewayError && (
+                        <div className="mt-3 rounded-sm border border-red-300 bg-red-50 px-4 py-3">
+                          <p className="text-sm text-red-700 flex items-center gap-2">
+                            <CircleAlert className="h-4 w-4 flex-shrink-0" />
+                            {gatewayError}
+                          </p>
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>
