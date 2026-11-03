@@ -7,6 +7,7 @@ import { usePathname } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { useEffect, useRef, useState } from "react";
 import { QuantityPickerField } from "@/components/cart/QuantityPickerField";
+import { LineItemGiftCardDetails } from "@/components/gift-cards/LineItemGiftCardDetails";
 import { Button } from "@/components/ui/button";
 import { ProductImage } from "@/components/ui/product-image";
 import {
@@ -193,6 +194,7 @@ export function CartDrawer() {
                           {item.options_text}
                         </p>
                       )}
+                      <LineItemGiftCardDetails item={item} />
 
                       {/* Quantity & Price */}
                       <div className="mt-3 flex items-center justify-between">

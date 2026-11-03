@@ -189,7 +189,18 @@
     "properties": "Eigenschaften",
     "yes": "Ja",
     "no": "Nein",
-    "optionFilterChip": "{filter}: {value}"
+    "optionFilterChip": "{filter}: {value}",
+    "giftCard": {
+      "sendToSomeoneElse": "Diese Geschenkkarte an eine andere Person senden",
+      "sentToYou": "Wir senden dir die Geschenkkarte per E-Mail, sobald deine Bestellung bezahlt ist.",
+      "recipientEmail": "E-Mail des Empfängers",
+      "recipientName": "Name des Empfängers (optional)",
+      "message": "Nachricht (optional)",
+      "sendOn": "Senden am (optional)",
+      "sendOnHelp": "Leer lassen, um sie zu senden, sobald deine Bestellung bezahlt ist. Bis zu 90 Tage im Voraus.",
+      "forRecipient": "Für {recipient}",
+      "forYou": "An dich gesendet"
+    }
   },
   "navigation": {
     "home": "Startseite",

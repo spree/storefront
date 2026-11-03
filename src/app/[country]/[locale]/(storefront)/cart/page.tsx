@@ -8,6 +8,7 @@ import { usePathname } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { useEffect, useRef, useState } from "react";
 import { QuantityPickerField } from "@/components/cart/QuantityPickerField";
+import { LineItemGiftCardDetails } from "@/components/gift-cards/LineItemGiftCardDetails";
 import { Button } from "@/components/ui/button";
 import { ProductImage } from "@/components/ui/product-image";
 import { useCart } from "@/contexts/CartContext";
@@ -125,6 +126,7 @@ export default function CartPage() {
                       {item.options_text}
                     </p>
                   )}
+                  <LineItemGiftCardDetails item={item} />
                   <p className="mt-2 text-lg font-semibold text-gray-900">
                     {formatMoney(item.price, item.currency, {
                       unitPrice: true,

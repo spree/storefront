@@ -189,7 +189,18 @@
     "properties": "Proprietes",
     "yes": "Oui",
     "no": "Non",
-    "optionFilterChip": "{filter} : {value}"
+    "optionFilterChip": "{filter} : {value}",
+    "giftCard": {
+      "sendToSomeoneElse": "Envoyer cette carte cadeau à quelqu'un d'autre",
+      "sentToYou": "Nous vous enverrons la carte cadeau par e-mail dès que votre commande sera payée.",
+      "recipientEmail": "E-mail du destinataire",
+      "recipientName": "Nom du destinataire (facultatif)",
+      "message": "Message (facultatif)",
+      "sendOn": "Envoyer le (facultatif)",
+      "sendOnHelp": "Laissez vide pour l'envoyer dès que votre commande est payée. Jusqu'à 90 jours à l'avance.",
+      "forRecipient": "Pour {recipient}",
+      "forYou": "Envoyée à vous"
+    }
   },
   "navigation": {
     "home": "Accueil",

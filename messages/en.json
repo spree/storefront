@@ -189,7 +189,18 @@
     "properties": "Properties",
     "yes": "Yes",
     "no": "No",
-    "optionFilterChip": "{filter}: {value}"
+    "optionFilterChip": "{filter}: {value}",
+    "giftCard": {
+      "sendToSomeoneElse": "Send this gift card to someone else",
+      "sentToYou": "We'll email the gift card to you once your order is paid.",
+      "recipientEmail": "Recipient email",
+      "recipientName": "Recipient name (optional)",
+      "message": "Message (optional)",
+      "sendOn": "Send on (optional)",
+      "sendOnHelp": "Leave empty to send it as soon as your order is paid. Up to 90 days ahead.",
+      "forRecipient": "For {recipient}",
+      "forYou": "Sent to you"
+    }
   },
   "navigation": {
     "home": "Home",

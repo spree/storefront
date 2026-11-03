@@ -1,6 +1,6 @@
 "use server";
 
-import type { Cart, CreateCartParams } from "@spree/sdk";
+import type { AddLineItemParams, Cart, CreateCartParams } from "@spree/sdk";
 import { updateTag } from "next/cache";
 import {
   cacheTagSuffix,
@@ -156,6 +156,7 @@ export async function addToCart(
   variantId: string,
   quantity: number,
   surface: Surface = DEFAULT_SURFACE,
+  recipient?: AddLineItemParams["recipient"],
 ) {
   return actionResult(async () => {
     const cart = await getOrCreateCart(undefined, surface);
@@ -164,7 +165,7 @@ export async function addToCart(
 
     const updatedCart = await getClientForSurface(surface).carts.items.create(
       cart.id,
-      { variant_id: variantId, quantity },
+      { variant_id: variantId, quantity, recipient },
       { spreeToken, token },
     );
 
