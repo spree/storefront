@@ -23,12 +23,15 @@ interface MobileMenuProps {
   basePath: string;
   /** Whether the wholesale addon is enabled — gates the trade portal link. */
   wholesaleEnabled: boolean;
+  /** Whether marketplace seller pages are enabled — gates the sellers link. */
+  marketplaceEnabled?: boolean;
 }
 
 export function MobileMenu({
   rootCategories,
   basePath,
   wholesaleEnabled,
+  marketplaceEnabled = false,
 }: MobileMenuProps) {
   const t = useTranslations("header");
   const [open, setOpen] = useState(false);
@@ -216,6 +219,15 @@ export function MobileMenu({
               >
                 {t("allProducts")}
               </Link>
+              {marketplaceEnabled && (
+                <Link
+                  href={`${basePath}/sellers`}
+                  onClick={() => setOpen(false)}
+                  className={linkClass}
+                >
+                  {t("sellers")}
+                </Link>
+              )}
               {rootCategories.map((category) =>
                 category.children && category.children.length > 0 ? (
                   <button

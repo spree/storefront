@@ -1,6 +1,6 @@
 "use client";
 
-import type { Media, Product, Variant } from "@spree/sdk";
+import type { Media, Product, Seller, Variant } from "@spree/sdk";
 import { CircleCheckBig, CircleX, Loader2, ShoppingBag } from "lucide-react";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
@@ -21,12 +21,19 @@ import { strikethroughAmount } from "@/lib/utils/price";
 interface ProductDetailsProps {
   product: Product;
   basePath: string;
+  /** Marketplace seller to credit under the title; omit to hide the line. */
+  seller?: Pick<Seller, "name" | "slug"> | null;
 }
 
-export function ProductDetails({ product, basePath }: ProductDetailsProps) {
+export function ProductDetails({
+  product,
+  basePath,
+  seller,
+}: ProductDetailsProps) {
   const { addItem } = useCart();
   const { currency } = useStore();
   const t = useTranslations("products");
+  const ts = useTranslations("sellers");
   const tw = useTranslations("wholesale");
   const formatMoney = useFormatMoney();
   // Non-null inside a HiddenPricingProvider (wholesale `prices_hidden`, guest
@@ -128,6 +135,21 @@ export function ProductDetails({ product, basePath }: ProductDetailsProps) {
         {/* Product Info */}
         <div>
           <h1 className="text-3xl font-bold text-gray-900">{product.name}</h1>
+          {seller && (
+            <p className="mt-1 text-sm text-gray-600">
+              {ts.rich("soldBy", {
+                name: seller.name,
+                link: (chunks) => (
+                  <Link
+                    href={`${basePath}/sellers/${seller.slug}`}
+                    className="font-medium text-gray-900 underline-offset-4 hover:underline"
+                  >
+                    {chunks}
+                  </Link>
+                ),
+              })}
+            </p>
+          )}
 
           {/* Price */}
           <div className="mt-4 flex items-center gap-4">

@@ -14,6 +14,7 @@ vi.mock("next-intl", () => ({
       contact: "Contact",
       myAccount: "My Account",
       wholesale: "Wholesale",
+      sellers: "Sellers",
     })[key] ?? key,
 }));
 
@@ -72,5 +73,39 @@ describe("MobileMenu", () => {
     expect(
       within(menu).getByRole("link", { name: "My Account" }),
     ).toHaveAttribute("href", "/us/en/account");
+  });
+
+  it("links to the seller directory only when the marketplace is enabled", async () => {
+    const user = userEvent.setup();
+
+    const { unmount } = render(
+      <MobileMenu
+        rootCategories={[]}
+        basePath="/us/en"
+        wholesaleEnabled={false}
+        marketplaceEnabled
+      />,
+    );
+    await user.click(screen.getByRole("button", { name: "Open menu" }));
+    expect(
+      within(screen.getByRole("dialog", { name: "Menu" })).getByRole("link", {
+        name: "Sellers",
+      }),
+    ).toHaveAttribute("href", "/us/en/sellers");
+    unmount();
+
+    render(
+      <MobileMenu
+        rootCategories={[]}
+        basePath="/us/en"
+        wholesaleEnabled={false}
+      />,
+    );
+    await user.click(screen.getByRole("button", { name: "Open menu" }));
+    expect(
+      within(screen.getByRole("dialog", { name: "Menu" })).queryByRole("link", {
+        name: "Sellers",
+      }),
+    ).not.toBeInTheDocument();
   });
 });

@@ -1,6 +1,6 @@
 "use server";
 
-import type { Category, Media, Product } from "@spree/sdk";
+import type { Category, Media, Product, Seller } from "@spree/sdk";
 import { cacheLife, cacheTag } from "next/cache";
 import { getClient } from "@/lib/spree";
 
@@ -18,7 +18,9 @@ export type SitemapCategory = Category & {
   updated_at?: string;
 };
 
-export type SitemapResource = "products" | "categories";
+export type SitemapSeller = Pick<Seller, "id" | "slug">;
+
+export type SitemapResource = "products" | "categories" | "sellers";
 
 export async function getSitemapMarkets(options: LocaleOptions) {
   "use cache: remote";
@@ -36,13 +38,19 @@ export async function getSitemapResourceCount(
   cacheLife("tenMinutes");
   cacheTag("sitemap", resource, `sitemap-market:${marketId}`);
 
+  const client = getClient();
   const response =
     resource === "products"
-      ? await getClient().products.list({ page: 1, limit: 1 }, options)
-      : await getClient().categories.list(
-          { page: 1, limit: 1, parent_id_not_null: true },
-          options,
-        );
+      ? await client.products.list({ page: 1, limit: 1 }, options)
+      : resource === "sellers"
+        ? await client.sellers.list(
+            { page: 1, limit: 1, fields: ["slug"] },
+            options,
+          )
+        : await client.categories.list(
+            { page: 1, limit: 1, parent_id_not_null: true },
+            options,
+          );
   return Math.max(0, response.meta.count);
 }
 
@@ -73,6 +81,22 @@ export async function getSitemapCategoryPage(
   cacheTag("sitemap", "categories", `sitemap-market:${marketId}`);
   const response = await getClient().categories.list(
     { page, limit, parent_id_not_null: true },
+    options,
+  );
+  return response.data;
+}
+
+export async function getSitemapSellerPage(
+  marketId: string,
+  page: number,
+  limit: number,
+  options: LocaleOptions,
+): Promise<SitemapSeller[]> {
+  "use cache: remote";
+  cacheLife("tenMinutes");
+  cacheTag("sitemap", "sellers", `sitemap-market:${marketId}`);
+  const response = await getClient().sellers.list(
+    { page, limit, sort: "id", fields: ["slug"] },
     options,
   );
   return response.data;

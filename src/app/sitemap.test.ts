@@ -8,24 +8,39 @@ const api = vi.hoisted(() => ({
   marketsList: vi.fn(),
   productsList: vi.fn(),
   categoriesList: vi.fn(),
+  sellersList: vi.fn(),
+}));
+
+const marketplace = vi.hoisted(() => ({ enabled: false }));
+
+vi.mock("@/lib/spree", () => ({
+  isMarketplaceEnabled: () => marketplace.enabled,
 }));
 
 vi.mock("@/lib/data/sitemap", () => ({
   getSitemapMarkets: async (options: { country: string; locale: string }) =>
     (await api.marketsList(options)).data,
   getSitemapResourceCount: async (
-    resource: "products" | "categories",
+    resource: "products" | "categories" | "sellers",
     _marketId: string,
     options: { country: string; locale: string },
   ) => {
     const response = await (resource === "products"
       ? api.productsList({ page: 1, limit: 1 }, options)
-      : api.categoriesList(
-          { page: 1, limit: 1, parent_id_not_null: true },
-          options,
-        ));
+      : resource === "sellers"
+        ? api.sellersList({ page: 1, limit: 1 }, options)
+        : api.categoriesList(
+            { page: 1, limit: 1, parent_id_not_null: true },
+            options,
+          ));
     return response.meta.count;
   },
+  getSitemapSellerPage: async (
+    _marketId: string,
+    page: number,
+    limit: number,
+    options: { country: string; locale: string },
+  ) => (await api.sellersList({ page, limit }, options)).data,
   getSitemapProductPage: async (
     _marketId: string,
     page: number,
@@ -103,6 +118,74 @@ describe("localized sitemap generation", () => {
   beforeEach(() => {
     vi.resetModules();
     vi.clearAllMocks();
+    marketplace.enabled = false;
+  });
+
+  it("lists the seller directory and profiles after categories when the marketplace is enabled", async () => {
+    marketplace.enabled = true;
+    api.marketsList.mockResolvedValue({ data: marketCountries("US") });
+    mockCatalog(1, 1);
+    api.sellersList.mockImplementation(
+      async ({ page, limit }: { page: number; limit: number }) => ({
+        data:
+          limit === 1
+            ? []
+            : Array.from({ length: 2 }, (_, index) => ({
+                id: `seller-${(page - 1) * limit + index}`,
+                slug: `s-${(page - 1) * limit + index}`,
+              })),
+        meta: { count: 2 },
+      }),
+    );
+    const { default: sitemap } = await import("@/app/sitemap");
+
+    const entries = await sitemap({ id: Promise.resolve("0") });
+
+    expect(entries.map((entry) => entry.url)).toEqual([
+      "https://store.example/us/en",
+      "https://store.example/us/en/products",
+      "https://store.example/us/en/c",
+      "https://store.example/us/en/sellers",
+      "https://store.example/us/en/products/p-0",
+      "https://store.example/us/en/c/c-0",
+      "https://store.example/us/en/sellers/s-0",
+      "https://store.example/us/en/sellers/s-1",
+    ]);
+  });
+
+  it("keeps products and categories when the seller count fails", async () => {
+    marketplace.enabled = true;
+    api.marketsList.mockResolvedValue({ data: marketCountries("US") });
+    mockCatalog(1, 1);
+    api.sellersList.mockRejectedValue(new Error("sellers endpoint down"));
+    const consoleError = vi
+      .spyOn(console, "error")
+      .mockImplementation(() => undefined);
+    const { default: sitemap } = await import("@/app/sitemap");
+
+    const entries = await sitemap({ id: Promise.resolve("0") });
+
+    expect(entries.map((entry) => entry.url)).toEqual(
+      expect.arrayContaining([
+        "https://store.example/us/en/products/p-0",
+        "https://store.example/us/en/c/c-0",
+      ]),
+    );
+    expect(entries.some((entry) => entry.url.includes("/sellers/"))).toBe(
+      false,
+    );
+    consoleError.mockRestore();
+  });
+
+  it("never queries sellers when the marketplace is disabled", async () => {
+    api.marketsList.mockResolvedValue({ data: marketCountries("US") });
+    mockCatalog(1, 1);
+    const { default: sitemap } = await import("@/app/sitemap");
+
+    const entries = await sitemap({ id: Promise.resolve("0") });
+
+    expect(api.sellersList).not.toHaveBeenCalled();
+    expect(entries.some((entry) => entry.url.includes("/sellers"))).toBe(false);
   });
 
   it("reuses translated catalog pages across countries with the same locale", async () => {

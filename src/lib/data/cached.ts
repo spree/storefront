@@ -13,6 +13,12 @@ export const PRODUCT_PAGE_EXPAND = [
   "categories.ancestors",
 ];
 
+/** Product page expand on marketplace builds: adds the "Sold by" seller. */
+export const MARKETPLACE_PRODUCT_PAGE_EXPAND = [
+  ...PRODUCT_PAGE_EXPAND,
+  "seller",
+];
+
 /** Slim expand used by generateProductMetadata (needs only the primary image for og:image). */
 export const PRODUCT_METADATA_EXPAND = ["primary_media"];
 

@@ -42,7 +42,8 @@
     "openSearch": "Suche öffnen",
     "closeSearch": "Suche schließen",
     "myAccount": "Mein Konto",
-    "wholesale": "Großhandel"
+    "wholesale": "Großhandel",
+    "sellers": "Verkäufer"
   },
   "regionPreferences": {
     "title": "Region und Sprache",
@@ -68,7 +69,8 @@
     "policies": "Richtlinien",
     "poweredBy": "Betrieben von",
     "copyright": "© {year} {storeName}. Unterstützt durch Spree Commerce.",
-    "wholesale": "Handel & Großhandel"
+    "wholesale": "Handel & Großhandel",
+    "sellers": "Verkäufer"
   },
   "home": {
     "welcome": "{storeName} Storefront",
@@ -151,6 +153,10 @@
     "search": "Suche…",
     "searching": "Suche läuft…",
     "viewAllResultsFor": "Alle Ergebnisse für \"{query}\" anzeigen",
+    "searchGroupProducts": "Produkte",
+    "searchGroupCategories": "Kategorien",
+    "searchGroupSellers": "Verkäufer",
+    "noSearchResults": "Keine Ergebnisse gefunden",
     "manual": "Manuell",
     "bestSelling": "Bestseller",
     "priceLowHigh": "Preis (niedrig-hoch)",
@@ -682,5 +688,29 @@
     "description": "Die gesuchte Seite existiert nicht oder ist nicht mehr verfügbar.",
     "backHome": "Zur Startseite",
     "browseProducts": "Alle Produkte ansehen"
+  },
+  "sellers": {
+    "title": "Verkäufer",
+    "subtitle": "Entdecken Sie die unabhängigen Shops auf unserem Marktplatz.",
+    "sellerCount": "{count, plural, one {# Verkäufer} other {# Verkäufer}}",
+    "noSellers": "Noch keine Verkäufer",
+    "noSellersHint": "Schauen Sie bald wieder vorbei — neue Shops kommen hinzu.",
+    "previous": "Zurück",
+    "next": "Weiter",
+    "pageOf": "Seite {page} von {pages}",
+    "pagination": "Verkäufer-Seitennavigation",
+    "visitShop": "Shop besuchen",
+    "allSellers": "Alle Verkäufer",
+    "about": "Über uns",
+    "products": "Produkte",
+    "policies": "Shop-Richtlinien",
+    "noProducts": "Dieser Verkäufer hat derzeit keine Produkte verfügbar.",
+    "soldBy": "Verkauft von <link>{name}</link>",
+    "sellerNotFound": "Verkäufer nicht gefunden",
+    "metaDescription": "Produkte von {name} kaufen.",
+    "directoryMetaDescription": "Alle Verkäufer auf unserem Marktplatz durchsuchen.",
+    "logoAlt": "Logo von {name}",
+    "pageOutOfRange": "Es gibt keine Seite {page} mit Verkäufern.",
+    "backToFirstPage": "Zurück zur ersten Seite"
   }
 }

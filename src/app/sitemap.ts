@@ -10,9 +10,12 @@ import {
   getSitemapMarkets,
   getSitemapProductPage,
   getSitemapResourceCount,
+  getSitemapSellerPage,
   type SitemapCategory,
   type SitemapProduct,
+  type SitemapSeller,
 } from "@/lib/data/sitemap";
+import { isMarketplaceEnabled } from "@/lib/spree";
 import { getDefaultCountry, getDefaultLocale, getStoreUrl } from "@/lib/store";
 
 type CountryLocale = MarketLocaleTarget;
@@ -26,11 +29,14 @@ interface LocaleCatalog extends LocaleOptions {
   marketId: string;
   productCount: number;
   categoryCount: number;
+  /** Seller profiles; always 0 when the marketplace flag is off. */
+  sellerCount: number;
 }
 
 interface PageCaches {
   products: Map<string, Promise<SitemapProduct[]>>;
   categories: Map<string, Promise<SitemapCategory[]>>;
+  sellers: Map<string, Promise<SitemapSeller[]>>;
 }
 
 /**
@@ -38,7 +44,6 @@ interface PageCaches {
  * Store API pages and avoids long-running sitemap responses on large catalogs.
  */
 const URLS_PER_SITEMAP = 10_000;
-const STATIC_PAGES_PER_LOCALE = 3;
 const ITEMS_PER_PAGE = 100;
 const MAX_PAGES = 1000;
 const MAX_CONCURRENT_PAGE_REQUESTS = 8;
@@ -144,6 +149,7 @@ export default async function sitemap(props: {
   const pageCaches: PageCaches = {
     products: new Map(),
     categories: new Map(),
+    sellers: new Map(),
   };
   let targetStart = 0;
 
@@ -161,10 +167,12 @@ export default async function sitemap(props: {
     const basePath = `${baseUrl}/${target.country}/${target.locale}`;
     appendStaticEntries(entries, basePath, targetStart, chunkStart, chunkEnd);
 
-    const productStart = targetStart + STATIC_PAGES_PER_LOCALE;
+    const productStart = targetStart + staticEntries(basePath).length;
     const productEnd = productStart + catalog.productCount;
     const categoryStart = productEnd;
     const categoryEnd = categoryStart + catalog.categoryCount;
+    const sellerStart = categoryEnd;
+    const sellerEnd = sellerStart + catalog.sellerCount;
 
     const productRange = intersectRange(
       productStart,
@@ -178,8 +186,14 @@ export default async function sitemap(props: {
       chunkStart,
       chunkEnd,
     );
+    const sellerRange = intersectRange(
+      sellerStart,
+      sellerEnd,
+      chunkStart,
+      chunkEnd,
+    );
 
-    const [products, categories] = await Promise.allSettled([
+    const [products, categories, sellers] = await Promise.allSettled([
       productRange
         ? fetchProductRange(
             catalog,
@@ -193,6 +207,14 @@ export default async function sitemap(props: {
             catalog,
             categoryRange.start - categoryStart,
             categoryRange.end - categoryStart,
+            pageCaches,
+          )
+        : Promise.resolve([]),
+      sellerRange
+        ? fetchSellerRange(
+            catalog,
+            sellerRange.start - sellerStart,
+            sellerRange.end - sellerStart,
             pageCaches,
           )
         : Promise.resolve([]),
@@ -212,6 +234,14 @@ export default async function sitemap(props: {
       console.error(
         `Sitemap: skipping categories for ${target.country}/${target.locale}.`,
         categories.reason,
+      );
+    }
+    if (sellers.status === "fulfilled") {
+      appendSellerEntries(entries, basePath, sellers.value);
+    } else {
+      console.error(
+        `Sitemap: skipping sellers for ${target.country}/${target.locale}.`,
+        sellers.reason,
       );
     }
 
@@ -241,7 +271,12 @@ function resolveBaseUrl(): string | undefined {
 }
 
 function catalogSize(catalog: LocaleCatalog): number {
-  return STATIC_PAGES_PER_LOCALE + catalog.productCount + catalog.categoryCount;
+  return (
+    staticEntries("").length +
+    catalog.productCount +
+    catalog.categoryCount +
+    catalog.sellerCount
+  );
 }
 
 function intersectRange(
@@ -255,14 +290,12 @@ function intersectRange(
   return start < end ? { start, end } : undefined;
 }
 
-function appendStaticEntries(
-  entries: MetadataRoute.Sitemap,
-  basePath: string,
-  targetStart: number,
-  chunkStart: number,
-  chunkEnd: number,
-): void {
-  const staticEntries: MetadataRoute.Sitemap = [
+/**
+ * Fixed pages listed once per country/locale. The count feeds chunk
+ * positioning, so it must not depend on anything but configuration.
+ */
+function staticEntries(basePath: string): MetadataRoute.Sitemap {
+  return [
     { url: basePath, changeFrequency: "daily", priority: 1 },
     {
       url: `${basePath}/products`,
@@ -270,9 +303,26 @@ function appendStaticEntries(
       priority: 0.8,
     },
     { url: `${basePath}/c`, changeFrequency: "weekly", priority: 0.7 },
+    ...(isMarketplaceEnabled()
+      ? [
+          {
+            url: `${basePath}/sellers`,
+            changeFrequency: "weekly" as const,
+            priority: 0.6,
+          },
+        ]
+      : []),
   ];
+}
 
-  for (const [offset, entry] of staticEntries.entries()) {
+function appendStaticEntries(
+  entries: MetadataRoute.Sitemap,
+  basePath: string,
+  targetStart: number,
+  chunkStart: number,
+  chunkEnd: number,
+): void {
+  for (const [offset, entry] of staticEntries(basePath).entries()) {
     const position = targetStart + offset;
     if (position >= chunkStart && position < chunkEnd) entries.push(entry);
   }
@@ -320,6 +370,20 @@ function appendCategoryEntries(
   }
 }
 
+function appendSellerEntries(
+  entries: MetadataRoute.Sitemap,
+  basePath: string,
+  sellers: SitemapSeller[],
+): void {
+  for (const seller of sellers) {
+    entries.push({
+      url: `${basePath}/sellers/${seller.slug}`,
+      changeFrequency: "weekly",
+      priority: 0.5,
+    });
+  }
+}
+
 /** Resolve every valid country/locale URL exposed by configured Markets. */
 async function resolveCountryLocales(): Promise<CountryLocale[]> {
   const localeOptions = getDefaultLocaleOptions();
@@ -342,9 +406,24 @@ async function buildLocaleCatalog(
   target: CountryLocale,
 ): Promise<LocaleCatalog> {
   const localeOptions = { locale: target.locale, country: target.country };
-  const [productCount, categoryCount] = await Promise.all([
+  const [productCount, categoryCount, sellerCount] = await Promise.all([
     getSitemapResourceCount("products", target.marketId, localeOptions),
     getSitemapResourceCount("categories", target.marketId, localeOptions),
+    // Optional extra: a failing seller count drops the seller pages, never
+    // the products and categories alongside them.
+    isMarketplaceEnabled()
+      ? getSitemapResourceCount(
+          "sellers",
+          target.marketId,
+          localeOptions,
+        ).catch((error) => {
+          console.error(
+            `Sitemap: skipping sellers for ${target.country}/${target.locale}.`,
+            error,
+          );
+          return 0;
+        })
+      : 0,
   ]);
 
   return {
@@ -352,6 +431,7 @@ async function buildLocaleCatalog(
     ...localeOptions,
     productCount: Math.min(productCount, MAX_FETCHABLE_ITEMS),
     categoryCount: Math.min(categoryCount, MAX_FETCHABLE_ITEMS),
+    sellerCount: Math.min(sellerCount, MAX_FETCHABLE_ITEMS),
   };
 }
 
@@ -374,6 +454,17 @@ async function fetchCategoryRange(
 ): Promise<SitemapCategory[]> {
   return fetchItemRange(start, end, (page) =>
     getCachedCategoryPage(catalog, page, pageCaches.categories),
+  );
+}
+
+async function fetchSellerRange(
+  catalog: LocaleCatalog,
+  start: number,
+  end: number,
+  pageCaches: PageCaches,
+): Promise<SitemapSeller[]> {
+  return fetchItemRange(start, end, (page) =>
+    getCachedSellerPage(catalog, page, pageCaches.sellers),
   );
 }
 
@@ -435,6 +526,26 @@ function getCachedCategoryPage(
   let cached = cache.get(key);
   if (!cached) {
     cached = getSitemapCategoryPage(catalog.marketId, page, ITEMS_PER_PAGE, {
+      locale: catalog.locale,
+      country: catalog.country,
+    }).catch((error) => {
+      cache.delete(key);
+      throw error;
+    });
+    cache.set(key, cached);
+  }
+  return cached;
+}
+
+function getCachedSellerPage(
+  catalog: LocaleCatalog,
+  page: number,
+  cache: PageCaches["sellers"],
+): Promise<SitemapSeller[]> {
+  const key = `${catalogKey(catalog)}:${page}`;
+  let cached = cache.get(key);
+  if (!cached) {
+    cached = getSitemapSellerPage(catalog.marketId, page, ITEMS_PER_PAGE, {
       locale: catalog.locale,
       country: catalog.country,
     }).catch((error) => {

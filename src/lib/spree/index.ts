@@ -16,6 +16,7 @@ export {
   getWholesaleChannelCode,
   getWholesaleClient,
   initSpreeNext,
+  isMarketplaceEnabled,
   isWholesaleEnabled,
 } from "./config";
 // Cookie management
