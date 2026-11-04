@@ -413,7 +413,26 @@
     "orderTitle": "Order #{number}",
     "shipmentCanceledRefund": "Shipment canceled — a refund has been issued.",
     "shippingMethodUnavailable": "Unavailable",
-    "totalColumn": "Total"
+    "totalColumn": "Total",
+    "documents": "Invoices & documents",
+    "documentsFor": "Invoices & documents for {number}",
+    "noDocuments": "No invoices or documents yet.",
+    "requestInvoice": "Request an invoice",
+    "invoiceCompanyName": "Company name",
+    "invoiceTaxId": "VAT or tax number",
+    "sendInvoiceRequest": "Send request",
+    "invoiceRequested": "You asked for an invoice. It will appear here once it is issued.",
+    "documentName": "Document name",
+    "documentFile": "File",
+    "addDocument": "Add document",
+    "documentEmpty": "Choose a file to upload.",
+    "documentTooLarge": "Choose a file up to 10 MB.",
+    "paperworkError": "Something went wrong. Please try again.",
+    "invoiceKinds": {
+      "invoice": "Invoice",
+      "receipt": "Receipt",
+      "credit_note": "Credit note"
+    }
   },
   "orderPlaced": {
     "thanksForOrder": "Thanks for your order, {name}!",
