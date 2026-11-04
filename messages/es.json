@@ -42,7 +42,8 @@
     "openSearch": "Abrir busqueda",
     "closeSearch": "Cerrar busqueda",
     "myAccount": "Mi cuenta",
-    "wholesale": "Mayorista"
+    "wholesale": "Mayorista",
+    "sellers": "Vendedores"
   },
   "regionPreferences": {
     "title": "Región e idioma",
@@ -68,7 +69,8 @@
     "policies": "Politicas",
     "poweredBy": "Impulsado por",
     "copyright": "© {year} {storeName}. Impulsado por Spree Commerce.",
-    "wholesale": "Comercio y venta al por mayor"
+    "wholesale": "Comercio y venta al por mayor",
+    "sellers": "Vendedores"
   },
   "home": {
     "welcome": "{storeName} Storefront",
@@ -151,6 +153,10 @@
     "search": "Buscar…",
     "searching": "Buscando…",
     "viewAllResultsFor": "Ver todos los resultados para \"{query}\"",
+    "searchGroupProducts": "Productos",
+    "searchGroupCategories": "Categorías",
+    "searchGroupSellers": "Vendedores",
+    "noSearchResults": "No se encontraron resultados",
     "manual": "Manual",
     "bestSelling": "Mas vendidos",
     "priceLowHigh": "Precio (menor a mayor)",
@@ -682,5 +688,29 @@
     "description": "La página que buscas no existe o ya no está disponible.",
     "backHome": "Ir a la página de inicio",
     "browseProducts": "Ver todos los productos"
+  },
+  "sellers": {
+    "title": "Vendedores",
+    "subtitle": "Descubre las tiendas independientes de nuestro marketplace.",
+    "sellerCount": "{count, plural, one {# vendedor} other {# vendedores}}",
+    "noSellers": "Aún no hay vendedores",
+    "noSellersHint": "Vuelve pronto: se están uniendo nuevas tiendas.",
+    "previous": "Anterior",
+    "next": "Siguiente",
+    "pageOf": "Página {page} de {pages}",
+    "pagination": "Paginación de vendedores",
+    "visitShop": "Visitar tienda",
+    "allSellers": "Todos los vendedores",
+    "about": "Acerca de",
+    "products": "Productos",
+    "policies": "Políticas de la tienda",
+    "noProducts": "Este vendedor no tiene productos disponibles en este momento.",
+    "soldBy": "Vendido por <link>{name}</link>",
+    "sellerNotFound": "Vendedor no encontrado",
+    "metaDescription": "Compra productos de {name}.",
+    "directoryMetaDescription": "Explora todos los vendedores de nuestro marketplace.",
+    "logoAlt": "Logotipo de {name}",
+    "pageOutOfRange": "No existe la página {page} de vendedores.",
+    "backToFirstPage": "Volver a la primera página"
   }
 }

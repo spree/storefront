@@ -63,6 +63,16 @@ export function getWholesaleChannelCode(): string | null {
   return process.env.SPREE_WHOLESALE_CHANNEL?.trim() || null;
 }
 
+/**
+ * Whether the storefront exposes marketplace seller pages (`/sellers` and
+ * `/sellers/[slug]`), the "Sold by" link on product pages, and the footer
+ * entry point. Opt-in via `SPREE_MARKETPLACE_ENABLED=true` — single-vendor
+ * stores keep it unset and those routes 404.
+ */
+export function isMarketplaceEnabled(): boolean {
+  return process.env.SPREE_MARKETPLACE_ENABLED?.trim().toLowerCase() === "true";
+}
+
 /** Whether the wholesale portal addon is enabled for this storefront. */
 export function isWholesaleEnabled(): boolean {
   return getWholesaleChannelCode() !== null;

@@ -1,12 +1,15 @@
 import { SpreeError } from "@spree/sdk";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-const { getProduct, getCategory, getPolicy, createClient } = vi.hoisted(() => ({
-  getProduct: vi.fn(),
-  getCategory: vi.fn(),
-  getPolicy: vi.fn(),
-  createClient: vi.fn(),
-}));
+const { getProduct, getCategory, getPolicy, getSeller, createClient, flags } =
+  vi.hoisted(() => ({
+    getProduct: vi.fn(),
+    getCategory: vi.fn(),
+    getPolicy: vi.fn(),
+    getSeller: vi.fn(),
+    createClient: vi.fn(),
+    flags: { marketplace: true },
+  }));
 
 vi.mock("@spree/sdk", async (importOriginal) => ({
   ...(await importOriginal<typeof import("@spree/sdk")>()),
@@ -18,12 +21,14 @@ vi.mock("@/lib/spree/config", () => ({
     baseUrl: "https://api.example",
     publishableKey: "pk_test",
   }),
+  isMarketplaceEnabled: () => flags.marketplace,
 }));
 
 createClient.mockReturnValue({
   products: { get: getProduct },
   categories: { get: getCategory },
   policies: { get: getPolicy },
+  sellers: { get: getSeller },
 });
 
 import { isMissingStorefrontResource } from "@/lib/spree/missing-resource";
@@ -45,6 +50,47 @@ describe("isMissingStorefrontResource", () => {
     getProduct.mockResolvedValue({ id: "prod_1" });
     getCategory.mockResolvedValue({ id: "ctg_1" });
     getPolicy.mockResolvedValue({ id: "pol_1" });
+    getSeller.mockReset();
+    getSeller.mockResolvedValue({ id: "sel_1" });
+    flags.marketplace = true;
+  });
+
+  it("checks seller profiles by slug on marketplace builds", async () => {
+    await expect(
+      isMissingStorefrontResource("/sellers/sparks-audio", options),
+    ).resolves.toBe(false);
+    expect(getSeller).toHaveBeenCalledWith(
+      "sparks-audio",
+      { fields: ["id"] },
+      options,
+    );
+
+    getSeller.mockRejectedValue(apiError(404));
+    await expect(
+      isMissingStorefrontResource("/sellers/gone", options),
+    ).resolves.toBe(true);
+  });
+
+  it("leaves the seller directory to the page on marketplace builds", async () => {
+    await expect(
+      isMissingStorefrontResource("/sellers", options),
+    ).resolves.toBe(false);
+    expect(getSeller).not.toHaveBeenCalled();
+  });
+
+  it("treats every seller URL as missing when the marketplace is off", async () => {
+    flags.marketplace = false;
+
+    await expect(
+      isMissingStorefrontResource("/sellers", options),
+    ).resolves.toBe(true);
+    await expect(
+      isMissingStorefrontResource("/sellers/sparks-audio", options),
+    ).resolves.toBe(true);
+    await expect(
+      isMissingStorefrontResource("/sellersfoo", options),
+    ).resolves.toBe(false);
+    expect(getSeller).not.toHaveBeenCalled();
   });
 
   it("asks for the record in the URL's country and language", async () => {

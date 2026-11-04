@@ -8,7 +8,7 @@ import type { ReactNode } from "react";
 import { CartButton } from "@/components/layout/CartButton";
 import { SearchToggle } from "@/components/layout/SearchToggle";
 import { Button } from "@/components/ui/button";
-import { isWholesaleEnabled } from "@/lib/spree";
+import { isMarketplaceEnabled, isWholesaleEnabled } from "@/lib/spree";
 import { getStoreName } from "@/lib/store";
 
 const LazyMobileMenu = dynamic(
@@ -55,6 +55,7 @@ export function HeaderMobileMenu({
       rootCategories={rootCategories}
       basePath={basePath}
       wholesaleEnabled={isWholesaleEnabled()}
+      marketplaceEnabled={isMarketplaceEnabled()}
     />
   );
 }
@@ -66,6 +67,7 @@ export async function Header({
 }: HeaderProps) {
   const t = await getTranslations({ locale, namespace: "header" });
   const wholesaleEnabled = isWholesaleEnabled();
+  const marketplaceEnabled = isMarketplaceEnabled();
 
   return (
     <SearchToggle
@@ -87,6 +89,14 @@ export async function Header({
       }
       rightStart={
         <div className="hidden lg:flex lg:items-center lg:gap-1">
+          {marketplaceEnabled && (
+            <Link
+              href={`${basePath}/sellers`}
+              className="px-2 py-1.5 text-sm text-gray-500 hover:text-gray-900 transition-colors whitespace-nowrap"
+            >
+              {t("sellers")}
+            </Link>
+          )}
           {/* Trade portal entry point — understated, secondary to the catalog nav.
               Only shown when the wholesale addon is enabled. */}
           {wholesaleEnabled && (

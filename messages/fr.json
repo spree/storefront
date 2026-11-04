@@ -42,7 +42,8 @@
     "openSearch": "Ouvrir la recherche",
     "closeSearch": "Fermer la recherche",
     "myAccount": "Mon compte",
-    "wholesale": "Vente en gros"
+    "wholesale": "Vente en gros",
+    "sellers": "Vendeurs"
   },
   "regionPreferences": {
     "title": "Région et langue",
@@ -68,7 +69,8 @@
     "policies": "Politiques",
     "poweredBy": "Propulse par",
     "copyright": "© {year} {storeName}. Propulse par Spree Commerce.",
-    "wholesale": "Professionnels & vente en gros"
+    "wholesale": "Professionnels & vente en gros",
+    "sellers": "Vendeurs"
   },
   "home": {
     "welcome": "{storeName} Storefront",
@@ -151,6 +153,10 @@
     "search": "Rechercher…",
     "searching": "Recherche…",
     "viewAllResultsFor": "Voir tous les resultats pour \"{query}\"",
+    "searchGroupProducts": "Produits",
+    "searchGroupCategories": "Catégories",
+    "searchGroupSellers": "Vendeurs",
+    "noSearchResults": "Aucun résultat trouvé",
     "manual": "Manuel",
     "bestSelling": "Meilleures ventes",
     "priceLowHigh": "Prix (croissant)",
@@ -682,5 +688,29 @@
     "description": "La page que vous recherchez n'existe pas ou n'est plus disponible.",
     "backHome": "Aller à la page d'accueil",
     "browseProducts": "Voir tous les produits"
+  },
+  "sellers": {
+    "title": "Vendeurs",
+    "subtitle": "Découvrez les boutiques indépendantes de notre marketplace.",
+    "sellerCount": "{count, plural, one {# vendeur} other {# vendeurs}}",
+    "noSellers": "Aucun vendeur pour le moment",
+    "noSellersHint": "Revenez bientôt — de nouvelles boutiques arrivent.",
+    "previous": "Précédent",
+    "next": "Suivant",
+    "pageOf": "Page {page} sur {pages}",
+    "pagination": "Pagination des vendeurs",
+    "visitShop": "Voir la boutique",
+    "allSellers": "Tous les vendeurs",
+    "about": "À propos",
+    "products": "Produits",
+    "policies": "Politiques de la boutique",
+    "noProducts": "Ce vendeur n'a aucun produit disponible pour le moment.",
+    "soldBy": "Vendu par <link>{name}</link>",
+    "sellerNotFound": "Vendeur introuvable",
+    "metaDescription": "Achetez les produits de {name}.",
+    "directoryMetaDescription": "Parcourez tous les vendeurs de notre marketplace.",
+    "logoAlt": "Logo de {name}",
+    "pageOutOfRange": "Il n'y a pas de page {page} de vendeurs.",
+    "backToFirstPage": "Revenir à la première page"
   }
 }

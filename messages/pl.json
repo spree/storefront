@@ -42,7 +42,8 @@
     "openSearch": "Otwórz wyszukiwanie",
     "closeSearch": "Zamknij wyszukiwanie",
     "myAccount": "Moje konto",
-    "wholesale": "Hurt"
+    "wholesale": "Hurt",
+    "sellers": "Sprzedawcy"
   },
   "regionPreferences": {
     "title": "Region i język",
@@ -68,7 +69,8 @@
     "policies": "Regulaminy",
     "poweredBy": "Zasilany przez",
     "copyright": "© {year} {storeName}. Zasilany przez Spree Commerce.",
-    "wholesale": "Handel i sprzedaż hurtowa"
+    "wholesale": "Handel i sprzedaż hurtowa",
+    "sellers": "Sprzedawcy"
   },
   "home": {
     "welcome": "{storeName} Storefront",
@@ -151,6 +153,10 @@
     "search": "Szukaj…",
     "searching": "Wyszukiwanie…",
     "viewAllResultsFor": "Zobacz wszystkie wyniki dla \"{query}\"",
+    "searchGroupProducts": "Produkty",
+    "searchGroupCategories": "Kategorie",
+    "searchGroupSellers": "Sprzedawcy",
+    "noSearchResults": "Nie znaleziono wyników",
     "manual": "Ręcznie",
     "bestSelling": "Bestsellery",
     "priceLowHigh": "Cena (rosnąco)",
@@ -682,5 +688,29 @@
     "description": "Strona, której szukasz, nie istnieje lub nie jest już dostępna.",
     "backHome": "Przejdź do strony głównej",
     "browseProducts": "Zobacz wszystkie produkty"
+  },
+  "sellers": {
+    "title": "Sprzedawcy",
+    "subtitle": "Odkryj niezależne sklepy w naszym marketplace.",
+    "sellerCount": "{count, plural, one {# sprzedawca} few {# sprzedawców} many {# sprzedawców} other {# sprzedawcy}}",
+    "noSellers": "Brak sprzedawców",
+    "noSellersHint": "Zajrzyj wkrótce — dołączają nowe sklepy.",
+    "previous": "Poprzednia",
+    "next": "Następna",
+    "pageOf": "Strona {page} z {pages}",
+    "pagination": "Paginacja sprzedawców",
+    "visitShop": "Odwiedź sklep",
+    "allSellers": "Wszyscy sprzedawcy",
+    "about": "O sklepie",
+    "products": "Produkty",
+    "policies": "Zasady sklepu",
+    "noProducts": "Ten sprzedawca nie ma obecnie dostępnych produktów.",
+    "soldBy": "Sprzedawca: <link>{name}</link>",
+    "sellerNotFound": "Nie znaleziono sprzedawcy",
+    "metaDescription": "Kupuj produkty od {name}.",
+    "directoryMetaDescription": "Przeglądaj wszystkich sprzedawców w naszym marketplace.",
+    "logoAlt": "Logo {name}",
+    "pageOutOfRange": "Nie ma strony {page} ze sprzedawcami.",
+    "backToFirstPage": "Wróć do pierwszej strony"
   }
 }

@@ -42,7 +42,8 @@
     "openSearch": "Open search",
     "closeSearch": "Close search",
     "myAccount": "My Account",
-    "wholesale": "Wholesale"
+    "wholesale": "Wholesale",
+    "sellers": "Sellers"
   },
   "regionPreferences": {
     "title": "Region and language",
@@ -68,7 +69,8 @@
     "policies": "Policies",
     "poweredBy": "Powered by",
     "copyright": "© {year} {storeName}. Powered by Spree Commerce.",
-    "wholesale": "Trade & Wholesale"
+    "wholesale": "Trade & Wholesale",
+    "sellers": "Sellers"
   },
   "home": {
     "welcome": "{storeName} Storefront",
@@ -151,6 +153,10 @@
     "search": "Search…",
     "searching": "Searching…",
     "viewAllResultsFor": "View all results for \"{query}\"",
+    "searchGroupProducts": "Products",
+    "searchGroupCategories": "Categories",
+    "searchGroupSellers": "Sellers",
+    "noSearchResults": "No results found",
     "manual": "Manual",
     "bestSelling": "Best Selling",
     "priceLowHigh": "Price (low-high)",
@@ -682,5 +688,29 @@
     "description": "The page you are looking for does not exist or is no longer available.",
     "backHome": "Go to the home page",
     "browseProducts": "Browse all products"
+  },
+  "sellers": {
+    "title": "Sellers",
+    "subtitle": "Discover the independent shops selling on our marketplace.",
+    "sellerCount": "{count, plural, one {# seller} other {# sellers}}",
+    "noSellers": "No sellers yet",
+    "noSellersHint": "Check back soon — new shops are joining.",
+    "previous": "Previous",
+    "next": "Next",
+    "pageOf": "Page {page} of {pages}",
+    "pagination": "Sellers pagination",
+    "visitShop": "Visit shop",
+    "allSellers": "All sellers",
+    "about": "About",
+    "products": "Products",
+    "policies": "Store policies",
+    "noProducts": "This seller has no products available right now.",
+    "soldBy": "Sold by <link>{name}</link>",
+    "sellerNotFound": "Seller Not Found",
+    "metaDescription": "Shop products from {name}.",
+    "directoryMetaDescription": "Browse all sellers on our marketplace.",
+    "logoAlt": "{name} logo",
+    "pageOutOfRange": "There is no page {page} of sellers.",
+    "backToFirstPage": "Back to the first page"
   }
 }

@@ -1,5 +1,5 @@
 import { type Client, createClient, SpreeError } from "@spree/sdk";
-import { getConfig } from "./config";
+import { getConfig, isMarketplaceEnabled } from "./config";
 
 /**
  * Upper bound on the existence check. A slow Store API must not hold up the
@@ -82,11 +82,15 @@ function resourceLookup(path: string): ResourceLookup | null {
   if (section === "policies" && rest.length === 1) {
     return (options) => getLookupClient().policies.get(rest[0], options);
   }
+  if (section === "sellers" && rest.length === 1) {
+    return (options) =>
+      getLookupClient().sellers.get(rest[0], { fields: ["id"] }, options);
+  }
   return null;
 }
 
 /**
- * Whether the product, category or policy addressed by a storefront path
+ * Whether the product, category, policy or seller addressed by a storefront path
  * (the part after `/{country}/{locale}`) is definitely missing.
  *
  * Pages render inside a streaming layout, so by the time they call
@@ -99,6 +103,10 @@ export async function isMissingStorefrontResource(
   path: string,
   options: LookupOptions,
 ): Promise<boolean> {
+  // Seller pages exist only on marketplace builds; elsewhere every /sellers
+  // URL is missing without asking the Store API.
+  if (!isMarketplaceEnabled() && /^\/sellers(\/|$)/.test(path)) return true;
+
   const lookup = resourceLookup(path);
   if (!lookup) return false;
 
