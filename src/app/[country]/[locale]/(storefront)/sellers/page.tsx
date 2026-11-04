@@ -1,10 +1,12 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { notFound } from "next/navigation";
 import { getTranslations } from "next-intl/server";
 import { SellerCard } from "@/components/sellers/SellerCard";
 import { getSellers } from "@/lib/data/sellers";
 import { buildHreflangLanguages } from "@/lib/metadata/alternates";
 import { buildCanonicalUrl } from "@/lib/seo";
+import { isMarketplaceEnabled } from "@/lib/spree";
 import { getStoreUrl } from "@/lib/store";
 
 const PAGE_SIZE = 24;
@@ -79,6 +81,8 @@ export default async function SellersPage({
   params,
   searchParams,
 }: SellersPageProps): Promise<React.JSX.Element> {
+  // The layout gates this too, but layout and page render in parallel.
+  if (!isMarketplaceEnabled()) notFound();
   const [{ country, locale }, rawSearchParams] = await Promise.all([
     params,
     searchParams,

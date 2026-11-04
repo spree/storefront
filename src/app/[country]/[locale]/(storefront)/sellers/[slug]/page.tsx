@@ -8,6 +8,7 @@ import { getProductFilters } from "@/lib/data/products";
 import { getSeller, getSellerProducts } from "@/lib/data/sellers";
 import { buildHreflangLanguages } from "@/lib/metadata/alternates";
 import { buildCanonicalUrl } from "@/lib/seo";
+import { isMarketplaceEnabled } from "@/lib/spree";
 import { getStoreUrl } from "@/lib/store";
 import { parseListingSearchParams } from "@/lib/utils/listing-search-params";
 
@@ -22,6 +23,7 @@ interface SellerPageProps {
 export async function generateMetadata({
   params,
 }: SellerPageProps): Promise<Metadata> {
+  if (!isMarketplaceEnabled()) return {};
   const { country, locale, slug } = await params;
   const t = await getTranslations({
     locale: locale as Locale,
@@ -79,6 +81,8 @@ export default async function SellerPage({
   params,
   searchParams,
 }: SellerPageProps): Promise<React.JSX.Element> {
+  // The layout gates this too, but layout and page render in parallel.
+  if (!isMarketplaceEnabled()) notFound();
   const { country, locale, slug } = await params;
   const [rawSearchParams, seller, currency, t] = await Promise.all([
     searchParams,

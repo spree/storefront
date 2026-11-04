@@ -692,7 +692,7 @@
   "sellers": {
     "title": "Sprzedawcy",
     "subtitle": "Odkryj niezależne sklepy w naszym marketplace.",
-    "sellerCount": "{count, plural, one {# sprzedawca} few {# sprzedawców} many {# sprzedawców} other {# sprzedawcy}}",
+    "sellerCount": "{count, plural, one {# sprzedawca} few {# sprzedawcy} many {# sprzedawców} other {# sprzedawcy}}",
     "noSellers": "Brak sprzedawców",
     "noSellersHint": "Zajrzyj wkrótce — dołączają nowe sklepy.",
     "previous": "Poprzednia",

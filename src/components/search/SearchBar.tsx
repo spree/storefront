@@ -282,7 +282,7 @@ export function SearchBar({ basePath, autoFocus, onNavigate }: SearchBarProps) {
       {/* Suggestions dropdown */}
       {showSuggestions && (
         <div
-          className="fixed left-0 right-0 mt-1 bg-white border-b border-gray-200 z-50"
+          className="fixed left-0 right-0 mt-1 max-h-[calc(100dvh-5rem)] overflow-y-auto overscroll-contain bg-white border-b border-gray-200 z-50"
           onMouseDown={handleSuggestionsMouseDown}
         >
           <div className="container mx-auto px-4 sm:px-6 lg:px-8">
@@ -390,8 +390,8 @@ export function SearchBar({ basePath, autoFocus, onNavigate }: SearchBarProps) {
                     </div>
                   )}
                 </div>
-                {/* View all results link */}
-                {trimmedQuery && (
+                {/* The results page lists products only */}
+                {trimmedQuery && results.products.length > 0 && (
                   <div className="border-t border-gray-100">
                     <button
                       type="button"
