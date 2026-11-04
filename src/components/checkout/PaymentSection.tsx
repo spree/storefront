@@ -59,6 +59,7 @@ import {
   paypalClientId,
   resolveGatewayId,
 } from "@/lib/utils/payment-gateway";
+import { stripePublishableKey } from "@/lib/utils/stripe";
 
 export type PaymentCompleteResult =
   | { type: "session"; sessionId: string; sessionResult?: string }
@@ -897,6 +898,7 @@ export function PaymentSection({
               if (canUseSavedCard) {
                 // Stripe saved card flow
                 const result = await confirmWithSavedCard(
+                  stripePublishableKey(selectedMethod),
                   clientSecret!,
                   selectedCardId!,
                   returnUrl,
@@ -1243,6 +1245,7 @@ export function PaymentSection({
                                     <StripePaymentForm
                                       key={secret}
                                       clientSecret={secret}
+                                      publishableKey={stripePublishableKey(pm)}
                                       onReady={handleGatewayReady}
                                     />
                                   </div>

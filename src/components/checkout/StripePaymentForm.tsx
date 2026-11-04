@@ -9,7 +9,7 @@ import {
 import { CircleAlert } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { stripePromise } from "@/lib/utils/stripe";
+import { getStripe } from "@/lib/utils/stripe";
 
 export interface StripePaymentFormHandle {
   confirmPayment: (returnUrl: string) => Promise<{ error?: string }>;
@@ -18,6 +18,8 @@ export interface StripePaymentFormHandle {
 
 interface StripePaymentFormProps {
   clientSecret: string;
+  /** The key of the Stripe account behind the chosen payment method. */
+  publishableKey: string | undefined;
   onReady: (handle: StripePaymentFormHandle) => void;
 }
 
@@ -88,11 +90,12 @@ function StripePaymentFormInner({
 
 export function StripePaymentForm({
   clientSecret,
+  publishableKey,
   onReady,
 }: StripePaymentFormProps) {
   return (
     <Elements
-      stripe={stripePromise}
+      stripe={getStripe(publishableKey)}
       options={{
         clientSecret,
         appearance: {
@@ -123,11 +126,12 @@ export function StripePaymentForm({
  * Confirm payment with a saved card (no Elements/PaymentElement needed).
  */
 export async function confirmWithSavedCard(
+  publishableKey: string | undefined,
   clientSecret: string,
   paymentMethodId: string,
   returnUrl: string,
 ): Promise<{ error?: string }> {
-  const stripe = await stripePromise;
+  const stripe = await getStripe(publishableKey);
   if (!stripe) {
     return { error: "Stripe has not loaded yet" };
   }
