@@ -267,6 +267,10 @@
     "placeOrder": "Realizar pedido",
     "noPaymentRequired": "No se requiere pago — tu pedido está completamente cubierto.",
     "unsupportedGateway": "Este método de pago aún no es compatible.",
+    "bankTransferAmountDue": "Pagarás {amount} por transferencia bancaria.",
+    "saveDiscount": "Ahorra un {percent} %",
+    "bankTransferAfterOrder": "Al realizar tu pedido te mostraremos nuestros datos bancarios y una referencia de pago. También te los enviaremos por correo electrónico.",
+    "bankTransferWindow": "Paga en un plazo de {days, plural, one {# día} other {# días}} o el pedido se cancelará.",
     "paypalApproveFirst": "Por favor aprueba el pago de PayPal antes de continuar.",
     "paypalApproved": "Pago de PayPal aprobado. Completando tu pedido…",
     "paypalChooseAnother": "PayPal rechazó ese método de pago. Elige otro para intentarlo de nuevo.",
@@ -440,6 +444,17 @@
     "payment": "Pago",
     "giftCard": "Tarjeta regalo",
     "confirmationSentTo": "Confirmacion enviada a"
+  },
+  "bankTransfer": {
+    "title": "Paga por transferencia bancaria para completar tu pedido",
+    "amount": "Importe",
+    "payBy": "Paga antes del {date}.",
+    "reference": "Referencia de pago",
+    "referenceHint": "Usa exactamente esta referencia para que podamos asociar tu pago a tu pedido.",
+    "accountName": "Titular de la cuenta: {name}",
+    "copy": "Copiar",
+    "copied": "Copiado",
+    "copyReference": "Copiar la referencia de pago"
   },
   "coupon": {
     "placeholder": "Tarjeta regalo o codigo de descuento",

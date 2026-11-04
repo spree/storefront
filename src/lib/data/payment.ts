@@ -1,6 +1,6 @@
 "use server";
 
-import type { Order, OrderGroup } from "@spree/sdk";
+import type { Cart, Order, OrderGroup } from "@spree/sdk";
 import { updateTag } from "next/cache";
 import {
   cacheTagSuffix,
@@ -34,9 +34,8 @@ export async function createCheckoutPaymentSession(
     const surface = await resolveSurfaceForCart(cartId);
     const options = await getCartOptions(surface);
     const id = await requireCartId(surface);
-    const session = await getClientForSurface(
-      surface,
-    ).carts.paymentSessions.create(
+    const client = getClientForSurface(surface);
+    const session = await client.carts.paymentSessions.create(
       id,
       {
         payment_method_id: paymentMethodId,
@@ -45,7 +44,17 @@ export async function createCheckoutPaymentSession(
       options,
     );
     updateTag(checkoutTag(surface));
-    return { session };
+    // Creating a session can change the cart's total: bank transfer
+    // (spree-bank_payments) applies its discount, and every other method
+    // releases bank transfer first. Read the cart back so the checkout shows
+    // the total the session was sized for. The session stands either way.
+    let cart: Cart | null = null;
+    try {
+      cart = (await client.carts.get(id, options)) ?? null;
+    } catch {
+      cart = null;
+    }
+    return { session, cart };
   }, "Failed to create payment session");
 }
 

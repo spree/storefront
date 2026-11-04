@@ -4,10 +4,12 @@ import { ChevronLeft } from "lucide-react";
 import Link from "next/link";
 import { getTranslations } from "next-intl/server";
 import { AddressBlock } from "@/components/order/AddressBlock";
+import { BankTransferInstructions } from "@/components/order/BankTransferInstructions";
 import { FulfillmentBlock } from "@/components/order/FulfillmentBlock";
 import { LineItemCard } from "@/components/order/LineItemCard";
 import { OrderTotals } from "@/components/order/OrderTotals";
 import { PaymentInfo } from "@/components/order/PaymentInfo";
+import { pendingBankTransfers } from "@/lib/bank-transfer";
 import { formatDateTime } from "@/lib/utils/format";
 import { toPurchase } from "@/lib/utils/purchase";
 
@@ -50,6 +52,14 @@ export async function OrderDetail({
       <p className="text-sm text-gray-500 mt-1 mb-6">
         {t("placedOn", { date: formatDateTime(purchase.completed_at, locale) })}
       </p>
+
+      {/* A buyer paying by bank transfer comes back here for the reference.
+          A voided payment (an expired, cancelled order) carries no quote. */}
+      {pendingBankTransfers(purchase).map((quote) => (
+        <div key={quote.reference} className="mb-6">
+          <BankTransferInstructions quote={quote} locale={locale} />
+        </div>
+      ))}
 
       {/* Walked per seller order: a parcel with no manifest falls back to its
           own seller's items, and a seller order with no parcels yet still

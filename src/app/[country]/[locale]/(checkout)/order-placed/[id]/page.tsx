@@ -3,9 +3,10 @@
 import { CircleCheckBig, Package } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import { use, useEffect, useMemo, useRef, useState } from "react";
 import { AddressBlock } from "@/components/order/AddressBlock";
+import { BankTransferInstructions } from "@/components/order/BankTransferInstructions";
 import { OrderTotals } from "@/components/order/OrderTotals";
 import { PaymentInfo } from "@/components/order/PaymentInfo";
 import { Button } from "@/components/ui/button";
@@ -13,6 +14,7 @@ import { ProductImage } from "@/components/ui/product-image";
 import { useCheckout } from "@/contexts/CheckoutContext";
 import { useFormatMoney } from "@/hooks/useFormatMoney";
 import { trackPurchase } from "@/lib/analytics/gtm";
+import { pendingBankTransfers } from "@/lib/bank-transfer";
 import { getCompletedOrder } from "@/lib/data/checkout";
 import { getCachedCompletedOrder } from "@/lib/utils/completed-order-cache";
 import { extractBasePath } from "@/lib/utils/path";
@@ -28,6 +30,7 @@ interface OrderPlacedPageProps {
 }
 
 export default function OrderPlacedPage({ params }: OrderPlacedPageProps) {
+  const locale = useLocale();
   const { id: cartId } = use(params);
   const pathname = usePathname();
   const basePath = extractBasePath(pathname);
@@ -149,6 +152,13 @@ export default function OrderPlacedPage({ params }: OrderPlacedPageProps) {
           </p>
         )}
       </div>
+
+      {/* How to pay, first: an order paid by bank transfer isn't paid yet */}
+      {pendingBankTransfers(purchase).map((quote) => (
+        <div key={quote.reference} className="mb-6">
+          <BankTransferInstructions quote={quote} locale={locale} />
+        </div>
+      ))}
 
       {/* Order Items */}
       <div className="bg-white rounded-xl border border-gray-200 overflow-hidden mb-6">

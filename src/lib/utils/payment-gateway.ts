@@ -9,7 +9,13 @@
  */
 
 /** Known gateway identifiers for conditional SDK loading */
-export type GatewayId = "stripe" | "adyen" | "paypal" | "razorpay" | "unknown";
+export type GatewayId =
+  | "stripe"
+  | "adyen"
+  | "paypal"
+  | "razorpay"
+  | "bank_transfer"
+  | "unknown";
 
 /**
  * Map Spree PaymentMethod.type (API shorthand) → frontend gateway ID.
@@ -44,6 +50,9 @@ const GATEWAY_TYPE_MAP: Record<string, GatewayId> = {
   paypal: "paypal",
   "SpreePaypalCheckout::Gateway": "paypal",
   "Spree::Gateway::PayPalExpress": "paypal",
+  // Bank transfer (spree-bank_payments gem): no SDK, the storefront's own
+  // button places the order and the confirmation shows how to pay.
+  bank_transfer: "bank_transfer",
   // Razorpay (spree_razorpay_checkout gem)
   razorpay_checkout: "razorpay",
   razorpay: "razorpay",

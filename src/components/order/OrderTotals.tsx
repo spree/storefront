@@ -1,6 +1,7 @@
 import type { Cart, Order, OrderGroup } from "@spree/sdk";
 import { useTranslations } from "next-intl";
 import { useFormatMoney } from "@/hooks/useFormatMoney";
+import { totalDiscount } from "@/lib/utils/discounts";
 
 type OrderLike = Cart | Order | OrderGroup;
 
@@ -28,15 +29,16 @@ export function OrderTotals({ order }: OrderTotalsProps) {
         </span>
       </div>
 
-      {order.discount_total &&
-        Number.parseFloat(order.discount_total) !== 0 && (
-          <div className="flex justify-between text-sm">
-            <span className="text-gray-500">{t("discount")}</span>
-            <span className="text-green-600">
-              {formatMoney(order.discount_total, order.currency)}
-            </span>
-          </div>
-        )}
+      {/* Promotions and every other discount (bank transfer's), which
+          Spree 6 leaves out of discount_total. */}
+      {totalDiscount(order) && (
+        <div className="flex justify-between text-sm">
+          <span className="text-gray-500">{t("discount")}</span>
+          <span className="text-green-600">
+            {formatMoney(totalDiscount(order), order.currency)}
+          </span>
+        </div>
+      )}
 
       {Number.parseFloat(order.tax_total ?? "0") > 0 && (
         <div className="flex justify-between text-sm">

@@ -267,6 +267,10 @@
     "placeOrder": "Złóż zamówienie",
     "noPaymentRequired": "Płatność nie jest wymagana — zamówienie jest w pełni pokryte.",
     "unsupportedGateway": "Ta metoda płatności nie jest jeszcze obsługiwana.",
+    "bankTransferAmountDue": "Zapłacisz {amount} przelewem bankowym.",
+    "saveDiscount": "Oszczędzasz {percent}%",
+    "bankTransferAfterOrder": "Po złożeniu zamówienia pokażemy Ci nasze dane bankowe i tytuł przelewu. Wyślemy je też e-mailem.",
+    "bankTransferWindow": "Zapłać w ciągu {days, plural, one {# dnia} other {# dni}}, inaczej zamówienie zostanie anulowane.",
     "paypalApproveFirst": "Zatwierdź płatność PayPal przed kontynuowaniem.",
     "paypalApproved": "Płatność PayPal zatwierdzona. Finalizacja zamówienia…",
     "paypalChooseAnother": "PayPal odrzucił tę metodę płatności. Wybierz inną, aby spróbować ponownie.",
@@ -440,6 +444,17 @@
     "payment": "Płatność",
     "giftCard": "Karta podarunkowa",
     "confirmationSentTo": "Potwierdzenie wysłane do"
+  },
+  "bankTransfer": {
+    "title": "Zapłać przelewem bankowym, aby sfinalizować zamówienie",
+    "amount": "Kwota",
+    "payBy": "Zapłać do {date}.",
+    "reference": "Tytuł przelewu",
+    "referenceHint": "Wpisz dokładnie ten tytuł przelewu, abyśmy mogli przypisać płatność do Twojego zamówienia.",
+    "accountName": "Odbiorca: {name}",
+    "copy": "Kopiuj",
+    "copied": "Skopiowano",
+    "copyReference": "Kopiuj tytuł przelewu"
   },
   "coupon": {
     "placeholder": "Karta podarunkowa lub kod rabatowy",

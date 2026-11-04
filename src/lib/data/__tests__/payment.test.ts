@@ -77,7 +77,44 @@ describe("payment server actions", () => {
         { payment_method_id: "pm-1" },
         { spreeToken: "order-token-123", token: undefined },
       );
-      expect(result).toEqual({ success: true, session: mockSession });
+      expect(result).toEqual({
+        success: true,
+        session: mockSession,
+        cart: null,
+      });
+    });
+
+    // Creating a session can change the total: bank transfer applies its
+    // discount, and every other method releases it first.
+    it("returns the cart as it is once the session exists", async () => {
+      const refreshed = { id: "cart-1", total: "75.66" };
+      mockClient.carts.paymentSessions.create.mockResolvedValue(mockSession);
+      mockClient.carts.get.mockResolvedValue(refreshed);
+
+      const result = await createCheckoutPaymentSession("cart-1", "pm-1");
+
+      expect(mockClient.carts.get).toHaveBeenCalledWith("cart-1", {
+        spreeToken: "order-token-123",
+        token: undefined,
+      });
+      expect(result).toEqual({
+        success: true,
+        session: mockSession,
+        cart: refreshed,
+      });
+    });
+
+    it("still returns the session when the cart cannot be read back", async () => {
+      mockClient.carts.paymentSessions.create.mockResolvedValue(mockSession);
+      mockClient.carts.get.mockRejectedValue(new Error("timeout"));
+
+      const result = await createCheckoutPaymentSession("cart-1", "pm-1");
+
+      expect(result).toEqual({
+        success: true,
+        session: mockSession,
+        cart: null,
+      });
     });
 
     it("passes external_data when provided", async () => {

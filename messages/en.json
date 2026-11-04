@@ -267,6 +267,10 @@
     "placeOrder": "Place Order",
     "noPaymentRequired": "No payment required — your order is fully covered.",
     "unsupportedGateway": "This payment method is not yet supported in the storefront.",
+    "bankTransferAmountDue": "You'll pay {amount} by bank transfer.",
+    "saveDiscount": "Save {percent}%",
+    "bankTransferAfterOrder": "Place your order and we'll show you our bank details and a payment reference. We'll email them to you too.",
+    "bankTransferWindow": "Please pay within {days, plural, one {# day} other {# days}}, or the order will be cancelled.",
     "paypalApproveFirst": "Please approve the PayPal payment before continuing.",
     "paypalApproved": "PayPal payment approved. Completing your order…",
     "paypalChooseAnother": "PayPal declined that payment method. Choose another to try again.",
@@ -440,6 +444,17 @@
     "payment": "Payment",
     "giftCard": "Gift Card",
     "confirmationSentTo": "Confirmation sent to"
+  },
+  "bankTransfer": {
+    "title": "Pay by bank transfer to complete your order",
+    "amount": "Amount",
+    "payBy": "Please pay by {date}.",
+    "reference": "Payment reference",
+    "referenceHint": "Use this reference exactly, so we can match your payment to your order.",
+    "accountName": "Account name: {name}",
+    "copy": "Copy",
+    "copied": "Copied",
+    "copyReference": "Copy the payment reference"
   },
   "coupon": {
     "placeholder": "Gift card or discount code",

@@ -4,6 +4,7 @@ import type { Cart } from "@spree/sdk";
 import { useTranslations } from "next-intl";
 import { ProductImage } from "@/components/ui/product-image";
 import { useFormatMoney } from "@/hooks/useFormatMoney";
+import { totalDiscount } from "@/lib/utils/discounts";
 import { lineItemAmount } from "@/lib/utils/price";
 
 interface SummaryProps {
@@ -77,11 +78,13 @@ export function Summary({ cart }: SummaryProps) {
           )}
         </div>
 
-        {cart.discount_total && parseFloat(cart.discount_total) !== 0 && (
+        {/* Promotions and every other discount (bank transfer's), which
+            Spree 6 leaves out of discount_total. */}
+        {totalDiscount(cart) && (
           <div className="flex justify-between text-sm">
             <span className="text-gray-700">{tc("discount")}</span>
             <span className="text-green-700">
-              {formatMoney(cart.discount_total, cart.currency)}
+              {formatMoney(totalDiscount(cart), cart.currency)}
             </span>
           </div>
         )}

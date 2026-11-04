@@ -774,6 +774,7 @@ function CheckoutPageContentInner({
             processing={processing}
             setProcessing={setProcessing}
             onSessionMethodChange={setIsSessionPayment}
+            onCartUpdated={setCart}
             errors={sectionErrors.payment}
           />
         </div>

@@ -25,6 +25,7 @@ import {
   AdyenPaymentForm,
   type AdyenPaymentFormHandle,
 } from "@/components/checkout/AdyenPaymentForm";
+import { BankTransferPaymentForm } from "@/components/checkout/BankTransferPaymentForm";
 import {
   type PayPalApprovalOutcome,
   PayPalPaymentForm,
@@ -38,6 +39,10 @@ import {
 import { Checkbox } from "@/components/ui/checkbox";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { useCountryStates } from "@/hooks/useCountryStates";
+import {
+  bankTransferMethodInfo,
+  hasBankTransferDiscount,
+} from "@/lib/bank-transfer";
 import { getCreditCards } from "@/lib/data/credit-cards";
 import {
   createCheckoutPaymentSession,
@@ -77,7 +82,14 @@ interface PaymentSectionProps {
   onPaymentComplete: (result: PaymentCompleteResult) => Promise<boolean>;
   processing: boolean;
   setProcessing: (processing: boolean) => void;
-  onSessionMethodChange?: (isSessionBased: boolean) => void;
+  /** Reports whether the selected method pays now ("Pay Now") rather than after the order is placed ("Place Order"). */
+  onSessionMethodChange?: (paysNow: boolean) => void;
+  /**
+   * Hands the checkout the cart as it stands once a payment session exists.
+   * Creating one can change the total: bank transfer applies its discount,
+   * and every other method releases bank transfer first.
+   */
+  onCartUpdated?: (cart: Cart) => void;
   errors?: string[];
 }
 
@@ -92,6 +104,7 @@ export function PaymentSection({
   processing,
   setProcessing,
   onSessionMethodChange,
+  onCartUpdated,
   errors,
 }: PaymentSectionProps) {
   const t = useTranslations("checkout");
@@ -122,16 +135,24 @@ export function PaymentSection({
   const isSessionBased =
     !isZeroAmount && (selectedMethod?.session_required ?? false);
 
-  // Notify parent when session method changes (for button text)
+  // Bank transfer is a session too, but the buyer pays after placing the
+  // order, so the button reads "Place Order".
+  const paysNow =
+    isSessionBased &&
+    resolveGatewayId(selectedMethod?.type ?? "") !== "bank_transfer";
+
+  // Notify parent when the method's pay timing changes (for button text)
   const onSessionMethodChangeRef = useRef(onSessionMethodChange);
   onSessionMethodChangeRef.current = onSessionMethodChange;
+  const onCartUpdatedRef = useRef(onCartUpdated);
+  onCartUpdatedRef.current = onCartUpdated;
 
-  const prevIsSessionRef = useRef<boolean | null>(null);
+  const prevPaysNowRef = useRef<boolean | null>(null);
   useEffect(() => {
-    if (prevIsSessionRef.current === isSessionBased) return;
-    prevIsSessionRef.current = isSessionBased;
-    onSessionMethodChangeRef.current?.(isSessionBased);
-  }, [isSessionBased]);
+    if (prevPaysNowRef.current === paysNow) return;
+    prevPaysNowRef.current = paysNow;
+    onSessionMethodChangeRef.current?.(paysNow);
+  }, [paysNow]);
 
   // ── Billing address ─────────────────────────────────────────────────
   const shipAddressData = useMemo(
@@ -223,6 +244,13 @@ export function PaymentSection({
         if (requestId !== sessionRequestIdRef.current) return;
 
         if (result.success && result.session) {
+          // The session was sized for the cart as it now stands. Record that
+          // cart's total before handing it over, so the total effect below
+          // doesn't take the change this session made as a reason to resize it.
+          if (result.cart) {
+            lastTotalRef.current = result.cart.total;
+            onCartUpdatedRef.current?.(result.cart);
+          }
           const extData = result.session.external_data;
           if (extData && Object.keys(extData).length > 0) {
             // Include external_id so gateway forms can access the
@@ -308,7 +336,14 @@ export function PaymentSection({
   // (fresh session ⇒ new client secret ⇒ new `key`) and silently wipe
   // whatever the customer already typed — e.g. when a shipping-rate save
   // lands while they enter card details.
+  // Only a change in the cart we are given counts: a session created against
+  // the refreshed cart records that cart's total, and the render before the
+  // checkout takes the refreshed cart still carries the old one.
+  const lastCartTotalRef = useRef(cart.total);
   useEffect(() => {
+    const cartTotalChanged = lastCartTotalRef.current !== cart.total;
+    lastCartTotalRef.current = cart.total;
+    if (!cartTotalChanged) return;
     if (!initRef.current) return;
     if (!isSessionBased || !selectedMethod) return;
     if (lastTotalRef.current === cart.total) return;
@@ -618,6 +653,23 @@ export function PaymentSection({
                 | string
                 | undefined;
               const gatewayId = resolveGatewayId(selectedMethod.type);
+
+              // Bank transfer has nothing to confirm with a gateway: placing
+              // the order completes its session, and the confirmation page
+              // shows how to pay. A released or expired quote can't be
+              // completed (the gem answers 422 and asks the buyer to choose
+              // bank transfer again); it is already chosen, so a fresh
+              // session starts here for the next Place Order.
+              if (gatewayId === "bank_transfer") {
+                const placed = await onPaymentComplete({
+                  type: "session",
+                  sessionId: paymentSessionId,
+                });
+                if (!placed)
+                  createSession(selectedCardRef.current, selectedMethod);
+                return {};
+              }
+
               const isStripe = gatewayId === "stripe";
               const isApprovalDriven =
                 gatewayId === "adyen" || gatewayId === "paypal";
@@ -702,6 +754,7 @@ export function PaymentSection({
       cart.id,
       setProcessing,
       t,
+      createSession,
     ],
   );
 
@@ -770,6 +823,17 @@ export function PaymentSection({
   }
 
   // ── Render ──────────────────────────────────────────────────────────
+  // What paying by bank transfer saves, shown before the buyer chooses.
+  const discountBadge = (pm: PaymentMethod) => {
+    const info = bankTransferMethodInfo(pm);
+    if (!info || !hasBankTransferDiscount(info.discountPercent)) return null;
+    return (
+      <span className="rounded-sm bg-green-100 px-2 py-0.5 text-xs font-medium text-green-800">
+        {t("saveDiscount", { percent: info.discountPercent })}
+      </span>
+    );
+  };
+
   return (
     <div>
       {/* Section Header */}
@@ -812,6 +876,7 @@ export function PaymentSection({
                   <span className="text-sm font-medium text-gray-900">
                     {pm.name}
                   </span>
+                  {discountBadge(pm)}
                 </label>
               )}
 
@@ -823,6 +888,7 @@ export function PaymentSection({
                     <span className="text-sm font-medium text-gray-900">
                       {pm.name}
                     </span>
+                    {discountBadge(pm)}
                   </div>
                 </div>
               )}
@@ -948,6 +1014,20 @@ export function PaymentSection({
                         (() => {
                           const ext = sessionExternalData;
                           switch (pmGatewayId) {
+                            case "bank_transfer": {
+                              const info = bankTransferMethodInfo(pm);
+                              return (
+                                <div className="p-4">
+                                  <BankTransferPaymentForm
+                                    amount={
+                                      cart.amount_due ?? cart.total ?? "0"
+                                    }
+                                    currency={cart.currency}
+                                    expiryDays={info?.expiryDays ?? null}
+                                  />
+                                </div>
+                              );
+                            }
                             case "stripe": {
                               const secret = ext.client_secret as
                                 | string

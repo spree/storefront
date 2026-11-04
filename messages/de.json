@@ -267,6 +267,10 @@
     "placeOrder": "Bestellung aufgeben",
     "noPaymentRequired": "Keine Zahlung erforderlich — Ihre Bestellung ist vollständig abgedeckt.",
     "unsupportedGateway": "Diese Zahlungsmethode wird noch nicht unterstützt.",
+    "bankTransferAmountDue": "Sie zahlen {amount} per Banküberweisung.",
+    "saveDiscount": "{percent} % sparen",
+    "bankTransferAfterOrder": "Nach Ihrer Bestellung zeigen wir Ihnen unsere Bankverbindung und einen Verwendungszweck. Wir senden Ihnen beides auch per E-Mail.",
+    "bankTransferWindow": "Bitte zahlen Sie innerhalb von {days, plural, one {# Tag} other {# Tagen}}, sonst wird die Bestellung storniert.",
     "paypalApproveFirst": "Bitte genehmigen Sie die PayPal-Zahlung, bevor Sie fortfahren.",
     "paypalApproved": "PayPal-Zahlung genehmigt. Ihre Bestellung wird abgeschlossen…",
     "paypalChooseAnother": "PayPal hat diese Zahlungsart abgelehnt. Wählen Sie eine andere, um es erneut zu versuchen.",
@@ -440,6 +444,17 @@
     "payment": "Zahlung",
     "giftCard": "Geschenkkarte",
     "confirmationSentTo": "Bestätigung gesendet an"
+  },
+  "bankTransfer": {
+    "title": "Bezahlen Sie per Banküberweisung, um Ihre Bestellung abzuschließen",
+    "amount": "Betrag",
+    "payBy": "Bitte zahlen Sie bis zum {date}.",
+    "reference": "Verwendungszweck",
+    "referenceHint": "Geben Sie genau diesen Verwendungszweck an, damit wir Ihre Zahlung Ihrer Bestellung zuordnen können.",
+    "accountName": "Kontoinhaber: {name}",
+    "copy": "Kopieren",
+    "copied": "Kopiert",
+    "copyReference": "Verwendungszweck kopieren"
   },
   "coupon": {
     "placeholder": "Geschenkkarte oder Rabattcode",

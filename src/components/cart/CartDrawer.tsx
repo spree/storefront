@@ -19,6 +19,7 @@ import {
 import { useCart } from "@/contexts/CartContext";
 import { useFormatMoney } from "@/hooks/useFormatMoney";
 import { trackRemoveFromCart, trackViewCart } from "@/lib/analytics/gtm";
+import { totalDiscount } from "@/lib/utils/discounts";
 import { extractBasePath } from "@/lib/utils/path";
 
 const ExpressCheckoutButton = dynamic(
@@ -253,15 +254,14 @@ export function CartDrawer() {
                       {formatMoney(cart?.item_total, cart?.currency ?? "")}
                     </span>
                   </div>
-                  {cart?.discount_total &&
-                    parseFloat(cart.discount_total) < 0 && (
-                      <div className="flex justify-between items-center text-sm text-green-600">
-                        <span>{tc("discount")}</span>
-                        <span>
-                          {formatMoney(cart.discount_total, cart.currency)}
-                        </span>
-                      </div>
-                    )}
+                  {cart && totalDiscount(cart) && (
+                    <div className="flex justify-between items-center text-sm text-green-600">
+                      <span>{tc("discount")}</span>
+                      <span>
+                        {formatMoney(totalDiscount(cart), cart.currency)}
+                      </span>
+                    </div>
+                  )}
                   <div className="flex justify-between items-center">
                     <span>{tc("shipping")}</span>
                     <span className="text-gray-500">

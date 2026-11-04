@@ -13,6 +13,7 @@ import { ProductImage } from "@/components/ui/product-image";
 import { useCart } from "@/contexts/CartContext";
 import { useFormatMoney } from "@/hooks/useFormatMoney";
 import { trackRemoveFromCart, trackViewCart } from "@/lib/analytics/gtm";
+import { totalDiscount } from "@/lib/utils/discounts";
 import { extractBasePath } from "@/lib/utils/path";
 
 const ExpressCheckoutButton = dynamic(
@@ -170,10 +171,12 @@ export default function CartPage() {
                   {formatMoney(cart.item_total, cart.currency)}
                 </dd>
               </div>
-              {cart.discount_total && parseFloat(cart.discount_total) < 0 && (
+              {/* Promotions and every other discount (bank transfer's),
+                  which Spree 6 leaves out of discount_total. */}
+              {totalDiscount(cart) && (
                 <div className="flex justify-between text-green-600">
                   <dt>{tc("discount")}</dt>
-                  <dd>{formatMoney(cart.discount_total, cart.currency)}</dd>
+                  <dd>{formatMoney(totalDiscount(cart), cart.currency)}</dd>
                 </div>
               )}
               {cart.delivery_total && parseFloat(cart.delivery_total) > 0 && (

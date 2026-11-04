@@ -267,6 +267,10 @@
     "placeOrder": "Passer la commande",
     "noPaymentRequired": "Aucun paiement requis — votre commande est entièrement couverte.",
     "unsupportedGateway": "Ce mode de paiement n'est pas encore pris en charge.",
+    "bankTransferAmountDue": "Vous paierez {amount} par virement bancaire.",
+    "saveDiscount": "Économisez {percent} %",
+    "bankTransferAfterOrder": "Après votre commande, nous vous indiquerons nos coordonnées bancaires et une référence de paiement. Nous vous les enverrons aussi par e-mail.",
+    "bankTransferWindow": "Veuillez payer sous {days, plural, one {# jour} other {# jours}}, sinon la commande sera annulée.",
     "paypalApproveFirst": "Veuillez approuver le paiement PayPal avant de continuer.",
     "paypalApproved": "Paiement PayPal approuvé. Finalisation de votre commande…",
     "paypalChooseAnother": "PayPal a refusé ce moyen de paiement. Choisissez-en un autre pour réessayer.",
@@ -440,6 +444,17 @@
     "payment": "Paiement",
     "giftCard": "Carte cadeau",
     "confirmationSentTo": "Confirmation envoyee a"
+  },
+  "bankTransfer": {
+    "title": "Payez par virement bancaire pour finaliser votre commande",
+    "amount": "Montant",
+    "payBy": "Veuillez payer avant le {date}.",
+    "reference": "Référence de paiement",
+    "referenceHint": "Indiquez exactement cette référence pour que nous puissions associer votre paiement à votre commande.",
+    "accountName": "Titulaire du compte : {name}",
+    "copy": "Copier",
+    "copied": "Copié",
+    "copyReference": "Copier la référence de paiement"
   },
   "coupon": {
     "placeholder": "Carte cadeau ou code de reduction",
