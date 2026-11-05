@@ -120,10 +120,12 @@ export function ProductDetails({
     }
 
     setLoading(true);
-    await addItem(variantId, quantity);
+    const added = await addItem(variantId, quantity);
     setLoading(false);
     trackAddToCart(product, selectedVariant, quantity, currency);
-    trackKlaviyoAddedToCart(product, selectedVariant, quantity, basePath);
+    // Klaviyo flows act on this event, so a failed add sends nothing.
+    if (added)
+      trackKlaviyoAddedToCart(product, selectedVariant, quantity, basePath);
   };
 
   return (
