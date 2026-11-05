@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { notFound } from "next/navigation";
+import { notFound, permanentRedirect } from "next/navigation";
 import { getTranslations } from "next-intl/server";
 import { CollectionHeader } from "@/components/collections/CollectionHeader";
 import { ProductListing } from "@/components/products/ProductListing";
@@ -11,6 +11,7 @@ import {
 import { resolveCurrency } from "@/lib/data/markets";
 import { generateCollectionMetadata } from "@/lib/metadata/collection";
 import { parseListingSearchParams } from "@/lib/utils/listing-search-params";
+import { queryString } from "@/lib/utils/query-string";
 
 interface CollectionPageProps {
   params: Promise<{ country: string; locale: string; permalink: string }>;
@@ -42,6 +43,13 @@ export default async function CollectionPage({
   if (!collection) notFound();
 
   const basePath = `/${country}/${locale}`;
+
+  // An old permalink still resolves after a rename; send it to the current one.
+  if (collection.permalink !== decodeURIComponent(permalink)) {
+    permanentRedirect(
+      `${basePath}/collections/${collection.permalink}${queryString(rawSearchParams)}`,
+    );
+  }
   const listingState = parseListingSearchParams(rawSearchParams);
 
   // Pre-bind the collection ID so the client InfiniteProductList island gets
