@@ -7,12 +7,15 @@ import {
 } from "@/i18n/markets";
 import {
   getSitemapCategoryPage,
+  getSitemapCollectionPage,
   getSitemapMarkets,
   getSitemapProductPage,
   getSitemapResourceCount,
   getSitemapSellerPage,
   type SitemapCategory,
+  type SitemapCollection,
   type SitemapProduct,
+  type SitemapResource,
   type SitemapSeller,
 } from "@/lib/data/sitemap";
 import { isMarketplaceEnabled } from "@/lib/spree";
@@ -25,19 +28,75 @@ interface LocaleOptions {
   country: string;
 }
 
+type SitemapEntry = MetadataRoute.Sitemap[number];
+
 interface LocaleCatalog extends LocaleOptions {
   marketId: string;
-  productCount: number;
-  categoryCount: number;
-  /** Seller profiles; always 0 when the marketplace flag is off. */
-  sellerCount: number;
+  /** Items per resource; 0 for a resource that is disabled or skipped. */
+  counts: Record<SitemapResource, number>;
 }
 
-interface PageCaches {
-  products: Map<string, Promise<SitemapProduct[]>>;
-  categories: Map<string, Promise<SitemapCategory[]>>;
-  sellers: Map<string, Promise<SitemapSeller[]>>;
+/**
+ * A sitemap entry whose `url` is relative to `/{country}/{locale}`, so a
+ * translated page can be shared by every country using that locale. `null`
+ * marks an item that is counted but not listed (a root category).
+ */
+type RelativeEntry = SitemapEntry | null;
+
+/** Store API pages already requested during one sitemap response. */
+type PageCaches = Record<
+  SitemapResource,
+  Map<string, Promise<RelativeEntry[]>>
+>;
+
+interface ResourceSource {
+  /** Off resources are never counted or fetched. */
+  enabled: () => boolean;
+  /**
+   * Optional resources are extras: a failing count skips them for that
+   * locale instead of failing the sitemap.
+   */
+  optional: boolean;
+  loadPage: (
+    marketId: string,
+    page: number,
+    limit: number,
+    options: LocaleOptions,
+  ) => Promise<RelativeEntry[]>;
 }
+
+/**
+ * Every resource listed per country/locale, in sitemap order. Chunk
+ * positions follow this order.
+ */
+const RESOURCES: Record<SitemapResource, ResourceSource> = {
+  products: {
+    enabled: () => true,
+    optional: false,
+    loadPage: async (...args) =>
+      (await getSitemapProductPage(...args)).map(productEntry),
+  },
+  categories: {
+    enabled: () => true,
+    optional: false,
+    loadPage: async (...args) =>
+      (await getSitemapCategoryPage(...args)).map(categoryEntry),
+  },
+  collections: {
+    enabled: () => true,
+    optional: true,
+    loadPage: async (...args) =>
+      (await getSitemapCollectionPage(...args)).map(collectionEntry),
+  },
+  sellers: {
+    enabled: isMarketplaceEnabled,
+    optional: true,
+    loadPage: async (...args) =>
+      (await getSitemapSellerPage(...args)).map(sellerEntry),
+  },
+};
+
+const RESOURCE_ORDER = Object.keys(RESOURCES) as SitemapResource[];
 
 /**
  * Google permits 50,000 URLs, but 10,000 keeps each request below roughly 100
@@ -146,11 +205,9 @@ export default async function sitemap(props: {
   const chunkStart = id * URLS_PER_SITEMAP;
   const chunkEnd = chunkStart + URLS_PER_SITEMAP;
   const entries: MetadataRoute.Sitemap = [];
-  const pageCaches: PageCaches = {
-    products: new Map(),
-    categories: new Map(),
-    sellers: new Map(),
-  };
+  const pageCaches = Object.fromEntries(
+    RESOURCE_ORDER.map((resource) => [resource, new Map()]),
+  ) as PageCaches;
   let targetStart = 0;
 
   for (const target of countryLocales) {
@@ -167,82 +224,35 @@ export default async function sitemap(props: {
     const basePath = `${baseUrl}/${target.country}/${target.locale}`;
     appendStaticEntries(entries, basePath, targetStart, chunkStart, chunkEnd);
 
-    const productStart = targetStart + staticEntries(basePath).length;
-    const productEnd = productStart + catalog.productCount;
-    const categoryStart = productEnd;
-    const categoryEnd = categoryStart + catalog.categoryCount;
-    const sellerStart = categoryEnd;
-    const sellerEnd = sellerStart + catalog.sellerCount;
-
-    const productRange = intersectRange(
-      productStart,
-      productEnd,
-      chunkStart,
-      chunkEnd,
-    );
-    const categoryRange = intersectRange(
-      categoryStart,
-      categoryEnd,
-      chunkStart,
-      chunkEnd,
-    );
-    const sellerRange = intersectRange(
-      sellerStart,
-      sellerEnd,
-      chunkStart,
-      chunkEnd,
-    );
-
-    const [products, categories, sellers] = await Promise.allSettled([
-      productRange
-        ? fetchProductRange(
+    // Each resource occupies the next `count` positions after the last.
+    let resourceStart = targetStart + staticEntries(basePath).length;
+    const requests = RESOURCE_ORDER.map((resource) => {
+      const start = resourceStart;
+      resourceStart += catalog.counts[resource];
+      const range = intersectRange(start, resourceStart, chunkStart, chunkEnd);
+      return range
+        ? fetchEntryRange(
+            resource,
             catalog,
-            productRange.start - productStart,
-            productRange.end - productStart,
+            range.start - start,
+            range.end - start,
             pageCaches,
           )
-        : Promise.resolve([]),
-      categoryRange
-        ? fetchCategoryRange(
-            catalog,
-            categoryRange.start - categoryStart,
-            categoryRange.end - categoryStart,
-            pageCaches,
-          )
-        : Promise.resolve([]),
-      sellerRange
-        ? fetchSellerRange(
-            catalog,
-            sellerRange.start - sellerStart,
-            sellerRange.end - sellerStart,
-            pageCaches,
-          )
-        : Promise.resolve([]),
-    ]);
+        : Promise.resolve([]);
+    });
+    const results = await Promise.allSettled(requests);
 
-    if (products.status === "fulfilled") {
-      appendProductEntries(entries, basePath, products.value);
-    } else {
-      console.error(
-        `Sitemap: skipping products for ${target.country}/${target.locale}.`,
-        products.reason,
-      );
-    }
-    if (categories.status === "fulfilled") {
-      appendCategoryEntries(entries, basePath, categories.value);
-    } else {
-      console.error(
-        `Sitemap: skipping categories for ${target.country}/${target.locale}.`,
-        categories.reason,
-      );
-    }
-    if (sellers.status === "fulfilled") {
-      appendSellerEntries(entries, basePath, sellers.value);
-    } else {
-      console.error(
-        `Sitemap: skipping sellers for ${target.country}/${target.locale}.`,
-        sellers.reason,
-      );
+    for (const [index, result] of results.entries()) {
+      if (result.status === "fulfilled") {
+        for (const entry of result.value) {
+          if (entry) entries.push({ ...entry, url: `${basePath}${entry.url}` });
+        }
+      } else {
+        console.error(
+          `Sitemap: skipping ${RESOURCE_ORDER[index]} for ${target.country}/${target.locale}.`,
+          result.reason,
+        );
+      }
     }
 
     targetStart = targetEnd;
@@ -271,11 +281,9 @@ function resolveBaseUrl(): string | undefined {
 }
 
 function catalogSize(catalog: LocaleCatalog): number {
-  return (
-    staticEntries("").length +
-    catalog.productCount +
-    catalog.categoryCount +
-    catalog.sellerCount
+  return RESOURCE_ORDER.reduce(
+    (size, resource) => size + catalog.counts[resource],
+    staticEntries("").length,
   );
 }
 
@@ -302,7 +310,11 @@ function staticEntries(basePath: string): MetadataRoute.Sitemap {
       changeFrequency: "daily",
       priority: 0.8,
     },
-    { url: `${basePath}/c`, changeFrequency: "weekly", priority: 0.7 },
+    {
+      url: `${basePath}/collections`,
+      changeFrequency: "weekly",
+      priority: 0.6,
+    },
     ...(isMarketplaceEnabled()
       ? [
           {
@@ -328,60 +340,50 @@ function appendStaticEntries(
   }
 }
 
-function appendProductEntries(
-  entries: MetadataRoute.Sitemap,
-  basePath: string,
-  products: SitemapProduct[],
-): void {
-  for (const product of products) {
-    entries.push({
-      url: `${basePath}/products/${product.slug}`,
-      ...(product.updated_at
-        ? { lastModified: new Date(product.updated_at) }
-        : {}),
-      changeFrequency: "weekly",
-      priority: 0.6,
-      ...(product.media && product.media.length > 0
-        ? {
-            images: product.media
-              .map((image) => image.original_url || image.large_url)
-              .filter((url: string | null): url is string => url != null),
-          }
-        : {}),
-    });
-  }
+function productEntry(product: SitemapProduct): SitemapEntry {
+  return {
+    url: `/products/${product.slug}`,
+    ...(product.updated_at
+      ? { lastModified: new Date(product.updated_at) }
+      : {}),
+    changeFrequency: "weekly",
+    priority: 0.6,
+    ...(product.media && product.media.length > 0
+      ? {
+          images: product.media
+            .map((image) => image.original_url || image.large_url)
+            .filter((url: string | null): url is string => url != null),
+        }
+      : {}),
+  };
 }
 
-function appendCategoryEntries(
-  entries: MetadataRoute.Sitemap,
-  basePath: string,
-  categories: SitemapCategory[],
-): void {
-  for (const category of categories) {
-    if (category.is_root) continue;
-    entries.push({
-      url: `${basePath}/c/${category.permalink}`,
-      ...(category.updated_at
-        ? { lastModified: new Date(category.updated_at) }
-        : {}),
-      changeFrequency: "weekly",
-      priority: 0.5,
-    });
-  }
+function categoryEntry(category: SitemapCategory): RelativeEntry {
+  if (category.is_root) return null;
+  return {
+    url: `/c/${category.permalink}`,
+    ...(category.updated_at
+      ? { lastModified: new Date(category.updated_at) }
+      : {}),
+    changeFrequency: "weekly",
+    priority: 0.5,
+  };
 }
 
-function appendSellerEntries(
-  entries: MetadataRoute.Sitemap,
-  basePath: string,
-  sellers: SitemapSeller[],
-): void {
-  for (const seller of sellers) {
-    entries.push({
-      url: `${basePath}/sellers/${seller.slug}`,
-      changeFrequency: "weekly",
-      priority: 0.5,
-    });
-  }
+function collectionEntry(collection: SitemapCollection): SitemapEntry {
+  return {
+    url: `/collections/${collection.permalink}`,
+    changeFrequency: "weekly",
+    priority: 0.5,
+  };
+}
+
+function sellerEntry(seller: SitemapSeller): SitemapEntry {
+  return {
+    url: `/sellers/${seller.slug}`,
+    changeFrequency: "weekly",
+    priority: 0.5,
+  };
 }
 
 /** Resolve every valid country/locale URL exposed by configured Markets. */
@@ -406,65 +408,50 @@ async function buildLocaleCatalog(
   target: CountryLocale,
 ): Promise<LocaleCatalog> {
   const localeOptions = { locale: target.locale, country: target.country };
-  const [productCount, categoryCount, sellerCount] = await Promise.all([
-    getSitemapResourceCount("products", target.marketId, localeOptions),
-    getSitemapResourceCount("categories", target.marketId, localeOptions),
-    // Optional extra: a failing seller count drops the seller pages, never
-    // the products and categories alongside them.
-    isMarketplaceEnabled()
-      ? getSitemapResourceCount(
-          "sellers",
-          target.marketId,
-          localeOptions,
-        ).catch((error) => {
-          console.error(
-            `Sitemap: skipping sellers for ${target.country}/${target.locale}.`,
-            error,
-          );
-          return 0;
-        })
-      : 0,
-  ]);
+  const counts = await Promise.all(
+    RESOURCE_ORDER.map(async (resource) => {
+      const source = RESOURCES[resource];
+      if (!source.enabled()) return 0;
+      const count = getSitemapResourceCount(
+        resource,
+        target.marketId,
+        localeOptions,
+      );
+      // An optional extra that fails to count drops only its own pages,
+      // never the products and categories alongside it.
+      return source.optional
+        ? count.catch((error) => {
+            console.error(
+              `Sitemap: skipping ${resource} for ${target.country}/${target.locale}.`,
+              error,
+            );
+            return 0;
+          })
+        : count;
+    }),
+  );
 
   return {
     marketId: target.marketId,
     ...localeOptions,
-    productCount: Math.min(productCount, MAX_FETCHABLE_ITEMS),
-    categoryCount: Math.min(categoryCount, MAX_FETCHABLE_ITEMS),
-    sellerCount: Math.min(sellerCount, MAX_FETCHABLE_ITEMS),
+    counts: Object.fromEntries(
+      RESOURCE_ORDER.map((resource, index) => [
+        resource,
+        Math.min(counts[index], MAX_FETCHABLE_ITEMS),
+      ]),
+    ) as Record<SitemapResource, number>,
   };
 }
 
-async function fetchProductRange(
+function fetchEntryRange(
+  resource: SitemapResource,
   catalog: LocaleCatalog,
   start: number,
   end: number,
   pageCaches: PageCaches,
-): Promise<SitemapProduct[]> {
+): Promise<RelativeEntry[]> {
   return fetchItemRange(start, end, (page) =>
-    getCachedProductPage(catalog, page, pageCaches.products),
-  );
-}
-
-async function fetchCategoryRange(
-  catalog: LocaleCatalog,
-  start: number,
-  end: number,
-  pageCaches: PageCaches,
-): Promise<SitemapCategory[]> {
-  return fetchItemRange(start, end, (page) =>
-    getCachedCategoryPage(catalog, page, pageCaches.categories),
-  );
-}
-
-async function fetchSellerRange(
-  catalog: LocaleCatalog,
-  start: number,
-  end: number,
-  pageCaches: PageCaches,
-): Promise<SitemapSeller[]> {
-  return fetchItemRange(start, end, (page) =>
-    getCachedSellerPage(catalog, page, pageCaches.sellers),
+    getCachedPage(resource, catalog, page, pageCaches[resource]),
   );
 }
 
@@ -497,61 +484,24 @@ async function fetchItemRange<T>(
   return items.slice(start - loadedRangeStart, end - loadedRangeStart);
 }
 
-function getCachedProductPage(
+function getCachedPage(
+  resource: SitemapResource,
   catalog: LocaleCatalog,
   page: number,
-  cache: PageCaches["products"],
-): Promise<SitemapProduct[]> {
+  cache: PageCaches[SitemapResource],
+): Promise<RelativeEntry[]> {
   const key = `${catalogKey(catalog)}:${page}`;
   let cached = cache.get(key);
   if (!cached) {
-    cached = getSitemapProductPage(catalog.marketId, page, ITEMS_PER_PAGE, {
-      locale: catalog.locale,
-      country: catalog.country,
-    }).catch((error) => {
-      cache.delete(key);
-      throw error;
-    });
-    cache.set(key, cached);
-  }
-  return cached;
-}
-
-function getCachedCategoryPage(
-  catalog: LocaleCatalog,
-  page: number,
-  cache: PageCaches["categories"],
-): Promise<SitemapCategory[]> {
-  const key = `${catalogKey(catalog)}:${page}`;
-  let cached = cache.get(key);
-  if (!cached) {
-    cached = getSitemapCategoryPage(catalog.marketId, page, ITEMS_PER_PAGE, {
-      locale: catalog.locale,
-      country: catalog.country,
-    }).catch((error) => {
-      cache.delete(key);
-      throw error;
-    });
-    cache.set(key, cached);
-  }
-  return cached;
-}
-
-function getCachedSellerPage(
-  catalog: LocaleCatalog,
-  page: number,
-  cache: PageCaches["sellers"],
-): Promise<SitemapSeller[]> {
-  const key = `${catalogKey(catalog)}:${page}`;
-  let cached = cache.get(key);
-  if (!cached) {
-    cached = getSitemapSellerPage(catalog.marketId, page, ITEMS_PER_PAGE, {
-      locale: catalog.locale,
-      country: catalog.country,
-    }).catch((error) => {
-      cache.delete(key);
-      throw error;
-    });
+    cached = RESOURCES[resource]
+      .loadPage(catalog.marketId, page, ITEMS_PER_PAGE, {
+        locale: catalog.locale,
+        country: catalog.country,
+      })
+      .catch((error) => {
+        cache.delete(key);
+        throw error;
+      });
     cache.set(key, cached);
   }
   return cached;

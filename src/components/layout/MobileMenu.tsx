@@ -1,6 +1,6 @@
 "use client";
 
-import type { Category } from "@spree/sdk";
+import type { Category, Collection } from "@spree/sdk";
 import { ArrowLeft, ChevronRight, X } from "lucide-react";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
@@ -16,10 +16,17 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet";
 
-type PanelType = { kind: "main" } | { kind: "category"; category: Category };
+type PanelType =
+  | { kind: "main" }
+  | { kind: "category"; category: Category }
+  | { kind: "collections" };
+
+type NavCollection = Pick<Collection, "id" | "name" | "permalink">;
 
 interface MobileMenuProps {
   rootCategories: Category[];
+  /** Collections listed in their own panel, like a category's children. */
+  collections?: NavCollection[];
   basePath: string;
   /** Whether the wholesale addon is enabled — gates the trade portal link. */
   wholesaleEnabled: boolean;
@@ -29,6 +36,7 @@ interface MobileMenuProps {
 
 export function MobileMenu({
   rootCategories,
+  collections = [],
   basePath,
   wholesaleEnabled,
   marketplaceEnabled = false,
@@ -181,7 +189,9 @@ export function MobileMenu({
             <span>
               {currentPanel.kind === "category"
                 ? currentPanel.category.name
-                : ""}
+                : currentPanel.kind === "collections"
+                  ? t("collections")
+                  : ""}
             </span>
           </button>
           <Button
@@ -219,6 +229,24 @@ export function MobileMenu({
               >
                 {t("allProducts")}
               </Link>
+              {collections.length > 0 ? (
+                <button
+                  type="button"
+                  onClick={() => pushPanel({ kind: "collections" })}
+                  className={categoryButtonClass}
+                >
+                  <span>{t("collections")}</span>
+                  <ChevronRight className="w-4 h-4 text-gray-400" />
+                </button>
+              ) : (
+                <Link
+                  href={`${basePath}/collections`}
+                  onClick={() => setOpen(false)}
+                  className={linkClass}
+                >
+                  {t("collections")}
+                </Link>
+              )}
               {marketplaceEnabled && (
                 <Link
                   href={`${basePath}/sellers`}
@@ -285,18 +313,27 @@ export function MobileMenu({
             </SheetFooter>
           </div>
 
-          {/* Category sub-panels — one for each level in the stack */}
+          {/* Sub-panels — one for each level in the stack */}
           {panelStack.map((panel, index) => {
-            if (panel.kind !== "category") return null;
+            if (panel.kind === "main") return null;
             const isAnimatedIn = index <= animatedIndex;
             let translateClass = "translate-x-full";
             if (isAnimatedIn && index < panelStack.length - 1)
               translateClass = "-translate-x-full";
             else if (isAnimatedIn) translateClass = "translate-x-0";
 
+            const title =
+              panel.kind === "category"
+                ? panel.category.name
+                : t("collections");
+            const viewAllHref =
+              panel.kind === "category"
+                ? `${basePath}/c/${panel.category.permalink}`
+                : `${basePath}/collections`;
+
             return (
               <div
-                key={`cat-${panel.category.id}-${index}`}
+                key={`${panel.kind}-${panel.kind === "category" ? panel.category.id : "all"}-${index}`}
                 className={`absolute inset-0 flex flex-col bg-white transition-transform duration-300 ease-in-out ${translateClass}`}
               >
                 {/* Back button (mobile only — desktop uses the global header) */}
@@ -307,46 +344,57 @@ export function MobileMenu({
                     className="flex items-center gap-2 text-gray-700 hover:text-gray-900 py-2 text-base font-medium"
                   >
                     <ArrowLeft className="w-5 h-5" />
-                    <span>{panel.category.name}</span>
+                    <span>{title}</span>
                   </button>
                 </div>
 
                 {/* Children */}
                 <nav className="flex flex-col gap-1 px-4 flex-1 overflow-y-auto pt-2">
-                  {panel.category.children?.map((child) =>
-                    child.children && child.children.length > 0 ? (
-                      <button
-                        key={child.id}
-                        type="button"
-                        onClick={() =>
-                          pushPanel({ kind: "category", category: child })
-                        }
-                        className={categoryButtonClass}
-                      >
-                        <span>{child.name}</span>
-                        <ChevronRight className="w-4 h-4 text-gray-400" />
-                      </button>
-                    ) : (
-                      <Link
-                        key={child.id}
-                        href={`${basePath}/c/${child.permalink}`}
-                        onClick={() => handleOpenChange(false)}
-                        className={linkClass}
-                      >
-                        {child.name}
-                      </Link>
-                    ),
-                  )}
+                  {panel.kind === "collections"
+                    ? collections.map((collection) => (
+                        <Link
+                          key={collection.id}
+                          href={`${basePath}/collections/${collection.permalink}`}
+                          onClick={() => handleOpenChange(false)}
+                          className={linkClass}
+                        >
+                          {collection.name}
+                        </Link>
+                      ))
+                    : panel.category.children?.map((child) =>
+                        child.children && child.children.length > 0 ? (
+                          <button
+                            key={child.id}
+                            type="button"
+                            onClick={() =>
+                              pushPanel({ kind: "category", category: child })
+                            }
+                            className={categoryButtonClass}
+                          >
+                            <span>{child.name}</span>
+                            <ChevronRight className="w-4 h-4 text-gray-400" />
+                          </button>
+                        ) : (
+                          <Link
+                            key={child.id}
+                            href={`${basePath}/c/${child.permalink}`}
+                            onClick={() => handleOpenChange(false)}
+                            className={linkClass}
+                          >
+                            {child.name}
+                          </Link>
+                        ),
+                      )}
                 </nav>
 
                 {/* "View all" at the bottom */}
                 <div className="border-t border-gray-200 px-4 py-3">
                   <Link
-                    href={`${basePath}/c/${panel.category.permalink}`}
+                    href={viewAllHref}
                     onClick={() => handleOpenChange(false)}
                     className="block w-full text-center text-sm text-gray-500 hover:text-gray-900 py-2 transition-colors"
                   >
-                    {t("viewAllCategory", { category: panel.category.name })}
+                    {t("viewAllCategory", { category: title })}
                   </Link>
                 </div>
               </div>

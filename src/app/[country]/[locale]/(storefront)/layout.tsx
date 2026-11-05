@@ -1,4 +1,4 @@
-import type { Category } from "@spree/sdk";
+import type { Category, Collection } from "@spree/sdk";
 import Link from "next/link";
 import { connection } from "next/server";
 import { cache, Suspense } from "react";
@@ -6,6 +6,7 @@ import { Footer, FooterCategoryLinks } from "@/components/layout/Footer";
 import { Header, HeaderMobileMenu } from "@/components/layout/Header";
 import { MainContent, SkipLink } from "@/components/layout/SkipLink";
 import { getCategories } from "@/lib/data/categories";
+import { getCollections } from "@/lib/data/collections";
 
 interface StorefrontLayoutProps {
   children: React.ReactNode;
@@ -19,6 +20,10 @@ interface StorefrontNavigationProps {
 }
 
 const EMPTY_CATEGORIES: Category[] = [];
+const EMPTY_COLLECTIONS: Collection[] = [];
+
+/** Collections listed in the menu; the rest are one "View all" away. */
+const NAV_COLLECTION_LIMIT = 24;
 
 function MobileNavigationFallback() {
   return (
@@ -61,6 +66,28 @@ const getRootCategories = cache(async (country: string, locale: string) => {
     });
 });
 
+/**
+ * Collections for the menu, in the merchant's order. Optional chrome like the
+ * categories: a failure leaves a plain "Collections" link.
+ */
+const getNavCollections = cache(async (country: string, locale: string) => {
+  await connection();
+
+  return getCollections(
+    {
+      limit: NAV_COLLECTION_LIMIT,
+      sort: "position",
+      fields: ["id", "name", "permalink"],
+    },
+    { country, locale },
+  )
+    .then((res) => res.data)
+    .catch((error) => {
+      console.error("StorefrontLayout: failed to load collections", error);
+      return EMPTY_COLLECTIONS;
+    });
+});
+
 function CategoryLinks({
   categories,
   basePath,
@@ -89,10 +116,17 @@ async function StorefrontMobileNavigation({
   country,
   locale,
 }: StorefrontNavigationProps) {
-  const rootCategories = await getRootCategories(country, locale);
+  const [rootCategories, collections] = await Promise.all([
+    getRootCategories(country, locale),
+    getNavCollections(country, locale),
+  ]);
 
   return (
-    <HeaderMobileMenu rootCategories={rootCategories} basePath={basePath} />
+    <HeaderMobileMenu
+      rootCategories={rootCategories}
+      collections={collections}
+      basePath={basePath}
+    />
   );
 }
 

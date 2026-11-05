@@ -1,6 +1,6 @@
 "use client";
 
-import type { Category, Product, Seller } from "@spree/sdk";
+import type { Category, Collection, Product, Seller } from "@spree/sdk";
 import { Search } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
@@ -27,11 +27,13 @@ interface SearchBarProps {
 type Suggestion =
   | { kind: "product"; item: Product; position: number }
   | { kind: "category"; item: Category }
+  | { kind: "collection"; item: Collection }
   | { kind: "seller"; item: Seller };
 
 const EMPTY_RESULTS: QuickSearchResults = {
   products: [],
   categories: [],
+  collections: [],
   sellers: [],
 };
 
@@ -43,6 +45,9 @@ function toSuggestions(results: QuickSearchResults): Suggestion[] {
     ...results.categories.map(
       (item): Suggestion => ({ kind: "category", item }),
     ),
+    ...results.collections.map(
+      (item): Suggestion => ({ kind: "collection", item }),
+    ),
     ...results.sellers.map((item): Suggestion => ({ kind: "seller", item })),
   ];
 }
@@ -53,6 +58,8 @@ function suggestionHref(suggestion: Suggestion, basePath: string): string {
       return `${basePath}/products/${suggestion.item.slug}`;
     case "category":
       return `${basePath}/c/${suggestion.item.permalink}`;
+    case "collection":
+      return `${basePath}/collections/${suggestion.item.permalink}`;
     case "seller":
       return `${basePath}/sellers/${suggestion.item.slug}`;
   }
@@ -248,7 +255,31 @@ export function SearchBar({ basePath, autoFocus, onNavigate }: SearchBarProps) {
   };
 
   const hasSideGroups =
-    results.categories.length > 0 || results.sellers.length > 0;
+    results.categories.length > 0 ||
+    results.collections.length > 0 ||
+    results.sellers.length > 0;
+
+  // Categories and collections share one row layout: thumbnail and name.
+  const renderGroupingOption = (s: Suggestion): React.JSX.Element =>
+    renderOption(
+      s,
+      s.kind === "category" || s.kind === "collection" ? (
+        <>
+          <div className="relative w-8 h-8 bg-gray-100 rounded flex-shrink-0 overflow-hidden">
+            <ProductImage
+              src={s.item.square_image_url || s.item.image_url}
+              alt=""
+              fill
+              className="object-cover"
+              iconClassName="w-4 h-4"
+            />
+          </div>
+          <p className="text-sm font-medium text-gray-900 truncate">
+            {s.item.name}
+          </p>
+        </>
+      ) : null,
+    );
 
   return (
     <div className="relative">
@@ -339,29 +370,12 @@ export function SearchBar({ basePath, autoFocus, onNavigate }: SearchBarProps) {
                       {renderGroup(
                         "category",
                         t("searchGroupCategories"),
-                        (s) =>
-                          renderOption(
-                            s,
-                            s.kind === "category" ? (
-                              <>
-                                <div className="relative w-8 h-8 bg-gray-100 rounded flex-shrink-0 overflow-hidden">
-                                  <ProductImage
-                                    src={
-                                      s.item.square_image_url ||
-                                      s.item.image_url
-                                    }
-                                    alt=""
-                                    fill
-                                    className="object-cover"
-                                    iconClassName="w-4 h-4"
-                                  />
-                                </div>
-                                <p className="text-sm font-medium text-gray-900 truncate">
-                                  {s.item.name}
-                                </p>
-                              </>
-                            ) : null,
-                          ),
+                        renderGroupingOption,
+                      )}
+                      {renderGroup(
+                        "collection",
+                        t("searchGroupCollections"),
+                        renderGroupingOption,
                       )}
                       {renderGroup("seller", t("searchGroupSellers"), (s) =>
                         renderOption(
