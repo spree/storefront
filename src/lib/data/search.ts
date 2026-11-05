@@ -6,6 +6,7 @@ import { getCollections } from "@/lib/data/collections";
 import { getProducts } from "@/lib/data/products";
 import { getSellers } from "@/lib/data/sellers";
 import { isMarketplaceEnabled } from "@/lib/spree";
+import { withTimeout } from "@/lib/utils/with-timeout";
 
 /** Records are trimmed to the fields below via `fields`; the rest are unset. */
 export interface QuickSearchResults {
@@ -19,6 +20,8 @@ const PRODUCT_LIMIT = 6;
 const CATEGORY_LIMIT = 4;
 const COLLECTION_LIMIT = 4;
 const SELLER_LIMIT = 4;
+/** Collections are a side group; a slow lookup leaves it empty. */
+const COLLECTION_DEADLINE_MS = 1500;
 
 /** Settled value, or an empty list when that part of the search failed. */
 function valueOrEmpty<T>(
@@ -52,11 +55,15 @@ export async function quickSearch(query: string): Promise<QuickSearchResults> {
         fields: ["id", "name", "permalink", "square_image_url", "image_url"],
         limit: CATEGORY_LIMIT,
       }),
-      getCollections({
-        search,
-        fields: ["id", "name", "permalink", "square_image_url", "image_url"],
-        limit: COLLECTION_LIMIT,
-      }),
+      withTimeout<{ data: Collection[] }>(
+        getCollections({
+          search,
+          fields: ["id", "name", "permalink", "square_image_url", "image_url"],
+          limit: COLLECTION_LIMIT,
+        }),
+        COLLECTION_DEADLINE_MS,
+        { data: [] as Collection[] },
+      ),
       isMarketplaceEnabled()
         ? getSellers({ search, limit: SELLER_LIMIT, sort: "name" })
         : Promise.resolve({ data: [] as Seller[] }),

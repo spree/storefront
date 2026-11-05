@@ -13,6 +13,10 @@ import { getAccessToken } from "@/lib/spree";
 
 /** Collections promoted on the home page, in the merchant's order. */
 const HOME_COLLECTION_LIMIT = 3;
+/** Collections looked at to fill the shelves; leading ones may be empty. */
+const HOME_COLLECTION_CANDIDATES = 12;
+/** Spare shelves loaded in case a collection has nothing sold in this market. */
+const HOME_COLLECTION_SPARES = 2;
 const PRODUCTS_PER_CAROUSEL = 8;
 
 interface CollectionCarouselsSectionProps {
@@ -101,7 +105,7 @@ async function loadShelves(
     const [{ data: collections }, userToken] = await Promise.all([
       getCollections(
         {
-          limit: HOME_COLLECTION_LIMIT,
+          limit: HOME_COLLECTION_CANDIDATES,
           sort: "position",
           fields: ["id", "name", "permalink", "products_count"],
         },
@@ -112,6 +116,7 @@ async function loadShelves(
     const shelves = await Promise.all(
       collections
         .filter((collection) => collection.products_count > 0)
+        .slice(0, HOME_COLLECTION_LIMIT + HOME_COLLECTION_SPARES)
         .map(async (collection) => {
           const { data: products } = await cachedListCollectionProducts(
             collection.id,
@@ -123,7 +128,9 @@ async function loadShelves(
         }),
     );
     // A collection can count products that aren't sold in this market.
-    return shelves.filter((shelf) => shelf.products.length > 0);
+    return shelves
+      .filter((shelf) => shelf.products.length > 0)
+      .slice(0, HOME_COLLECTION_LIMIT);
   } catch (error) {
     console.error("Home: failed to load collection carousels", error);
     return [];

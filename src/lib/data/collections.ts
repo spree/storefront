@@ -49,19 +49,29 @@ export async function getCollections(
 
 /**
  * Persistent cached collection fetch. Returns null only for a real Store API
- * 404 — other failures bubble so they are not cached as not-found.
+ * 404 — other failures bubble so they are not cached as not-found. A miss is
+ * kept for seconds, not the full TTL, so a collection published after it
+ * shows up right away.
  */
 export async function cachedGetCollection(
   idOrPermalink: string,
   options: LocaleOptions,
 ): Promise<Collection | null> {
   "use cache: remote";
-  cacheLife("tenMinutes");
   cacheTag("collections", `collection:${idOrPermalink}`);
   try {
-    return await getClient().collections.get(idOrPermalink, {}, options);
+    const collection = await getClient().collections.get(
+      idOrPermalink,
+      {},
+      options,
+    );
+    cacheLife("tenMinutes");
+    return collection;
   } catch (error) {
-    if (error instanceof SpreeError && error.status === 404) return null;
+    if (error instanceof SpreeError && error.status === 404) {
+      cacheLife("seconds");
+      return null;
+    }
     throw error;
   }
 }

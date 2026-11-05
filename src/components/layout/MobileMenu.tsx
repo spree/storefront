@@ -197,7 +197,7 @@ export function MobileMenu({
           <Button
             variant="ghost"
             size="icon-sm"
-            onClick={() => setOpen(false)}
+            onClick={() => handleOpenChange(false)}
             className="cursor-pointer ml-auto"
           >
             <X className="size-4" />

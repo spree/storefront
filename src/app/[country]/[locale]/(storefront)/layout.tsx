@@ -7,6 +7,7 @@ import { Header, HeaderMobileMenu } from "@/components/layout/Header";
 import { MainContent, SkipLink } from "@/components/layout/SkipLink";
 import { getCategories } from "@/lib/data/categories";
 import { getCollections } from "@/lib/data/collections";
+import { withTimeout } from "@/lib/utils/with-timeout";
 
 interface StorefrontLayoutProps {
   children: React.ReactNode;
@@ -24,6 +25,8 @@ const EMPTY_COLLECTIONS: Collection[] = [];
 
 /** Collections listed in the menu; the rest are one "View all" away. */
 const NAV_COLLECTION_LIMIT = 24;
+/** How long the mobile menu waits for collections before rendering without. */
+const NAV_COLLECTION_DEADLINE_MS = 2000;
 
 function MobileNavigationFallback() {
   return (
@@ -68,12 +71,13 @@ const getRootCategories = cache(async (country: string, locale: string) => {
 
 /**
  * Collections for the menu, in the merchant's order. Optional chrome like the
- * categories: a failure leaves a plain "Collections" link.
+ * categories: a failure, or a response slower than the deadline, leaves a
+ * plain "Collections" link rather than holding up the menu.
  */
 const getNavCollections = cache(async (country: string, locale: string) => {
   await connection();
 
-  return getCollections(
+  const collections = getCollections(
     {
       limit: NAV_COLLECTION_LIMIT,
       sort: "position",
@@ -86,6 +90,12 @@ const getNavCollections = cache(async (country: string, locale: string) => {
       console.error("StorefrontLayout: failed to load collections", error);
       return EMPTY_COLLECTIONS;
     });
+
+  return withTimeout(
+    collections,
+    NAV_COLLECTION_DEADLINE_MS,
+    EMPTY_COLLECTIONS,
+  );
 });
 
 function CategoryLinks({

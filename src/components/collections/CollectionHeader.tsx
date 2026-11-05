@@ -16,19 +16,30 @@ export async function CollectionHeader({
   locale,
 }: CollectionHeaderProps): Promise<React.JSX.Element> {
   const t = await getTranslations({ locale, namespace: "collections" });
+  // Over a merchant image the text goes light on a dark scrim, so it stays
+  // readable whatever the image looks like.
+  const hasImage = Boolean(collection.image_url);
 
   return (
     <div
-      className="flex flex-col justify-end min-h-[350px] bg-gray-50 bg-cover bg-center"
+      className="relative flex flex-col justify-end min-h-[350px] bg-gray-50 bg-cover bg-center"
       style={
-        collection.image_url
+        hasImage
           ? { backgroundImage: `url(${collection.image_url})` }
           : undefined
       }
     >
-      <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+      {hasImage && (
+        <div
+          aria-hidden="true"
+          className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/40 to-black/10"
+        />
+      )}
+      <div className="relative container mx-auto px-4 sm:px-6 lg:px-8">
         <nav aria-label="Breadcrumb" className="mb-4">
-          <ol className="flex items-center gap-1 text-sm text-gray-500">
+          <ol
+            className={`flex items-center gap-1 text-sm ${hasImage ? "text-white/80" : "text-gray-500"}`}
+          >
             <li>
               <Link
                 href={`${basePath}/collections`}
@@ -40,25 +51,32 @@ export async function CollectionHeader({
             <li aria-hidden="true">
               <ChevronRight className="h-4 w-4" />
             </li>
-            <li aria-current="page" className="text-gray-900">
+            <li
+              aria-current="page"
+              className={hasImage ? "text-white" : "text-gray-900"}
+            >
               {collection.name}
             </li>
           </ol>
         </nav>
 
-        <h1 className="mb-4 text-4xl font-bold text-gray-900">
+        <h1
+          className={`mb-4 text-4xl font-bold ${hasImage ? "text-white" : "text-gray-900"}`}
+        >
           {collection.name}
         </h1>
 
         {collection.description_html ? (
           <div
-            className="prose prose-gray mb-4 max-w-3xl"
+            className={`prose mb-4 max-w-3xl ${hasImage ? "prose-invert" : "prose-gray"}`}
             // Rich text is sanitized by Spree when it is saved.
             dangerouslySetInnerHTML={{ __html: collection.description_html }}
           />
         ) : (
           collection.description && (
-            <p className="mb-4 max-w-3xl text-gray-600">
+            <p
+              className={`mb-4 max-w-3xl ${hasImage ? "text-white/90" : "text-gray-600"}`}
+            >
               {collection.description}
             </p>
           )

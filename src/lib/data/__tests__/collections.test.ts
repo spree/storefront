@@ -32,6 +32,7 @@ vi.mock("next/cache", () => ({
   cacheTag: vi.fn(),
 }));
 
+import { cacheLife } from "next/cache";
 import {
   cachedGetCollection,
   cachedListCollections,
@@ -73,9 +74,14 @@ describe("collections data", () => {
     );
   });
 
-  it("returns null only for a real Store API 404", async () => {
+  it("returns null only for a real Store API 404, cached briefly", async () => {
+    getCollectionFromApi.mockResolvedValueOnce({ id: "coll_1" });
+    await cachedGetCollection("summer", options);
+    expect(cacheLife).toHaveBeenLastCalledWith("tenMinutes");
+
     getCollectionFromApi.mockRejectedValueOnce(apiError(404));
     await expect(cachedGetCollection("gone", options)).resolves.toBeNull();
+    expect(cacheLife).toHaveBeenLastCalledWith("seconds");
 
     getCollectionFromApi.mockRejectedValueOnce(apiError(500));
     await expect(cachedGetCollection("broken", options)).rejects.toThrow();
