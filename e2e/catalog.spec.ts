@@ -15,13 +15,15 @@ function productNames(page: Page) {
 }
 
 test.describe("home page", () => {
-  test("shows featured products that open their product page", async ({
+  test("shows product shelves that open their product page", async ({
     page,
   }) => {
     await page.goto(BASE_PATH);
     await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
+    // A shelf per collection, or the featured products when no collection
+    // has products; both render as a .featured-products section.
     await expect(
-      page.getByRole("heading", { name: "Featured Products" }),
+      page.locator("section.featured-products").getByRole("heading").first(),
     ).toBeVisible();
 
     await openFirstProduct(page, BASE_PATH);

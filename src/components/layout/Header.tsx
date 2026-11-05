@@ -1,4 +1,4 @@
-import type { Category } from "@spree/sdk";
+import type { Category, Collection } from "@spree/sdk";
 import { User } from "lucide-react";
 import dynamic from "next/dynamic";
 import Image from "next/image";
@@ -43,16 +43,19 @@ interface HeaderProps {
 
 interface HeaderMobileMenuProps {
   rootCategories: Category[];
+  collections?: Collection[];
   basePath: string;
 }
 
 export function HeaderMobileMenu({
   rootCategories,
+  collections,
   basePath,
 }: HeaderMobileMenuProps) {
   return (
     <LazyMobileMenu
       rootCategories={rootCategories}
+      collections={collections}
       basePath={basePath}
       wholesaleEnabled={isWholesaleEnabled()}
       marketplaceEnabled={isMarketplaceEnabled()}
@@ -89,6 +92,12 @@ export async function Header({
       }
       rightStart={
         <div className="hidden lg:flex lg:items-center lg:gap-1">
+          <Link
+            href={`${basePath}/collections`}
+            className="px-2 py-1.5 text-sm text-gray-500 hover:text-gray-900 transition-colors whitespace-nowrap"
+          >
+            {t("collections")}
+          </Link>
           {marketplaceEnabled && (
             <Link
               href={`${basePath}/sellers`}

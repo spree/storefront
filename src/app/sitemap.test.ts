@@ -8,6 +8,7 @@ const api = vi.hoisted(() => ({
   marketsList: vi.fn(),
   productsList: vi.fn(),
   categoriesList: vi.fn(),
+  collectionsList: vi.fn(),
   sellersList: vi.fn(),
 }));
 
@@ -21,20 +22,26 @@ vi.mock("@/lib/data/sitemap", () => ({
   getSitemapMarkets: async (options: { country: string; locale: string }) =>
     (await api.marketsList(options)).data,
   getSitemapResourceCount: async (
-    resource: "products" | "categories" | "sellers",
+    resource: "products" | "categories" | "collections" | "sellers",
     _marketId: string,
     options: { country: string; locale: string },
   ) => {
-    const response = await (resource === "products"
-      ? api.productsList({ page: 1, limit: 1 }, options)
-      : resource === "sellers"
-        ? api.sellersList({ page: 1, limit: 1 }, options)
-        : api.categoriesList(
-            { page: 1, limit: 1, parent_id_not_null: true },
-            options,
-          ));
+    const query = { page: 1, limit: 1 };
+    const response = await {
+      products: () => api.productsList(query, options),
+      categories: () =>
+        api.categoriesList({ ...query, parent_id_not_null: true }, options),
+      collections: () => api.collectionsList(query, options),
+      sellers: () => api.sellersList(query, options),
+    }[resource]();
     return response.meta.count;
   },
+  getSitemapCollectionPage: async (
+    _marketId: string,
+    page: number,
+    limit: number,
+    options: { country: string; locale: string },
+  ) => (await api.collectionsList({ page, limit }, options)).data,
   getSitemapSellerPage: async (
     _marketId: string,
     page: number,
@@ -80,7 +87,11 @@ function marketCountries(...isos: string[]) {
   ];
 }
 
-function mockCatalog(productCount: number, categoryCount: number): void {
+function mockCatalog(
+  productCount: number,
+  categoryCount: number,
+  collectionCount = 0,
+): void {
   api.productsList.mockImplementation(
     async ({ page, limit }: { page: number; limit: number }) => {
       if (limit === 1) {
@@ -112,6 +123,18 @@ function mockCatalog(productCount: number, categoryCount: number): void {
       };
     },
   );
+  api.collectionsList.mockImplementation(
+    async ({ page, limit }: { page: number; limit: number }) => ({
+      data:
+        limit === 1
+          ? []
+          : Array.from({ length: collectionCount }, (_, index) => ({
+              id: `collection-${(page - 1) * limit + index}`,
+              permalink: `col-${(page - 1) * limit + index}`,
+            })),
+      meta: { count: collectionCount },
+    }),
+  );
 }
 
 describe("localized sitemap generation", () => {
@@ -121,10 +144,10 @@ describe("localized sitemap generation", () => {
     marketplace.enabled = false;
   });
 
-  it("lists the seller directory and profiles after categories when the marketplace is enabled", async () => {
+  it("lists collections after categories, then sellers when the marketplace is enabled", async () => {
     marketplace.enabled = true;
     api.marketsList.mockResolvedValue({ data: marketCountries("US") });
-    mockCatalog(1, 1);
+    mockCatalog(1, 1, 1);
     api.sellersList.mockImplementation(
       async ({ page, limit }: { page: number; limit: number }) => ({
         data:
@@ -144,10 +167,11 @@ describe("localized sitemap generation", () => {
     expect(entries.map((entry) => entry.url)).toEqual([
       "https://store.example/us/en",
       "https://store.example/us/en/products",
-      "https://store.example/us/en/c",
+      "https://store.example/us/en/collections",
       "https://store.example/us/en/sellers",
       "https://store.example/us/en/products/p-0",
       "https://store.example/us/en/c/c-0",
+      "https://store.example/us/en/collections/col-0",
       "https://store.example/us/en/sellers/s-0",
       "https://store.example/us/en/sellers/s-1",
     ]);
@@ -174,6 +198,68 @@ describe("localized sitemap generation", () => {
     expect(entries.some((entry) => entry.url.includes("/sellers/"))).toBe(
       false,
     );
+    consoleError.mockRestore();
+  });
+
+  it("keeps products and categories when the collection count fails", async () => {
+    api.marketsList.mockResolvedValue({ data: marketCountries("US") });
+    mockCatalog(1, 1);
+    api.collectionsList.mockRejectedValue(new Error("collections down"));
+    const consoleError = vi
+      .spyOn(console, "error")
+      .mockImplementation(() => undefined);
+    const { default: sitemap } = await import("@/app/sitemap");
+
+    const entries = await sitemap({ id: Promise.resolve("0") });
+
+    expect(entries.map((entry) => entry.url)).toEqual(
+      expect.arrayContaining([
+        "https://store.example/us/en/products/p-0",
+        "https://store.example/us/en/c/c-0",
+      ]),
+    );
+    expect(entries.some((entry) => entry.url.includes("/collections/"))).toBe(
+      false,
+    );
+    consoleError.mockRestore();
+  });
+
+  it("keeps product positions when an optional count fails only during discovery", async () => {
+    // Two locales of 3 static pages + 4,990 products fill 9,986 positions;
+    // their 40 collections push the total past one 10,000-URL chunk.
+    api.marketsList.mockResolvedValue({ data: marketCountries("US", "CA") });
+    mockCatalog(4_990, 0, 20);
+    const workingCollections = api.collectionsList.getMockImplementation();
+    api.collectionsList.mockRejectedValue(new Error("collections down"));
+    const consoleError = vi
+      .spyOn(console, "error")
+      .mockImplementation(() => undefined);
+    const { default: sitemap, generateSitemaps } = await import(
+      "@/app/sitemap"
+    );
+
+    await expect(generateSitemaps()).resolves.toEqual([{ id: 0 }]);
+
+    // Collections recover before the advertised chunk is requested.
+    api.collectionsList.mockImplementation(
+      workingCollections as NonNullable<typeof workingCollections>,
+    );
+    const chunk0 = (await sitemap({ id: Promise.resolve("0") })).map(
+      (entry) => entry.url,
+    );
+    const chunk1 = (await sitemap({ id: Promise.resolve("1") })).map(
+      (entry) => entry.url,
+    );
+
+    // Every product is still in the one chunk discovery advertised.
+    expect(chunk0).toContain("https://store.example/us/en/products/p-4989");
+    expect(chunk0).toContain("https://store.example/ca/en/products/p-4989");
+    expect(chunk0.filter((url) => url.includes("/products/"))).toHaveLength(
+      9_980,
+    );
+    // Only collections spill into the chunk discovery didn't advertise.
+    expect(chunk1.length).toBeGreaterThan(0);
+    expect(chunk1.every((url) => url.includes("/collections/"))).toBe(true);
     consoleError.mockRestore();
   });
 
@@ -281,6 +367,7 @@ describe("localized sitemap generation", () => {
       data: [],
       meta: { count: 0 },
     }));
+    api.collectionsList.mockResolvedValue({ data: [], meta: { count: 0 } });
     const { default: sitemap } = await import("@/app/sitemap");
 
     const entries = await sitemap({ id: Promise.resolve("0") });
@@ -326,6 +413,7 @@ describe("localized sitemap generation", () => {
         meta: { count: 1 },
       }),
     );
+    api.collectionsList.mockResolvedValue({ data: [], meta: { count: 0 } });
     const { default: sitemap } = await import("@/app/sitemap");
 
     const entries = await sitemap({ id: Promise.resolve("0") });
