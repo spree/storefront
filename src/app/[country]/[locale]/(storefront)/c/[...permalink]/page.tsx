@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { notFound, permanentRedirect } from "next/navigation";
+import { notFound } from "next/navigation";
 import { ProductListing } from "@/components/products/ProductListing";
 import { JsonLd } from "@/components/seo/JsonLd";
 import { getCategory, getCategoryProducts } from "@/lib/data/categories";
@@ -9,7 +9,7 @@ import { generateCategoryMetadata } from "@/lib/metadata/category";
 import { buildBreadcrumbJsonLd } from "@/lib/seo";
 import { getStoreUrl } from "@/lib/store";
 import { parseListingSearchParams } from "@/lib/utils/listing-search-params";
-import { queryString } from "@/lib/utils/query-string";
+import { redirectToCurrentPermalink } from "@/lib/utils/permalink-redirect";
 import { CategoryBanner } from "./CategoryBanner";
 
 interface CategoryPageProps {
@@ -51,12 +51,12 @@ export default async function CategoryPage({
     notFound();
   }
 
-  // An old permalink still resolves after a rename; send it to the current one.
-  if (category.permalink !== decodeURIComponent(fullPermalink)) {
-    permanentRedirect(
-      `${basePath}/c/${category.permalink}${queryString(rawSearchParams)}`,
-    );
-  }
+  redirectToCurrentPermalink(
+    fullPermalink,
+    category.permalink,
+    `${basePath}/c`,
+    rawSearchParams,
+  );
 
   const storeUrl = getStoreUrl();
   const currency = await resolveCurrency(country);
