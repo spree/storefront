@@ -75,7 +75,13 @@ export async function generateCollectionMetadata({
       description,
       ...(localizedAlternates ? { url: localizedAlternates.canonical } : {}),
       type: "website",
-      ...(image ? { images: [{ url: image, alt: collection.name }] } : {}),
+      ...(image
+        ? {
+            images: [
+              { url: image, alt: collection.image_alt || collection.name },
+            ],
+          }
+        : {}),
     },
     twitter: {
       card: image ? "summary_large_image" : "summary",
