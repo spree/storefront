@@ -16,6 +16,10 @@ import { useHiddenPricing } from "@/contexts/HiddenPricingContext";
 import { useStore } from "@/contexts/StoreContext";
 import { useFormatMoney } from "@/hooks/useFormatMoney";
 import { trackAddToCart, trackViewItem } from "@/lib/analytics/gtm";
+import {
+  trackKlaviyoAddedToCart,
+  trackKlaviyoViewedProduct,
+} from "@/lib/analytics/klaviyo";
 import { strikethroughAmount } from "@/lib/utils/price";
 
 interface ProductDetailsProps {
@@ -67,7 +71,8 @@ export function ProductDetails({
   // Track product view (analytics - client-only side effect)
   useEffect(() => {
     trackViewItem(product, currency);
-  }, [product, currency]);
+    trackKlaviyoViewedProduct(product, basePath);
+  }, [product, currency, basePath]);
 
   const galleryImages = useMemo((): Media[] => {
     return product.media || [];
@@ -118,6 +123,7 @@ export function ProductDetails({
     await addItem(variantId, quantity);
     setLoading(false);
     trackAddToCart(product, selectedVariant, quantity, currency);
+    trackKlaviyoAddedToCart(product, selectedVariant, quantity, basePath);
   };
 
   return (

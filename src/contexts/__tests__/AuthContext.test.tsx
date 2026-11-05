@@ -24,8 +24,13 @@ vi.mock("@/lib/data/customer", () => ({
   register: vi.fn(),
 }));
 
+vi.mock("@/lib/analytics/klaviyo", () => ({
+  identifyKlaviyo: vi.fn(),
+}));
+
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
-import { syncSession } from "@/lib/data/customer";
+import { identifyKlaviyo } from "@/lib/analytics/klaviyo";
+import { login, register, syncSession } from "@/lib/data/customer";
 
 const mockSyncSession = vi.mocked(syncSession);
 
@@ -98,5 +103,55 @@ describe("AuthContext session sync", () => {
     await waitFor(() => expect(result.current.loading).toBe(false));
     expect(result.current.isAuthenticated).toBe(false);
     expect(result.current.user).toBeNull();
+  });
+});
+
+describe("AuthContext Klaviyo identify", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockSyncSession.mockResolvedValue({ customer: null, refreshed: false });
+  });
+
+  it("identifies the shopper after signing in", async () => {
+    vi.mocked(login).mockResolvedValue({
+      success: true,
+      user: mockCustomer,
+    } as never);
+    const { result } = renderHook(() => useAuth(), { wrapper });
+
+    await act(async () => {
+      await result.current.login("test@example.com", "secret");
+    });
+
+    expect(identifyKlaviyo).toHaveBeenCalledWith("test@example.com");
+  });
+
+  it("identifies the shopper after signing up", async () => {
+    vi.mocked(register).mockResolvedValue({
+      success: true,
+      user: mockCustomer,
+    } as never);
+    const { result } = renderHook(() => useAuth(), { wrapper });
+
+    await act(async () => {
+      await result.current.register({
+        email: "test@example.com",
+        password: "secret",
+        password_confirmation: "secret",
+      });
+    });
+
+    expect(identifyKlaviyo).toHaveBeenCalledWith("test@example.com");
+  });
+
+  it("does not identify after a failed sign-in", async () => {
+    vi.mocked(login).mockResolvedValue({ success: false } as never);
+    const { result } = renderHook(() => useAuth(), { wrapper });
+
+    await act(async () => {
+      await result.current.login("test@example.com", "wrong");
+    });
+
+    expect(identifyKlaviyo).not.toHaveBeenCalled();
   });
 });

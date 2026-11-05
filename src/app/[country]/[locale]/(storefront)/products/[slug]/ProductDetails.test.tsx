@@ -38,6 +38,11 @@ vi.mock("@/lib/analytics/gtm", () => ({
   trackViewItem: vi.fn(),
 }));
 
+vi.mock("@/lib/analytics/klaviyo", () => ({
+  trackKlaviyoAddedToCart: vi.fn(),
+  trackKlaviyoViewedProduct: vi.fn(),
+}));
+
 const productWithoutCustomVariants = {
   id: "product-1",
   name: "Single Variant Product",
