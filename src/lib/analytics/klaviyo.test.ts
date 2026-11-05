@@ -1,6 +1,7 @@
 import type { Cart, Product } from "@spree/sdk";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
+  forgetKlaviyo,
   identifyKlaviyo,
   trackKlaviyoAddedToCart,
   trackKlaviyoStartedCheckout,
@@ -132,5 +133,24 @@ describe("Klaviyo onsite events", () => {
 
       expect(() => trackKlaviyoViewedProduct(product, "/us/en")).not.toThrow();
     });
+  });
+});
+
+describe("forgetKlaviyo", () => {
+  afterEach(() => {
+    // biome-ignore lint/suspicious/noDocumentCookie: jsdom has no Cookie Store API
+    document.cookie = "__kla_id=; Max-Age=0; path=/";
+  });
+
+  it("reports nothing to forget when Klaviyo set no identity", async () => {
+    expect(await forgetKlaviyo()).toBe(false);
+  });
+
+  it("expires the identity cookie", async () => {
+    // biome-ignore lint/suspicious/noDocumentCookie: jsdom has no Cookie Store API
+    document.cookie = "__kla_id=eyJjaWQiOiJhYmMifQ; path=/";
+
+    expect(await forgetKlaviyo()).toBe(true);
+    expect(document.cookie).not.toContain("__kla_id=");
   });
 });

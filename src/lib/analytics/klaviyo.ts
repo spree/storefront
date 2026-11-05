@@ -97,6 +97,45 @@ export function identifyKlaviyo(email: string | null | undefined): void {
   send((onsite) => onsite.identify({ email }));
 }
 
+const KLAVIYO_IDENTITY_COOKIE = "__kla_id";
+
+/**
+ * Drops the shopper Klaviyo remembers, so the next person on this browser
+ * browses anonymously. Klaviyo's script has no reset: the identity lives in
+ * its cookie, set on this host or a parent domain, and in memory until the
+ * page reloads.
+ *
+ * @returns whether there was an identity to drop, so the caller reloads.
+ */
+export async function forgetKlaviyo(): Promise<boolean> {
+  if (typeof document === "undefined") return false;
+  const present = document.cookie
+    .split("; ")
+    .some((cookie) => cookie.startsWith(`${KLAVIYO_IDENTITY_COOKIE}=`));
+  if (!present) return false;
+
+  const labels = window.location.hostname.split(".");
+  const domains = labels.map((_, index) => labels.slice(index).join("."));
+  await Promise.allSettled(
+    [undefined, ...domains].map((domain) => expireCookie(domain)),
+  );
+  return true;
+}
+
+async function expireCookie(domain: string | undefined): Promise<void> {
+  if ("cookieStore" in window && window.cookieStore) {
+    await window.cookieStore.delete({
+      name: KLAVIYO_IDENTITY_COOKIE,
+      path: "/",
+      ...(domain && { domain }),
+    });
+    return;
+  }
+  const scope = domain ? `; domain=${domain}` : "";
+  // biome-ignore lint/suspicious/noDocumentCookie: fallback for browsers without Cookie Store API
+  document.cookie = `${KLAVIYO_IDENTITY_COOKIE}=; Max-Age=0; path=/${scope}`;
+}
+
 export function trackKlaviyoViewedProduct(
   product: Product,
   basePath: string,

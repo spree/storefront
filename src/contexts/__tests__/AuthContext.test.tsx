@@ -25,12 +25,18 @@ vi.mock("@/lib/data/customer", () => ({
 }));
 
 vi.mock("@/lib/analytics/klaviyo", () => ({
+  forgetKlaviyo: vi.fn(),
   identifyKlaviyo: vi.fn(),
 }));
 
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
-import { identifyKlaviyo } from "@/lib/analytics/klaviyo";
-import { login, register, syncSession } from "@/lib/data/customer";
+import { forgetKlaviyo, identifyKlaviyo } from "@/lib/analytics/klaviyo";
+import {
+  login,
+  logout as logoutAction,
+  register,
+  syncSession,
+} from "@/lib/data/customer";
 
 const mockSyncSession = vi.mocked(syncSession);
 
@@ -153,5 +159,33 @@ describe("AuthContext Klaviyo identify", () => {
     });
 
     expect(identifyKlaviyo).not.toHaveBeenCalled();
+  });
+
+  it("forgets the Klaviyo shopper and reloads after signing out", async () => {
+    vi.mocked(logoutAction).mockResolvedValue(undefined as never);
+    vi.mocked(forgetKlaviyo).mockResolvedValue(true);
+    const reload = vi.fn();
+    vi.stubGlobal("location", { ...window.location, reload });
+    const { result } = renderHook(() => useAuth(), { wrapper });
+
+    await act(async () => {
+      await result.current.logout();
+    });
+
+    expect(forgetKlaviyo).toHaveBeenCalled();
+    expect(reload).toHaveBeenCalled();
+    vi.unstubAllGlobals();
+  });
+
+  it("only refreshes after signing out when Klaviyo knew no one", async () => {
+    vi.mocked(logoutAction).mockResolvedValue(undefined as never);
+    vi.mocked(forgetKlaviyo).mockResolvedValue(false);
+    const { result } = renderHook(() => useAuth(), { wrapper });
+
+    await act(async () => {
+      await result.current.logout();
+    });
+
+    expect(mockRefresh).toHaveBeenCalled();
   });
 });
