@@ -49,6 +49,17 @@ type PageCaches = Record<
   Map<string, Promise<RelativeEntry[]>>
 >;
 
+/**
+ * A run of consecutive sitemap positions: one country/locale's static pages,
+ * or one of its resources.
+ */
+interface Segment {
+  target: CountryLocale;
+  catalog: LocaleCatalog;
+  resource: SitemapResource | "static";
+  size: number;
+}
+
 interface ResourceSource {
   /** Off resources are never counted or fetched. */
   enabled: () => boolean;
@@ -66,8 +77,10 @@ interface ResourceSource {
 }
 
 /**
- * Every resource listed per country/locale, in sitemap order. Chunk
- * positions follow this order.
+ * Every resource listed per country/locale, in sitemap order. Required
+ * resources of every country/locale come first and optional ones after them
+ * (see `layoutSegments`), so chunk positions follow this order within each
+ * of the two sections.
  */
 const RESOURCES: Record<SitemapResource, ResourceSource> = {
   products: {
@@ -204,61 +217,130 @@ export default async function sitemap(props: {
 
   const chunkStart = id * URLS_PER_SITEMAP;
   const chunkEnd = chunkStart + URLS_PER_SITEMAP;
-  const entries: MetadataRoute.Sitemap = [];
   const pageCaches = Object.fromEntries(
     RESOURCE_ORDER.map((resource) => [resource, new Map()]),
   ) as PageCaches;
-  let targetStart = 0;
 
-  for (const target of countryLocales) {
-    const catalog = catalogs.get(catalogKey(target));
-    if (!catalog) continue;
-
-    const targetEnd = targetStart + catalogSize(catalog);
-    if (targetEnd <= chunkStart) {
-      targetStart = targetEnd;
-      continue;
+  // Segments overlapping this chunk, with the item range each contributes.
+  const slices: Array<{ segment: Segment; start: number; end: number }> = [];
+  let position = 0;
+  for (const segment of layoutSegments(countryLocales, catalogs)) {
+    const segmentStart = position;
+    position += segment.size;
+    if (position <= chunkStart) continue;
+    if (segmentStart >= chunkEnd) break;
+    const range = intersectRange(segmentStart, position, chunkStart, chunkEnd);
+    if (range) {
+      slices.push({
+        segment,
+        start: range.start - segmentStart,
+        end: range.end - segmentStart,
+      });
     }
-    if (targetStart >= chunkEnd) break;
+  }
 
-    const basePath = `${baseUrl}/${target.country}/${target.locale}`;
-    appendStaticEntries(entries, basePath, targetStart, chunkStart, chunkEnd);
-
-    // Each resource occupies the next `count` positions after the last.
-    let resourceStart = targetStart + staticEntries(basePath).length;
-    const requests = RESOURCE_ORDER.map((resource) => {
-      const start = resourceStart;
-      resourceStart += catalog.counts[resource];
-      const range = intersectRange(start, resourceStart, chunkStart, chunkEnd);
-      return range
-        ? fetchEntryRange(
-            resource,
-            catalog,
-            range.start - start,
-            range.end - start,
-            pageCaches,
-          )
-        : Promise.resolve([]);
-    });
-    const results = await Promise.allSettled(requests);
+  const entries: MetadataRoute.Sitemap = [];
+  for (
+    let offset = 0;
+    offset < slices.length;
+    offset += MAX_CONCURRENT_CATALOG_REQUESTS
+  ) {
+    const batch = slices.slice(
+      offset,
+      offset + MAX_CONCURRENT_CATALOG_REQUESTS,
+    );
+    const results = await Promise.allSettled(
+      batch.map(({ segment, start, end }) =>
+        loadSegmentEntries(baseUrl, segment, start, end, pageCaches),
+      ),
+    );
 
     for (const [index, result] of results.entries()) {
       if (result.status === "fulfilled") {
-        for (const entry of result.value) {
-          if (entry) entries.push({ ...entry, url: `${basePath}${entry.url}` });
-        }
+        entries.push(...result.value);
       } else {
+        const { segment } = batch[index];
         console.error(
-          `Sitemap: skipping ${RESOURCE_ORDER[index]} for ${target.country}/${target.locale}.`,
+          `Sitemap: skipping ${segment.resource} for ${segment.target.country}/${segment.target.locale}.`,
           result.reason,
         );
       }
     }
-
-    targetStart = targetEnd;
   }
 
   return entries;
+}
+
+/**
+ * Sitemap positions in order. Every country/locale's static pages and
+ * required resources come first; optional resources follow, after all of
+ * them. A failed optional count can differ between the request that counts
+ * chunks and the one that renders a chunk, so it may only shift other
+ * optional entries, never products or categories.
+ */
+function layoutSegments(
+  countryLocales: CountryLocale[],
+  catalogs: Map<string, LocaleCatalog>,
+): Segment[] {
+  const targets = countryLocales.flatMap((target) => {
+    const catalog = catalogs.get(catalogKey(target));
+    return catalog ? [{ target, catalog }] : [];
+  });
+  const required = RESOURCE_ORDER.filter(
+    (resource) => !RESOURCES[resource].optional,
+  );
+  const optional = RESOURCE_ORDER.filter(
+    (resource) => RESOURCES[resource].optional,
+  );
+
+  return [
+    ...targets.flatMap(({ target, catalog }): Segment[] => [
+      {
+        target,
+        catalog,
+        resource: "static",
+        size: staticEntries("").length,
+      },
+      ...required.map((resource) => ({
+        target,
+        catalog,
+        resource,
+        size: catalog.counts[resource],
+      })),
+    ]),
+    ...targets.flatMap(({ target, catalog }) =>
+      optional.map((resource) => ({
+        target,
+        catalog,
+        resource,
+        size: catalog.counts[resource],
+      })),
+    ),
+  ];
+}
+
+async function loadSegmentEntries(
+  baseUrl: string,
+  segment: Segment,
+  start: number,
+  end: number,
+  pageCaches: PageCaches,
+): Promise<MetadataRoute.Sitemap> {
+  const basePath = `${baseUrl}/${segment.target.country}/${segment.target.locale}`;
+  if (segment.resource === "static") {
+    return staticEntries(basePath).slice(start, end);
+  }
+
+  const relative = await fetchEntryRange(
+    segment.resource,
+    segment.catalog,
+    start,
+    end,
+    pageCaches,
+  );
+  return relative.flatMap((entry) =>
+    entry ? [{ ...entry, url: `${basePath}${entry.url}` }] : [],
+  );
 }
 
 function resolveBaseUrl(): string | undefined {
@@ -325,19 +407,6 @@ function staticEntries(basePath: string): MetadataRoute.Sitemap {
         ]
       : []),
   ];
-}
-
-function appendStaticEntries(
-  entries: MetadataRoute.Sitemap,
-  basePath: string,
-  targetStart: number,
-  chunkStart: number,
-  chunkEnd: number,
-): void {
-  for (const [offset, entry] of staticEntries(basePath).entries()) {
-    const position = targetStart + offset;
-    if (position >= chunkStart && position < chunkEnd) entries.push(entry);
-  }
 }
 
 function productEntry(product: SitemapProduct): SitemapEntry {

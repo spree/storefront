@@ -224,6 +224,45 @@ describe("localized sitemap generation", () => {
     consoleError.mockRestore();
   });
 
+  it("keeps product positions when an optional count fails only during discovery", async () => {
+    // Two locales of 3 static pages + 4,990 products fill 9,986 positions;
+    // their 40 collections push the total past one 10,000-URL chunk.
+    api.marketsList.mockResolvedValue({ data: marketCountries("US", "CA") });
+    mockCatalog(4_990, 0, 20);
+    const workingCollections = api.collectionsList.getMockImplementation();
+    api.collectionsList.mockRejectedValue(new Error("collections down"));
+    const consoleError = vi
+      .spyOn(console, "error")
+      .mockImplementation(() => undefined);
+    const { default: sitemap, generateSitemaps } = await import(
+      "@/app/sitemap"
+    );
+
+    await expect(generateSitemaps()).resolves.toEqual([{ id: 0 }]);
+
+    // Collections recover before the advertised chunk is requested.
+    api.collectionsList.mockImplementation(
+      workingCollections as NonNullable<typeof workingCollections>,
+    );
+    const chunk0 = (await sitemap({ id: Promise.resolve("0") })).map(
+      (entry) => entry.url,
+    );
+    const chunk1 = (await sitemap({ id: Promise.resolve("1") })).map(
+      (entry) => entry.url,
+    );
+
+    // Every product is still in the one chunk discovery advertised.
+    expect(chunk0).toContain("https://store.example/us/en/products/p-4989");
+    expect(chunk0).toContain("https://store.example/ca/en/products/p-4989");
+    expect(chunk0.filter((url) => url.includes("/products/"))).toHaveLength(
+      9_980,
+    );
+    // Only collections spill into the chunk discovery didn't advertise.
+    expect(chunk1.length).toBeGreaterThan(0);
+    expect(chunk1.every((url) => url.includes("/collections/"))).toBe(true);
+    consoleError.mockRestore();
+  });
+
   it("never queries sellers when the marketplace is disabled", async () => {
     api.marketsList.mockResolvedValue({ data: marketCountries("US") });
     mockCatalog(1, 1);
