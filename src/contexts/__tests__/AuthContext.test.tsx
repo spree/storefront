@@ -24,8 +24,19 @@ vi.mock("@/lib/data/customer", () => ({
   register: vi.fn(),
 }));
 
+vi.mock("@/lib/analytics/klaviyo", () => ({
+  forgetKlaviyo: vi.fn(),
+  identifyKlaviyo: vi.fn(),
+}));
+
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
-import { syncSession } from "@/lib/data/customer";
+import { forgetKlaviyo, identifyKlaviyo } from "@/lib/analytics/klaviyo";
+import {
+  login,
+  logout as logoutAction,
+  register,
+  syncSession,
+} from "@/lib/data/customer";
 
 const mockSyncSession = vi.mocked(syncSession);
 
@@ -98,5 +109,83 @@ describe("AuthContext session sync", () => {
     await waitFor(() => expect(result.current.loading).toBe(false));
     expect(result.current.isAuthenticated).toBe(false);
     expect(result.current.user).toBeNull();
+  });
+});
+
+describe("AuthContext Klaviyo identify", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockSyncSession.mockResolvedValue({ customer: null, refreshed: false });
+  });
+
+  it("identifies the shopper after signing in", async () => {
+    vi.mocked(login).mockResolvedValue({
+      success: true,
+      user: mockCustomer,
+    } as never);
+    const { result } = renderHook(() => useAuth(), { wrapper });
+
+    await act(async () => {
+      await result.current.login("test@example.com", "secret");
+    });
+
+    expect(identifyKlaviyo).toHaveBeenCalledWith("test@example.com");
+  });
+
+  it("identifies the shopper after signing up", async () => {
+    vi.mocked(register).mockResolvedValue({
+      success: true,
+      user: mockCustomer,
+    } as never);
+    const { result } = renderHook(() => useAuth(), { wrapper });
+
+    await act(async () => {
+      await result.current.register({
+        email: "test@example.com",
+        password: "secret",
+        password_confirmation: "secret",
+      });
+    });
+
+    expect(identifyKlaviyo).toHaveBeenCalledWith("test@example.com");
+  });
+
+  it("does not identify after a failed sign-in", async () => {
+    vi.mocked(login).mockResolvedValue({ success: false } as never);
+    const { result } = renderHook(() => useAuth(), { wrapper });
+
+    await act(async () => {
+      await result.current.login("test@example.com", "wrong");
+    });
+
+    expect(identifyKlaviyo).not.toHaveBeenCalled();
+  });
+
+  it("forgets the Klaviyo shopper and reloads after signing out", async () => {
+    vi.mocked(logoutAction).mockResolvedValue(undefined as never);
+    vi.mocked(forgetKlaviyo).mockResolvedValue(true);
+    const reload = vi.fn();
+    vi.stubGlobal("location", { ...window.location, reload });
+    const { result } = renderHook(() => useAuth(), { wrapper });
+
+    await act(async () => {
+      await result.current.logout();
+    });
+
+    expect(forgetKlaviyo).toHaveBeenCalled();
+    expect(reload).toHaveBeenCalled();
+    vi.unstubAllGlobals();
+  });
+
+  it("only refreshes after signing out when Klaviyo knew no one", async () => {
+    vi.mocked(logoutAction).mockResolvedValue(undefined as never);
+    vi.mocked(forgetKlaviyo).mockResolvedValue(false);
+    const { result } = renderHook(() => useAuth(), { wrapper });
+
+    await act(async () => {
+      await result.current.logout();
+    });
+
+    expect(mockRefresh).toHaveBeenCalled();
   });
 });

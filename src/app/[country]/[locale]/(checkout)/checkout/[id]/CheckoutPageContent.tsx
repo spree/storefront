@@ -37,6 +37,10 @@ import {
   trackAddShippingInfo,
   trackBeginCheckout,
 } from "@/lib/analytics/gtm";
+import {
+  identifyKlaviyo,
+  trackKlaviyoStartedCheckout,
+} from "@/lib/analytics/klaviyo";
 import { updateAddress } from "@/lib/data/addresses";
 import {
   applyCode,
@@ -142,6 +146,25 @@ function CheckoutPageContentInner({
   const tRef = useRef(t);
   tRef.current = t;
   const beginCheckoutFiredRef = useRef(false);
+  // Klaviyo needs to know the shopper, so Started Checkout waits for an email:
+  // the cart's own when checkout opens, otherwise the first one saved here,
+  // whether alone or together with the address.
+  const klaviyoCheckoutStartedRef = useRef(false);
+  const klaviyoEmailRef = useRef<string | null>(null);
+  const startKlaviyoCheckout = useCallback(
+    (checkoutCart: Cart | null | undefined) => {
+      const email = checkoutCart?.email;
+      if (!email) return;
+      if (email !== klaviyoEmailRef.current) {
+        klaviyoEmailRef.current = email;
+        identifyKlaviyo(email);
+      }
+      if (klaviyoCheckoutStartedRef.current) return;
+      klaviyoCheckoutStartedRef.current = true;
+      trackKlaviyoStartedCheckout(checkoutCart, basePath);
+    },
+    [basePath],
+  );
   const paymentRef = useRef<PaymentSectionHandle>(null);
 
   // Handle code application (discount code or gift card — single input field)
@@ -272,6 +295,7 @@ function CheckoutPageContentInner({
         } catch {
           // Analytics should never break checkout flow
         }
+        startKlaviyoCheckout(initialData.cart);
         beginCheckoutFiredRef.current = true;
       }
       return;
@@ -283,10 +307,11 @@ function CheckoutPageContentInner({
         } catch {
           // Analytics should never break checkout flow
         }
+        startKlaviyoCheckout(cartData);
         beginCheckoutFiredRef.current = true;
       }
     });
-  }, [initialData, loadOrder]);
+  }, [initialData, loadOrder, startKlaviyoCheckout]);
 
   // When the router cache restores a stale /checkout/[id] view (e.g. the
   // user added an item, went to checkout, went back, changed quantity,
@@ -329,22 +354,26 @@ function CheckoutPageContentInner({
   }, [contextCart, cartId, cart, basePath]);
 
   // Handle email blur — persist email as the first backend call
-  const handleEmailBlur = useCallback(async (email: string) => {
-    const currentOrder = cartRef.current;
-    if (!currentOrder || !email.trim()) return;
+  const handleEmailBlur = useCallback(
+    async (email: string) => {
+      const currentOrder = cartRef.current;
+      if (!currentOrder || !email.trim()) return;
 
-    // Only persist email if it changed
-    if (email === currentOrder.email) return;
+      // Only persist email if it changed
+      if (email === currentOrder.email) return;
 
-    try {
-      const result = await updateOrderAddresses(currentOrder.id, { email });
-      if (result.success && result.cart) {
-        setCart(result.cart);
+      try {
+        const result = await updateOrderAddresses(currentOrder.id, { email });
+        if (result.success && result.cart) {
+          setCart(result.cart);
+          startKlaviyoCheckout(result.cart);
+        }
+      } catch {
+        // Email save failure is not critical — will be caught on "Pay now"
       }
-    } catch {
-      // Email save failure is not critical — will be caught on "Pay now"
-    }
-  }, []);
+    },
+    [startKlaviyoCheckout],
+  );
 
   // Handle auto-save (address + email on blur)
   const handleAutoSave = useCallback(
@@ -377,6 +406,7 @@ function CheckoutPageContentInner({
 
         if (updateResult.cart) {
           setCart(updateResult.cart);
+          startKlaviyoCheckout(updateResult.cart);
         }
       } catch {
         setError(tRef.current("generalError"));
@@ -384,7 +414,7 @@ function CheckoutPageContentInner({
         setSaving(false);
       }
     },
-    [],
+    [startKlaviyoCheckout],
   );
 
   // Handle delivery rate selection
