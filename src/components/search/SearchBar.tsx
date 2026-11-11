@@ -4,7 +4,7 @@ import type { Category, Collection, Product, Seller } from "@spree/sdk";
 import { Search } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
-import { useCallback, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import {
   InputGroup,
   InputGroupAddon,
@@ -15,7 +15,13 @@ import { SellerImage } from "@/components/ui/seller-image";
 import { useStore } from "@/contexts/StoreContext";
 import { useFormatMoney } from "@/hooks/useFormatMoney";
 import { trackQuickSearch, trackSelectItem } from "@/lib/analytics/gtm";
-import { type QuickSearchResults, quickSearch } from "@/lib/data/search";
+import {
+  EMPTY_QUICK_SEARCH_RESULTS,
+  fetchQuickSearch,
+  QUICK_SEARCH_MIN_LENGTH,
+  type QuickSearchResults,
+  quickSearchUrl,
+} from "@/lib/utils/quick-search";
 
 interface SearchBarProps {
   basePath: string;
@@ -30,12 +36,25 @@ type Suggestion =
   | { kind: "collection"; item: Collection }
   | { kind: "seller"; item: Seller };
 
-const EMPTY_RESULTS: QuickSearchResults = {
-  products: [],
-  categories: [],
-  collections: [],
-  sellers: [],
-};
+/** Pause after the last keystroke before a request goes out. */
+const DEBOUNCE_MS = 150;
+/** Recent queries kept in memory so backspacing and reopening are instant. */
+const RESULT_CACHE_SIZE = 30;
+
+/**
+ * Module-level so it survives the SearchBar remount each time the overlay
+ * opens. Keyed by request URL, which carries the query, country and locale.
+ */
+const resultCache = new Map<string, QuickSearchResults>();
+
+function rememberResults(key: string, results: QuickSearchResults): void {
+  resultCache.delete(key);
+  resultCache.set(key, results);
+  if (resultCache.size > RESULT_CACHE_SIZE) {
+    const oldest = resultCache.keys().next().value;
+    if (oldest !== undefined) resultCache.delete(oldest);
+  }
+}
 
 function toSuggestions(results: QuickSearchResults): Suggestion[] {
   return [
@@ -67,66 +86,91 @@ function suggestionHref(suggestion: Suggestion, basePath: string): string {
 
 export function SearchBar({ basePath, autoFocus, onNavigate }: SearchBarProps) {
   const router = useRouter();
-  const { currency } = useStore();
+  const { country, locale, currency } = useStore();
   const t = useTranslations("products");
   const formatMoney = useFormatMoney();
   const [query, setQuery] = useState("");
-  const [results, setResults] = useState<QuickSearchResults>(EMPTY_RESULTS);
+  const [results, setResults] = useState<QuickSearchResults>(
+    EMPTY_QUICK_SEARCH_RESULTS,
+  );
   const [isOpen, setIsOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [selectedIndex, setSelectedIndex] = useState(-1);
   const inputRef = useRef<HTMLInputElement>(null);
   const debounceRef = useRef<NodeJS.Timeout | null>(null);
   const blurTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-  const requestIdRef = useRef(0);
+  // Every keystroke takes a sequence number. GET requests run in parallel, so
+  // responses can arrive out of order: one is shown only if it is newer than
+  // what is on screen, and loading ends when the latest query answers.
+  const latestSeqRef = useRef(0);
+  const shownSeqRef = useRef(0);
 
   const suggestions = toSuggestions(results);
 
-  // Fetch suggestions
-  const fetchSuggestions = useCallback(
-    async (searchQuery: string) => {
-      const currentRequestId = requestIdRef.current;
-      setLoading(true);
-      try {
-        const response = await quickSearch(searchQuery);
-        // Discard stale responses if a newer query has been issued
-        if (requestIdRef.current !== currentRequestId) return;
-        setResults(response);
-        if (response.products.length > 0) {
-          trackQuickSearch(response.products, searchQuery, currency);
-        }
-      } catch (error) {
-        if (requestIdRef.current !== currentRequestId) return;
-        console.error("Search failed:", error);
-        setResults(EMPTY_RESULTS);
-      } finally {
-        if (requestIdRef.current === currentRequestId) {
-          setLoading(false);
-        }
-      }
-    },
-    [currency],
-  );
+  const showResults = (
+    seq: number,
+    searchQuery: string,
+    response: QuickSearchResults,
+  ) => {
+    if (seq <= shownSeqRef.current) return;
+    shownSeqRef.current = seq;
+    setResults(response);
+    if (seq !== latestSeqRef.current) return;
+    setLoading(false);
+    if (response.products.length > 0) {
+      trackQuickSearch(response.products, searchQuery, currency);
+    }
+  };
 
-  // Debounced search — called from onChange handler, no useEffect needed
+  const fetchSuggestions = async (
+    seq: number,
+    searchQuery: string,
+    cacheKey: string,
+  ) => {
+    try {
+      const response = await fetchQuickSearch(searchQuery, {
+        country,
+        locale,
+      });
+      rememberResults(cacheKey, response);
+      showResults(seq, searchQuery, response);
+    } catch (error) {
+      if (seq !== latestSeqRef.current) return;
+      console.error("Search failed:", error);
+      showResults(seq, searchQuery, EMPTY_QUICK_SEARCH_RESULTS);
+    }
+  };
+
+  // Debounced search — called from onChange handler, no useEffect needed.
   const handleQueryChange = (value: string) => {
     setQuery(value);
     setIsOpen(true);
     setSelectedIndex(-1);
-    requestIdRef.current += 1;
 
-    if (debounceRef.current) {
-      clearTimeout(debounceRef.current);
-    }
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    latestSeqRef.current += 1;
+    const seq = latestSeqRef.current;
 
-    if (value.trim().length >= 2) {
-      debounceRef.current = setTimeout(() => {
-        fetchSuggestions(value);
-      }, 300);
-    } else {
-      setResults(EMPTY_RESULTS);
+    if (value.trim().length < QUICK_SEARCH_MIN_LENGTH) {
+      // Drop answers still in flight for longer queries.
+      shownSeqRef.current = seq;
+      setResults(EMPTY_QUICK_SEARCH_RESULTS);
       setLoading(false);
+      return;
     }
+
+    const cacheKey = quickSearchUrl(value, { country, locale });
+    const cached = resultCache.get(cacheKey);
+    if (cached) {
+      showResults(seq, value, cached);
+      return;
+    }
+
+    // Previous results stay on screen until the new ones arrive.
+    setLoading(true);
+    debounceRef.current = setTimeout(() => {
+      fetchSuggestions(seq, value, cacheKey);
+    }, DEBOUNCE_MS);
   };
 
   const viewAllResults = () => {
@@ -202,7 +246,10 @@ export function SearchBar({ basePath, autoFocus, onNavigate }: SearchBarProps) {
 
   const trimmedQuery = query.trim();
   const showSuggestions =
-    isOpen && (suggestions.length > 0 || loading || trimmedQuery.length >= 2);
+    isOpen &&
+    (suggestions.length > 0 ||
+      loading ||
+      trimmedQuery.length >= QUICK_SEARCH_MIN_LENGTH);
 
   const renderOption = (
     suggestion: Suggestion,
@@ -317,21 +364,18 @@ export function SearchBar({ basePath, autoFocus, onNavigate }: SearchBarProps) {
           onMouseDown={handleSuggestionsMouseDown}
         >
           <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-            {loading ? (
-              <div className="p-4 text-center text-gray-500 text-sm">
-                {t("searching")}
-              </div>
-            ) : suggestions.length > 0 ? (
+            {suggestions.length > 0 ? (
               <>
                 <div
                   id="search-suggestions"
                   role="listbox"
                   aria-label={t("search")}
-                  className={
+                  aria-busy={loading}
+                  className={`transition-opacity ${loading ? "opacity-60" : ""} ${
                     hasSideGroups && results.products.length > 0
                       ? "md:grid md:grid-cols-[2fr_1fr] md:gap-6"
-                      : undefined
-                  }
+                      : ""
+                  }`}
                 >
                   {renderGroup("product", t("searchGroupProducts"), (s) =>
                     renderOption(
@@ -417,7 +461,11 @@ export function SearchBar({ basePath, autoFocus, onNavigate }: SearchBarProps) {
                   </div>
                 )}
               </>
-            ) : trimmedQuery.length >= 2 ? (
+            ) : loading ? (
+              <div className="p-4 text-center text-gray-500 text-sm">
+                {t("searching")}
+              </div>
+            ) : trimmedQuery.length >= QUICK_SEARCH_MIN_LENGTH ? (
               <div className="p-4 text-center text-gray-500 text-sm">
                 {t("noSearchResults")}
               </div>
