@@ -1,20 +1,19 @@
-"use server";
-
 import type { Category, Collection, Product, Seller } from "@spree/sdk";
 import { getCategories } from "@/lib/data/categories";
 import { getCollections } from "@/lib/data/collections";
-import { getProducts } from "@/lib/data/products";
+import { cachedListProducts } from "@/lib/data/products";
 import { getSellers } from "@/lib/data/sellers";
-import { isMarketplaceEnabled } from "@/lib/spree";
+import {
+  DEFAULT_SURFACE,
+  getAccessToken,
+  isMarketplaceEnabled,
+} from "@/lib/spree";
+import {
+  EMPTY_QUICK_SEARCH_RESULTS,
+  QUICK_SEARCH_MIN_LENGTH,
+  type QuickSearchResults,
+} from "@/lib/utils/quick-search";
 import { withTimeout } from "@/lib/utils/with-timeout";
-
-/** Records are trimmed to the fields below via `fields`; the rest are unset. */
-export interface QuickSearchResults {
-  products: Product[];
-  categories: Category[];
-  collections: Collection[];
-  sellers: Seller[];
-}
 
 const PRODUCT_LIMIT = 6;
 const CATEGORY_LIMIT = 4;
@@ -35,37 +34,63 @@ function valueOrEmpty<T>(
 
 /**
  * Header search-as-you-type: products, categories, collections and (on
- * marketplace builds) sellers in one round trip. Each group fails on its own, so a broken
- * category lookup still shows product matches.
+ * marketplace builds) sellers in one round trip. Each group fails on its own,
+ * so a broken category lookup still shows product matches.
+ *
+ * Served by the `GET /api/search` Route Handler rather than a Server Action:
+ * Next.js runs Server Actions one at a time, so outdated keystrokes would
+ * queue ahead of the latest query.
  */
-export async function quickSearch(query: string): Promise<QuickSearchResults> {
+export async function quickSearch(
+  query: string,
+  options: { locale: string; country: string },
+): Promise<QuickSearchResults> {
   const search = query.trim();
-  if (search.length < 2)
-    return { products: [], categories: [], collections: [], sellers: [] };
+  if (search.length < QUICK_SEARCH_MIN_LENGTH)
+    return EMPTY_QUICK_SEARCH_RESULTS;
+
+  const userToken = await getAccessToken();
 
   const [products, categories, collections, sellers] = await Promise.allSettled(
     [
-      getProducts({
-        search,
-        fields: ["id", "name", "slug", "price", "thumbnail_url"],
-        limit: PRODUCT_LIMIT,
-      }),
-      getCategories({
-        search,
-        fields: ["id", "name", "permalink", "square_image_url", "image_url"],
-        limit: CATEGORY_LIMIT,
-      }),
-      withTimeout<{ data: Collection[] }>(
-        getCollections({
+      cachedListProducts(
+        {
+          search,
+          fields: ["id", "name", "slug", "price", "thumbnail_url"],
+          limit: PRODUCT_LIMIT,
+        },
+        options,
+        DEFAULT_SURFACE,
+        userToken,
+      ),
+      getCategories(
+        {
           search,
           fields: ["id", "name", "permalink", "square_image_url", "image_url"],
-          limit: COLLECTION_LIMIT,
-        }),
+          limit: CATEGORY_LIMIT,
+        },
+        options,
+      ),
+      withTimeout<{ data: Collection[] }>(
+        getCollections(
+          {
+            search,
+            fields: [
+              "id",
+              "name",
+              "permalink",
+              "square_image_url",
+              "image_url",
+            ],
+            limit: COLLECTION_LIMIT,
+          },
+          options,
+        ),
         COLLECTION_DEADLINE_MS,
         { data: [] as Collection[] },
       ),
       isMarketplaceEnabled()
-        ? getSellers({ search, limit: SELLER_LIMIT, sort: "name" })
+        ? getSellers({ search, limit: SELLER_LIMIT, sort: "name" }, options)
         : Promise.resolve({ data: [] as Seller[] }),
     ],
   );
