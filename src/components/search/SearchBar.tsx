@@ -18,6 +18,7 @@ import { trackQuickSearch, trackSelectItem } from "@/lib/analytics/gtm";
 import {
   EMPTY_QUICK_SEARCH_RESULTS,
   fetchQuickSearch,
+  QUICK_SEARCH_MAX_AGE,
   QUICK_SEARCH_MIN_LENGTH,
   type QuickSearchResults,
   quickSearchUrl,
@@ -44,12 +45,29 @@ const RESULT_CACHE_SIZE = 30;
 /**
  * Module-level so it survives the SearchBar remount each time the overlay
  * opens. Keyed by request URL, which carries the query, country and locale.
+ * Entries expire with the route's browser cache, so results stay as fresh.
  */
-const resultCache = new Map<string, QuickSearchResults>();
+const resultCache = new Map<
+  string,
+  { results: QuickSearchResults; expiresAt: number }
+>();
+
+function cachedResults(key: string): QuickSearchResults | undefined {
+  const entry = resultCache.get(key);
+  if (!entry) return undefined;
+  if (entry.expiresAt <= Date.now()) {
+    resultCache.delete(key);
+    return undefined;
+  }
+  return entry.results;
+}
 
 function rememberResults(key: string, results: QuickSearchResults): void {
   resultCache.delete(key);
-  resultCache.set(key, results);
+  resultCache.set(key, {
+    results,
+    expiresAt: Date.now() + QUICK_SEARCH_MAX_AGE * 1000,
+  });
   if (resultCache.size > RESULT_CACHE_SIZE) {
     const oldest = resultCache.keys().next().value;
     if (oldest !== undefined) resultCache.delete(oldest);
@@ -115,6 +133,8 @@ export function SearchBar({ basePath, autoFocus, onNavigate }: SearchBarProps) {
     if (seq <= shownSeqRef.current) return;
     shownSeqRef.current = seq;
     setResults(response);
+    // A row picked from the previous list may not exist in this one.
+    setSelectedIndex(-1);
     if (seq !== latestSeqRef.current) return;
     setLoading(false);
     if (response.products.length > 0) {
@@ -160,7 +180,7 @@ export function SearchBar({ basePath, autoFocus, onNavigate }: SearchBarProps) {
     }
 
     const cacheKey = quickSearchUrl(value, { country, locale });
-    const cached = resultCache.get(cacheKey);
+    const cached = cachedResults(cacheKey);
     if (cached) {
       showResults(seq, value, cached);
       return;
@@ -233,7 +253,7 @@ export function SearchBar({ basePath, autoFocus, onNavigate }: SearchBarProps) {
         setSelectedIndex((prev) => (prev > 0 ? prev - 1 : -1));
         break;
       case "Enter":
-        if (selectedIndex >= 0) {
+        if (selectedIndex >= 0 && selectedIndex < suggestions.length) {
           e.preventDefault();
           handleSuggestionClick(suggestions[selectedIndex]);
         }
