@@ -198,7 +198,18 @@
     "properties": "Propiedades",
     "yes": "Si",
     "no": "No",
-    "optionFilterChip": "{filter}: {value}"
+    "optionFilterChip": "{filter}: {value}",
+    "giftCard": {
+      "sendToSomeoneElse": "Enviar esta tarjeta regalo a otra persona",
+      "sentToYou": "Te enviaremos la tarjeta regalo por correo cuando se pague tu pedido.",
+      "recipientEmail": "Correo del destinatario",
+      "recipientName": "Nombre del destinatario (opcional)",
+      "message": "Mensaje (opcional)",
+      "sendOn": "Enviar el (opcional)",
+      "sendOnHelp": "Déjalo vacío para enviarla en cuanto se pague tu pedido. Hasta 90 días de antelación.",
+      "forRecipient": "Para {recipient}",
+      "forYou": "Enviada a ti"
+    }
   },
   "navigation": {
     "home": "Inicio",
