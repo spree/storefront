@@ -18,8 +18,12 @@ export interface PurchaseOrderSectionHandle {
    * Persists what is typed but not yet saved. Place Order awaits this, so a
    * reference the buyer typed and never blurred out of still reaches the cart
    * before its requirements are read.
+   *
+   * @returns whether the cart now holds what the field shows — false when a
+   *   pending write failed, in which case the cart still carries the previous
+   *   reference and must not be placed on it.
    */
-  flush: () => Promise<void>;
+  flush: () => Promise<boolean>;
 }
 
 interface PurchaseOrderSectionProps {
@@ -57,15 +61,17 @@ export function PurchaseOrderSection({
   const poNumberRef = useRef(poNumber);
   poNumberRef.current = poNumber;
 
-  const save = useCallback(async () => {
+  const save = useCallback(async (): Promise<boolean> => {
     const value = poNumberRef.current.trim();
-    if (value === savedRef.current) return;
+    if (value === savedRef.current) return true;
 
     setSaving(true);
     try {
       // Left unrecorded on failure, so the next blur or the flush below
       // retries rather than reporting a number the cart never took.
-      if (await onSave(value)) savedRef.current = value;
+      const saved = await onSave(value);
+      if (saved) savedRef.current = value;
+      return saved;
     } finally {
       setSaving(false);
     }

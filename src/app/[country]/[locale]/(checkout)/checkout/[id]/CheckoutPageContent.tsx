@@ -608,10 +608,11 @@ function CheckoutPageContentInner({
       return;
     }
 
-    // A purchase-order reference typed and never blurred out of is still only
-    // in the field. Save it before the cart is re-read, or its requirements
-    // would report a number missing that the buyer has already given.
-    await purchaseOrderRef.current?.flush();
+    // The typed reference may not have reached the cart yet, so write it
+    // before the cart is re-read. A failed write stops the checkout: the order
+    // would otherwise be placed with the reference the buyer was replacing, or
+    // none at all, which no requirement would catch.
+    if ((await purchaseOrderRef.current?.flush()) === false) return;
 
     // Refresh cart to get latest requirements
     const freshOrder = await getCheckoutOrder(cart.id);

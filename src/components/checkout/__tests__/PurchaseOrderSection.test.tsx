@@ -88,13 +88,35 @@ describe("PurchaseOrderSection", () => {
     );
 
     await user.type(screen.getByLabelText("poNumberRequiredLabel"), "PO-2");
-    await ref.current?.flush();
 
+    await expect(ref.current?.flush()).resolves.toBe(true);
     expect(onSave).toHaveBeenCalledExactlyOnceWith("PO-2");
 
     // Already on the cart — Place Order flushing again writes nothing.
-    await ref.current?.flush();
+    await expect(ref.current?.flush()).resolves.toBe(true);
     expect(onSave).toHaveBeenCalledOnce();
+  });
+
+  it("reports a failed flush so the order is not placed on the old reference", async () => {
+    const user = userEvent.setup();
+    const onSave = vi.fn().mockResolvedValue(false);
+    const ref = createRef<PurchaseOrderSectionHandle>();
+    render(
+      <PurchaseOrderSection
+        ref={ref}
+        cart={cartWith({ po_number: "PO-OLD" })}
+        onSave={onSave}
+      />,
+    );
+
+    const input = screen.getByLabelText("poNumberRequiredLabel");
+    await user.clear(input);
+    await user.type(input, "PO-NEW");
+
+    await expect(ref.current?.flush()).resolves.toBe(false);
+    expect(onSave).toHaveBeenCalledExactlyOnceWith("PO-NEW");
+    // Still in the field, so the buyer can try again.
+    expect(input).toHaveValue("PO-NEW");
   });
 
   it("starts from the number the cart already carries", () => {
