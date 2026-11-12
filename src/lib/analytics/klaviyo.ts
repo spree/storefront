@@ -2,13 +2,14 @@ import type { Cart, LineItem, Order, Product, Variant } from "@spree/sdk";
 import { lineItemAmount } from "@/lib/utils/price";
 
 /**
- * Klaviyo's onsite events, sent through the script DocumentShell loads when
- * KLAVIYO_COMPANY_ID is set. The server sends what only it knows (profiles,
- * orders, refunds); the browser sends browsing events and Started Checkout,
- * and identifies the shopper so their anonymous history joins their profile.
+ * Klaviyo's onsite events, sent through the script the store's Google Tag
+ * Manager container loads, so the shopper's cookie consent can gate it. The
+ * server sends what only it knows (profiles, orders, refunds); the browser
+ * sends browsing events and Started Checkout, and identifies the shopper so
+ * their anonymous history joins their profile.
  *
- * Every call does nothing while the script is not loaded, and builds its
- * payload only once it is.
+ * Every call does nothing until the script is loaded, so nothing from before
+ * consent is queued and sent later, and builds its payload only once it is.
  */
 
 interface KlaviyoOnsite {
