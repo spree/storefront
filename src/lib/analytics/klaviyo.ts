@@ -8,8 +8,10 @@ import { lineItemAmount } from "@/lib/utils/price";
  * sends browsing events and Started Checkout, and identifies the shopper so
  * their anonymous history joins their profile.
  *
- * Every call does nothing until the script is loaded, so nothing from before
- * consent is queued and sent later, and builds its payload only once it is.
+ * A call made before the script loads waits up to KLAVIYO_WAIT_MS for it, and
+ * only while the shopper stays on that page, so a shopper who lands on a
+ * product page still sends its view, but an earlier page's calls are dropped.
+ * Every call builds its payload only once the script is there.
  */
 
 interface KlaviyoOnsite {
@@ -46,13 +48,52 @@ function storefrontUrl(basePath: string, path: string): string {
   return `${window.location.origin}${basePath}${path}`;
 }
 
-function send(call: (onsite: KlaviyoOnsite) => unknown): void {
-  const onsite = klaviyo();
-  if (!onsite) return;
+type Call = (onsite: KlaviyoOnsite) => unknown;
+
+/** How long a call waits for the script before it is dropped. */
+export const KLAVIYO_WAIT_MS = 10_000;
+const WAIT_POLL_MS = 250;
+
+// Calls made before the script loaded, each tied to the page it was made on.
+let waiting: { path: string; madeAt: number; call: Call }[] = [];
+let waitTimer: ReturnType<typeof setInterval> | undefined;
+
+function run(onsite: KlaviyoOnsite, call: Call): void {
   try {
     call(onsite);
   } catch {
     // Analytics must never break the page
+  }
+}
+
+function send(call: Call): void {
+  if (typeof window === "undefined") return;
+  const onsite = klaviyo();
+  if (onsite) {
+    run(onsite, call);
+    return;
+  }
+  waiting.push({ path: window.location.pathname, madeAt: Date.now(), call });
+  waitTimer ??= setInterval(releaseWaiting, WAIT_POLL_MS);
+}
+
+// A page view tracked at hydration comes before GTM has loaded the script.
+// Its calls wait for it, but only while the shopper is still on that page.
+function releaseWaiting(): void {
+  const now = Date.now();
+  waiting = waiting.filter(
+    (entry) =>
+      entry.path === window.location.pathname &&
+      now - entry.madeAt < KLAVIYO_WAIT_MS,
+  );
+  const onsite = klaviyo();
+  if (onsite) {
+    for (const entry of waiting) run(onsite, entry.call);
+    waiting = [];
+  }
+  if (waiting.length === 0) {
+    clearInterval(waitTimer);
+    waitTimer = undefined;
   }
 }
 

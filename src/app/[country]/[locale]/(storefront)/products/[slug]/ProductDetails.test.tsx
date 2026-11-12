@@ -1,7 +1,10 @@
 import type { Product } from "@spree/sdk";
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
-import { trackKlaviyoAddedToCart } from "@/lib/analytics/klaviyo";
+import {
+  trackKlaviyoAddedToCart,
+  trackKlaviyoViewedProduct,
+} from "@/lib/analytics/klaviyo";
 import { PRODUCT_PAGE_EXPAND } from "@/lib/data/cached";
 import { ProductDetails } from "./ProductDetails";
 
@@ -81,6 +84,33 @@ const productWithoutCustomVariants = {
 } as unknown as Product;
 
 describe("ProductDetails", () => {
+  it("tracks one view per product, not per product object", () => {
+    vi.mocked(trackKlaviyoViewedProduct).mockClear();
+    const { rerender } = render(
+      <ProductDetails
+        product={productWithoutCustomVariants}
+        basePath="/us/en"
+      />,
+    );
+
+    // A cart change refreshes the page with an equal, new product object.
+    rerender(
+      <ProductDetails
+        product={{ ...productWithoutCustomVariants }}
+        basePath="/us/en"
+      />,
+    );
+    expect(trackKlaviyoViewedProduct).toHaveBeenCalledTimes(1);
+
+    rerender(
+      <ProductDetails
+        product={{ ...productWithoutCustomVariants, id: "product-2" }}
+        basePath="/us/en"
+      />,
+    );
+    expect(trackKlaviyoViewedProduct).toHaveBeenCalledTimes(2);
+  });
+
   it("sends Klaviyo Added to Cart once the item is in the cart", async () => {
     vi.mocked(trackKlaviyoAddedToCart).mockClear();
     cart.addItem.mockResolvedValueOnce(true);

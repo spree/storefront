@@ -4,7 +4,7 @@ import type { Media, Product, Seller, Variant } from "@spree/sdk";
 import { CircleCheckBig, CircleX, Loader2, ShoppingBag } from "lucide-react";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useEffectEvent, useMemo, useState } from "react";
 import { QuantityPickerField } from "@/components/cart/QuantityPickerField";
 import { HiddenPricePrompt } from "@/components/products/HiddenPricePrompt";
 import { MediaGallery } from "@/components/products/MediaGallery";
@@ -68,11 +68,15 @@ export function ProductDetails({
   const [quantity, setQuantity] = useState(1);
   const [loading, setLoading] = useState(false);
 
-  // Track product view (analytics - client-only side effect)
-  useEffect(() => {
+  const trackView = useEffectEvent(() => {
     trackViewItem(product, currency);
     trackKlaviyoViewedProduct(product, basePath);
-  }, [product, currency, basePath]);
+  });
+
+  // biome-ignore lint/correctness/useExhaustiveDependencies: a cart change hands over a new product object for the same product, which is not a new view
+  useEffect(() => {
+    trackView();
+  }, [product.id]);
 
   const galleryImages = useMemo((): Media[] => {
     return product.media || [];

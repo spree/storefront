@@ -3,6 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
   forgetKlaviyo,
   identifyKlaviyo,
+  KLAVIYO_WAIT_MS,
   trackKlaviyoAddedToCart,
   trackKlaviyoStartedCheckout,
   trackKlaviyoViewedProduct,
@@ -44,8 +45,61 @@ describe("Klaviyo onsite events", () => {
     vi.restoreAllMocks();
   });
 
-  describe("without Klaviyo's script", () => {
-    it("does nothing", () => {
+  describe("before Klaviyo's script loads", () => {
+    function loadKlaviyo() {
+      (window as unknown as { klaviyo: unknown }).klaviyo = { track, identify };
+    }
+
+    beforeEach(() => {
+      vi.useFakeTimers();
+      track.mockReset();
+      identify.mockReset();
+      window.history.replaceState(null, "", "/us/en/products/linen-shirt");
+    });
+
+    afterEach(() => {
+      // Lets every waiting call run out, so none reaches the next test.
+      delete (window as unknown as { klaviyo?: unknown }).klaviyo;
+      vi.advanceTimersByTime(KLAVIYO_WAIT_MS * 2);
+      vi.useRealTimers();
+    });
+
+    it("sends the landing page's view once the script loads", () => {
+      trackKlaviyoViewedProduct(product, "/us/en");
+      identifyKlaviyo("ada@example.com");
+      expect(track).not.toHaveBeenCalled();
+
+      loadKlaviyo();
+      vi.advanceTimersByTime(500);
+
+      expect(track).toHaveBeenCalledWith(
+        "Viewed Product",
+        expect.objectContaining({ ProductName: "Linen Shirt" }),
+      );
+      expect(identify).toHaveBeenCalledWith({ email: "ada@example.com" });
+    });
+
+    it("drops a call once the shopper has left its page", () => {
+      trackKlaviyoViewedProduct(product, "/us/en");
+      window.history.pushState(null, "", "/us/en/cart");
+
+      loadKlaviyo();
+      vi.advanceTimersByTime(500);
+
+      expect(track).not.toHaveBeenCalled();
+    });
+
+    it("drops a call the script does not load in time for", () => {
+      trackKlaviyoViewedProduct(product, "/us/en");
+      vi.advanceTimersByTime(KLAVIYO_WAIT_MS + 500);
+
+      loadKlaviyo();
+      vi.advanceTimersByTime(500);
+
+      expect(track).not.toHaveBeenCalled();
+    });
+
+    it("never throws", () => {
       expect(() => {
         trackKlaviyoViewedProduct(product, "/us/en");
         trackKlaviyoAddedToCart(product, null, 1, "/us/en");
