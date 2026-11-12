@@ -27,6 +27,10 @@ import {
   PaymentSection,
   type PaymentSectionHandle,
 } from "@/components/checkout/PaymentSection";
+import {
+  PurchaseOrderSection,
+  type PurchaseOrderSectionHandle,
+} from "@/components/checkout/PurchaseOrderSection";
 import { PolicyConsent } from "@/components/policy/PolicyConsent";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useAuth } from "@/contexts/AuthContext";
@@ -44,6 +48,7 @@ import {
   removeDiscountCode,
   removeGiftCard,
   selectDeliveryRate,
+  updateCartPoNumber,
   updateOrderAddresses,
 } from "@/lib/data/checkout";
 import {
@@ -143,6 +148,7 @@ function CheckoutPageContentInner({
   tRef.current = t;
   const beginCheckoutFiredRef = useRef(false);
   const paymentRef = useRef<PaymentSectionHandle>(null);
+  const purchaseOrderRef = useRef<PurchaseOrderSectionHandle>(null);
 
   // Handle code application (discount code or gift card — single input field)
   const handleApplyCode = useCallback(async (code: string) => {
@@ -387,6 +393,31 @@ function CheckoutPageContentInner({
     [],
   );
 
+  // Handle the purchase-order reference — saved on blur, and flushed again
+  // before the order is placed.
+  const handleSavePoNumber = useCallback(
+    async (poNumber: string): Promise<boolean> => {
+      const currentOrder = cartRef.current;
+      if (!currentOrder) return false;
+
+      setError(null);
+
+      try {
+        const result = await updateCartPoNumber(currentOrder.id, poNumber);
+        if (!result.success) {
+          setError(result.error || tRef.current("failedToSavePoNumber"));
+          return false;
+        }
+        if (result.cart) setCart(result.cart);
+        return true;
+      } catch {
+        setError(tRef.current("failedToSavePoNumber"));
+        return false;
+      }
+    },
+    [],
+  );
+
   // Handle delivery rate selection
   const handleDeliveryRateSelect = useCallback(
     async (fulfillmentId: string, rateId: string) => {
@@ -577,6 +608,11 @@ function CheckoutPageContentInner({
       return;
     }
 
+    // A purchase-order reference typed and never blurred out of is still only
+    // in the field. Save it before the cart is re-read, or its requirements
+    // would report a number missing that the buyer has already given.
+    await purchaseOrderRef.current?.flush();
+
     // Refresh cart to get latest requirements
     const freshOrder = await getCheckoutOrder(cart.id);
     if (!freshOrder) {
@@ -595,13 +631,15 @@ function CheckoutPageContentInner({
       const errorsBySection: Record<string, string[]> = {};
 
       for (const req of prePaymentReqs) {
-        // Map requirement steps to section IDs
+        // Map requirement steps to section IDs.
         const sectionId =
-          req.step === "address"
-            ? "address"
-            : req.step === "delivery"
-              ? "shipping"
-              : req.step;
+          req.field === "po_number" && freshOrder.po_number_required
+            ? "po"
+            : req.step === "address"
+              ? "address"
+              : req.step === "delivery"
+                ? "shipping"
+                : req.step;
         if (!errorsBySection[sectionId]) {
           errorsBySection[sectionId] = [];
         }
@@ -749,6 +787,20 @@ function CheckoutPageContentInner({
             user={user}
           />
         </div>
+
+        {/* Purchase order — company buyers only, and mandatory for a company
+            that requires one. */}
+        {(cart.company_id || cart.po_number_required) && (
+          <div id="checkout-section-po" className="mt-6">
+            <PurchaseOrderSection
+              ref={purchaseOrderRef}
+              cart={cart}
+              onSave={handleSavePoNumber}
+              processing={processing}
+              errors={sectionErrors.po}
+            />
+          </div>
+        )}
 
         {/* Shipping method */}
         <div id="checkout-section-shipping" className="mt-6">
