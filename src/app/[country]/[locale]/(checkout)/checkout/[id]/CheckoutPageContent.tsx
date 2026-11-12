@@ -393,8 +393,8 @@ function CheckoutPageContentInner({
     [],
   );
 
-  // Handle the purchase-order reference — saved on blur, and flushed again
-  // before the order is placed.
+  // Handle the purchase-order reference. Written on blur, and once more at
+  // Place Order only if the field still holds something the cart does not.
   const handleSavePoNumber = useCallback(
     async (poNumber: string): Promise<boolean> => {
       const currentOrder = cartRef.current;
