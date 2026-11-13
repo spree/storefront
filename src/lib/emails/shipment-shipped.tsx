@@ -14,7 +14,7 @@ import {
   Section,
   Text,
 } from "react-email";
-import { getStoreName, getStoreUrl } from "@/lib/store";
+import { FALLBACK_STORE_NAME, getStoreUrl } from "@/lib/store";
 
 interface ShippedItem {
   name: string;
@@ -44,7 +44,7 @@ interface ShipmentShippedEmailProps {
 export function ShipmentShippedEmail({
   orderNumber,
   customerName,
-  storeName = getStoreName(),
+  storeName = FALLBACK_STORE_NAME,
   storeUrl = getStoreUrl(),
   shipments,
 }: ShipmentShippedEmailProps) {

@@ -3,12 +3,9 @@ import Link from "next/link";
 import { getTranslations } from "next-intl/server";
 import type { ReactNode } from "react";
 import { POLICY_LINKS } from "@/lib/constants/policies";
+import { getStore } from "@/lib/data/store";
 import { isMarketplaceEnabled, isWholesaleEnabled } from "@/lib/spree";
-import { getStoreDescription, getStoreName } from "@/lib/store";
 import { CurrentYear } from "./CurrentYear";
-
-const storeName = getStoreName();
-const storeDescription = getStoreDescription();
 
 // Demo-only: Remove for production.
 const githubUrl = "https://github.com/spree/storefront";
@@ -44,8 +41,11 @@ export function FooterCategoryLinks({
 }
 
 export async function Footer({ basePath, locale, categoryLinks }: FooterProps) {
-  const t = await getTranslations({ locale, namespace: "footer" });
-  const tp = await getTranslations({ locale, namespace: "policies" });
+  const [t, tp, { name: storeName }] = await Promise.all([
+    getTranslations({ locale, namespace: "footer" }),
+    getTranslations({ locale, namespace: "policies" }),
+    getStore(locale),
+  ]);
   const wholesaleEnabled = isWholesaleEnabled();
   const marketplaceEnabled = isMarketplaceEnabled();
 
@@ -57,9 +57,7 @@ export async function Footer({ basePath, locale, categoryLinks }: FooterProps) {
           {/* Brand */}
           <div className="col-span-1 md:col-span-2">
             <span className="text-xl font-bold text-white">{storeName}</span>
-            <p className="mt-4 text-sm text-neutral-400">
-              {t("description") || storeDescription}
-            </p>
+            <p className="mt-4 text-sm text-neutral-400">{t("description")}</p>
             {/* Demo-only: Remove for production. */}
             <div className="mt-4 flex flex-col gap-2">
               <Link

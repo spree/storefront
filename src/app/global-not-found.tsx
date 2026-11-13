@@ -15,8 +15,9 @@ import {
 import { findMarketForCountry } from "@/i18n/markets";
 import { REQUEST_PATHNAME_HEADER } from "@/i18n/routing";
 import { getStorefrontMarkets } from "@/lib/data/markets";
+import { getStore } from "@/lib/data/store";
 import { storeViewport } from "@/lib/metadata/viewport";
-import { getDefaultCountry, getDefaultLocale, getStoreName } from "@/lib/store";
+import { getDefaultCountry, getDefaultLocale } from "@/lib/store";
 
 /**
  * Served with a real 404 status for unmatched URLs and for products,
@@ -48,9 +49,12 @@ export const viewport: Viewport = storeViewport;
 
 export async function generateMetadata(): Promise<Metadata> {
   const { locale } = await getRequestContext();
-  const t = await getTranslations({ locale, namespace: "notFound" });
+  const [t, store] = await Promise.all([
+    getTranslations({ locale, namespace: "notFound" }),
+    getStore(locale),
+  ]);
   return {
-    title: `${t("title")} | ${getStoreName()}`,
+    title: `${t("title")} | ${store.name}`,
     description: t("description"),
   };
 }
@@ -65,7 +69,10 @@ export default function GlobalNotFound(): React.JSX.Element {
 
 async function NotFoundDocument(): Promise<React.JSX.Element> {
   const { country, locale, markets } = await getRequestContext();
-  const messages = await loadMessages(locale);
+  const [messages, store] = await Promise.all([
+    loadMessages(locale),
+    getStore(locale),
+  ]);
   const basePath = `/${country}/${locale}`;
 
   return (
@@ -75,6 +82,7 @@ async function NotFoundDocument(): Promise<React.JSX.Element> {
         locale={locale}
         markets={markets}
         messages={messages}
+        storeName={store.name}
       >
         <StorefrontLayout params={Promise.resolve({ country, locale })}>
           <NotFoundContent basePath={basePath} />

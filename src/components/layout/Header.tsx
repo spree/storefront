@@ -8,8 +8,8 @@ import type { ReactNode } from "react";
 import { CartButton } from "@/components/layout/CartButton";
 import { SearchToggle } from "@/components/layout/SearchToggle";
 import { Button } from "@/components/ui/button";
+import { getStore } from "@/lib/data/store";
 import { isMarketplaceEnabled, isWholesaleEnabled } from "@/lib/spree";
-import { getStoreName } from "@/lib/store";
 
 const LazyMobileMenu = dynamic(
   () =>
@@ -32,8 +32,6 @@ const LazyRegionPreferences = dynamic(
     loading: () => <div className="size-11" aria-hidden="true" />,
   },
 );
-
-const storeName = getStoreName();
 
 interface HeaderProps {
   basePath: string;
@@ -68,7 +66,10 @@ export async function Header({
   locale,
   mobileNavigation,
 }: HeaderProps) {
-  const t = await getTranslations({ locale, namespace: "header" });
+  const [t, store] = await Promise.all([
+    getTranslations({ locale, namespace: "header" }),
+    getStore(locale),
+  ]);
   const wholesaleEnabled = isWholesaleEnabled();
   const marketplaceEnabled = isMarketplaceEnabled();
 
@@ -80,7 +81,7 @@ export async function Header({
         <Link href={basePath || "/"} className="flex items-center min-w-0">
           <Image
             src="/spree.png"
-            alt={storeName}
+            alt={store.name}
             width={90}
             height={32}
             className="max-w-full object-contain"

@@ -2,11 +2,12 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { getTranslations } from "next-intl/server";
 import { cachedGetPolicy, getPolicy } from "@/lib/data/policies";
+import { getStore } from "@/lib/data/store";
 import {
   buildLocalizedAlternates,
   translationFingerprint,
 } from "@/lib/metadata/alternates";
-import { getStoreName, getStoreUrl } from "@/lib/store";
+import { getStoreUrl } from "@/lib/store";
 
 interface PolicyPageProps {
   params: Promise<{
@@ -20,9 +21,10 @@ export async function generateMetadata({
   params,
 }: PolicyPageProps): Promise<Metadata> {
   const { country, locale, slug } = await params;
-  const policy = await getPolicy(slug, { country, locale });
-
-  const storeName = getStoreName();
+  const [policy, store] = await Promise.all([
+    getPolicy(slug, { country, locale }),
+    getStore(locale),
+  ]);
 
   if (!policy) {
     const t = await getTranslations({
@@ -35,7 +37,7 @@ export async function generateMetadata({
     };
   }
 
-  const description = `${policy.name} — ${storeName}`;
+  const description = `${policy.name} — ${store.name}`;
   const storeUrl = getStoreUrl();
   const localizedAlternates = storeUrl
     ? await buildLocalizedAlternates({

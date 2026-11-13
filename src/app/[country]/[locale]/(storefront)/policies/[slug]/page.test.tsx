@@ -13,6 +13,15 @@ vi.mock("@/lib/data/policies", () => ({
   getPolicy: vi.fn(),
 }));
 
+vi.mock("@/lib/data/store", () => ({
+  getStore: vi.fn().mockResolvedValue({
+    id: "store-1",
+    name: "Example Store",
+    seo_title: null,
+    meta_description: null,
+  }),
+}));
+
 vi.mock("@/lib/metadata/alternates", () => ({
   buildLocalizedAlternates: vi.fn(),
   translationFingerprint: (...fields: unknown[]) => JSON.stringify(fields),
@@ -30,7 +39,6 @@ const policy = {
 describe("policy metadata", () => {
   beforeEach(() => {
     vi.stubEnv("NEXT_PUBLIC_SITE_URL", "https://store.example/");
-    vi.stubEnv("NEXT_PUBLIC_STORE_NAME", "Example Store");
     vi.mocked(getPolicy).mockResolvedValue(policy);
     vi.mocked(buildLocalizedAlternates).mockResolvedValue({
       canonical: "https://store.example/us/en/policies/privacy-policy",
