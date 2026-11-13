@@ -1,5 +1,5 @@
 import type { Cart } from "@spree/sdk";
-import { render, screen } from "@testing-library/react";
+import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { createRef } from "react";
 import { describe, expect, it, vi } from "vitest";
@@ -95,6 +95,64 @@ describe("PurchaseOrderSection", () => {
     // Already on the cart — Place Order flushing again writes nothing.
     await expect(ref.current?.flush()).resolves.toBe(true);
     expect(onSave).toHaveBeenCalledOnce();
+  });
+
+  it("waits for a write already in flight rather than duplicating it", async () => {
+    const user = userEvent.setup();
+    let settle: ((saved: boolean) => void) | undefined;
+    const onSave = vi.fn(
+      () =>
+        new Promise<boolean>((resolve) => {
+          settle = resolve;
+        }),
+    );
+    const ref = createRef<PurchaseOrderSectionHandle>();
+    render(
+      <PurchaseOrderSection ref={ref} cart={cartWith({})} onSave={onSave} />,
+    );
+
+    await user.type(screen.getByLabelText("poNumberRequiredLabel"), "PO-3");
+    await user.tab();
+    expect(onSave).toHaveBeenCalledExactlyOnceWith("PO-3");
+
+    const flushed = ref.current?.flush();
+    settle?.(true);
+
+    await expect(flushed).resolves.toBe(true);
+    expect(onSave).toHaveBeenCalledOnce();
+  });
+
+  it("writes the value last typed when the field changed mid-write", async () => {
+    const user = userEvent.setup();
+    const settlers: Array<(saved: boolean) => void> = [];
+    const onSave = vi.fn(
+      () =>
+        new Promise<boolean>((resolve) => {
+          settlers.push(resolve);
+        }),
+    );
+    const ref = createRef<PurchaseOrderSectionHandle>();
+    render(
+      <PurchaseOrderSection ref={ref} cart={cartWith({})} onSave={onSave} />,
+    );
+
+    const input = screen.getByLabelText("poNumberRequiredLabel");
+    await user.type(input, "PO-A");
+    await user.tab();
+    expect(onSave).toHaveBeenCalledExactlyOnceWith("PO-A");
+
+    await user.clear(input);
+    await user.type(input, "PO-B");
+    const flushed = ref.current?.flush();
+
+    // Nothing is sent for PO-B until the write for PO-A has settled.
+    expect(onSave).toHaveBeenCalledOnce();
+    settlers[0](true);
+    await waitFor(() => expect(onSave).toHaveBeenCalledTimes(2));
+    expect(onSave).toHaveBeenLastCalledWith("PO-B");
+
+    settlers[1](true);
+    await expect(flushed).resolves.toBe(true);
   });
 
   it("reports a failed flush so the order is not placed on the old reference", async () => {

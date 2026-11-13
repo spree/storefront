@@ -61,20 +61,32 @@ export function PurchaseOrderSection({
   const poNumberRef = useRef(poNumber);
   poNumberRef.current = poNumber;
 
-  const save = useCallback(async (): Promise<boolean> => {
-    const value = poNumberRef.current.trim();
-    if (value === savedRef.current) return true;
+  const queueRef = useRef<Promise<boolean> | null>(null);
 
-    setSaving(true);
-    try {
-      // Left unrecorded on failure, so the next blur or the flush below
-      // retries rather than reporting a number the cart never took.
-      const saved = await onSave(value);
-      if (saved) savedRef.current = value;
-      return saved;
-    } finally {
-      setSaving(false);
-    }
+  const save = useCallback((): Promise<boolean> => {
+    const write = async (): Promise<boolean> => {
+      const value = poNumberRef.current.trim();
+      if (value === savedRef.current) return true;
+
+      setSaving(true);
+      try {
+        // Left unrecorded on failure, so the next blur or the flush below
+        // retries rather than reporting a number the cart never took.
+        const saved = await onSave(value);
+        if (saved) savedRef.current = value;
+        return saved;
+      } finally {
+        setSaving(false);
+      }
+    };
+
+    // Queued behind what is already writing rather than racing it: the field
+    // and `savedRef` are read once that settles, so the cart ends up holding
+    // the value last typed — and a flush right after a blur usually finds
+    // nothing left to send.
+    const result = queueRef.current?.then(write) ?? write();
+    queueRef.current = result.catch(() => false);
+    return result;
   }, [onSave]);
 
   useImperativeHandle(ref, () => ({ flush: save }), [save]);
