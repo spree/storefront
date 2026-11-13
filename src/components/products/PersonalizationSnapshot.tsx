@@ -21,6 +21,7 @@ type Props = {
   className?: string;
   /** Compact density for cart drawer / checkout summary. */
   compact?: boolean;
+  proofNoticeVariant?: "default" | "quiet";
   title?: string;
   /** Authorized private file refs from the line item serializer. */
   files?: PersonalizationFileRef[] | null;
@@ -137,6 +138,7 @@ export function PersonalizationSnapshot({
   proofRequired,
   className,
   compact,
+  proofNoticeVariant = "default",
   title,
   files,
 }: Props) {
@@ -165,14 +167,20 @@ export function PersonalizationSnapshot({
         files={files}
       />
       {proofRequired ? (
-        <p
-          className={cn(
-            "text-amber-800 bg-amber-50 border border-amber-100 rounded-md",
-            compact ? "mt-1 px-2 py-1 text-xs" : "mt-2 px-3 py-2 text-sm",
-          )}
-        >
-          {t("proofRequiredShort")}
-        </p>
+        proofNoticeVariant === "quiet" ? (
+          <p className="mt-1 inline-block w-fit max-w-[16rem] rounded-md bg-amber-50/70 px-2 py-1 text-[11px] leading-4 text-amber-800/90">
+            {t("proofRequiredShort")}
+          </p>
+        ) : (
+          <p
+            className={cn(
+              "text-amber-800 bg-amber-50 border border-amber-100 rounded-md",
+              compact ? "mt-1 px-2 py-1 text-xs" : "mt-2 px-3 py-2 text-sm",
+            )}
+          >
+            {t("proofRequiredShort")}
+          </p>
+        )
       ) : null}
     </div>
   );

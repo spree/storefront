@@ -18,7 +18,7 @@ export function OffersPageIntro() {
   return (
     <section className="bg-[#f4eee9] px-4 py-7 sm:px-6 sm:py-9">
       <div className="mx-auto flex max-w-6xl items-start gap-4 sm:items-center sm:gap-6">
-        <div className="hidden size-14 shrink-0 items-center justify-center rounded-full bg-[#f26432] text-white sm:flex">
+        <div className="hidden size-14 shrink-0 items-center justify-center rounded-full bg-marketplace-brand-accent text-white sm:flex">
           <BadgePercent aria-hidden="true" className="size-7" />
         </div>
         <div className="min-w-0">
@@ -34,7 +34,7 @@ export function OffersPageIntro() {
               <DialogTrigger asChild>
                 <button
                   type="button"
-                  className="font-semibold text-[#302936] underline decoration-[#a69aa1] underline-offset-4 transition-colors hover:text-[#b74a20] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#f26432]"
+                  className="font-semibold text-[#302936] underline decoration-[#a69aa1] underline-offset-4 transition-colors hover:text-marketplace-brand-accent-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-marketplace-brand-accent"
                 >
                   {t("learnMore")}
                 </button>

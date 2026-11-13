@@ -6,7 +6,10 @@ import { getTranslations } from "next-intl/server";
 import { ReportShopButton } from "@/components/shops/ReportShopButton";
 import { ShopFollowersButton } from "@/components/shops/ShopFollowersButton";
 import type { SellerShopSection } from "@/lib/data/seller-storefront-types";
-import { sellerShopCatalogPath } from "@/lib/utils/seller-storefront";
+import {
+  sellerShopCatalogPath,
+  sellerShopPath,
+} from "@/lib/utils/seller-storefront";
 import { SellerShopStat } from "./SellerShopStat";
 
 interface SellerShopSidebarProps {
@@ -124,7 +127,7 @@ export async function SellerShopSidebar({
           <div className="max-h-64 overflow-y-auto py-2">{categoryLinks}</div>
         </details>
         <div className="hidden md:block">
-          <h2 className="mb-2 text-xs font-semibold uppercase text-[#757575]">
+          <h2 className="mb-2 font-sans text-xs font-semibold uppercase tracking-wide text-[#757575]">
             {t("shopCategoriesLabel")}
           </h2>
           {categoryLinks}
@@ -186,7 +189,10 @@ export async function SellerShopSidebar({
             </a>
           </li>
           <li>
-            <a href={`${shopPath}#shop-about`} className={linkClass(false)}>
+            <a
+              href={sellerShopPath(basePath, slug, "about")}
+              className={linkClass(false)}
+            >
               {t("tab_about")}
             </a>
           </li>

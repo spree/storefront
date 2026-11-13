@@ -8,33 +8,15 @@ vi.mock("next/navigation", () => ({
 vi.mock("next-intl", () => ({
   useTranslations: () => (key: string) => key,
 }));
-vi.mock("@/components/layout/MobileMenu", () => ({
-  MobileMenu: () => <button type="button">browse</button>,
-}));
-vi.mock("@/components/account/MessagesNavBadge", () => ({
-  MessagesNavBadge: () => null,
-}));
-
-const authState = vi.hoisted(() => ({ isAuthenticated: true }));
-vi.mock("@/contexts/AuthContext", () => ({
-  useAuth: () => ({
-    isAuthenticated: authState.isAuthenticated,
-    loading: false,
-  }),
+vi.mock("@/contexts/CartContext", () => ({
+  useCart: () => ({ itemCount: 2, openCart: vi.fn() }),
 }));
 
 import { MarketplaceBottomNav } from "./MarketplaceBottomNav";
 
 describe("MarketplaceBottomNav", () => {
-  it("renders exactly five canonical destinations and marks the current one", () => {
-    authState.isAuthenticated = true;
-    render(
-      <MarketplaceBottomNav
-        rootCategories={[]}
-        basePath="/us/en"
-        wholesaleEnabled={false}
-      />,
-    );
+  it("renders five canonical tabs and marks the saved destination active", () => {
+    render(<MarketplaceBottomNav basePath="/us/en" />);
 
     const navigation = screen.getByRole("navigation", {
       name: "marketplaceNavigation",
@@ -45,50 +27,32 @@ describe("MarketplaceBottomNav", () => {
       "/us/en",
     );
     expect(
-      within(navigation).getByText("favorites").closest("a"),
+      within(navigation).getByText("navExplore").closest("a"),
+    ).toHaveAttribute("href", "/us/en/products");
+    expect(
+      within(navigation).getByText("navSaved").closest("a"),
     ).toHaveAttribute("aria-current", "page");
-    expect(
-      within(navigation).getByText("messages").closest("a"),
-    ).toHaveAttribute("href", "/us/en/account/messages");
-    expect(
-      within(navigation).getByText("account").closest("a"),
-    ).toHaveAttribute("href", "/us/en/account");
+    expect(within(navigation).getByText("cart").closest("a")).toHaveAttribute(
+      "href",
+      "/us/en/cart",
+    );
+    expect(within(navigation).getByText("navYou").closest("a")).toHaveAttribute(
+      "href",
+      "/us/en/account",
+    );
   });
 
-  it("removes the favorites destination when the General wishlist setting is off", () => {
-    authState.isAuthenticated = true;
+  it("drops the saved tab when the General wishlist setting is off", () => {
     render(
       <ThemeSettingsProvider settings={{ general: { enable_wishlist: false } }}>
-        <MarketplaceBottomNav
-          rootCategories={[]}
-          basePath="/us/en"
-          wholesaleEnabled={false}
-        />
+        <MarketplaceBottomNav basePath="/us/en" />
       </ThemeSettingsProvider>,
     );
 
     const navigation = screen.getByRole("navigation", {
       name: "marketplaceNavigation",
     });
-    expect(within(navigation).queryByText("favorites")).not.toBeInTheDocument();
+    expect(within(navigation).queryByText("navSaved")).not.toBeInTheDocument();
     expect(navigation.firstElementChild?.children).toHaveLength(4);
-  });
-
-  it("hides favorites and messages when the shopper is signed out", () => {
-    authState.isAuthenticated = false;
-    render(
-      <MarketplaceBottomNav
-        rootCategories={[]}
-        basePath="/us/en"
-        wholesaleEnabled={false}
-      />,
-    );
-
-    const navigation = screen.getByRole("navigation", {
-      name: "marketplaceNavigation",
-    });
-    expect(within(navigation).queryByText("favorites")).not.toBeInTheDocument();
-    expect(within(navigation).queryByText("messages")).not.toBeInTheDocument();
-    expect(navigation.firstElementChild?.children).toHaveLength(3);
   });
 });

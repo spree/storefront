@@ -2,7 +2,7 @@
 
 import { createHash } from "node:crypto";
 import type { ListParams } from "@spree/sdk";
-import { getClient, withAuthRefresh } from "@/lib/spree";
+import { ensureFreshSession, getClient, withAuthRefresh } from "@/lib/spree";
 import { withFallback } from "./utils";
 
 export async function getMessageThreads(params?: ListParams) {
@@ -86,6 +86,7 @@ export async function contactSeller(params: {
   seller_id: string;
   body: string;
 }) {
+  await ensureFreshSession();
   return withAuthRefresh(async (options) => {
     return getClient().customer.messageThreads.contactSeller(params, options);
   });
@@ -95,6 +96,7 @@ export async function askAboutProduct(params: {
   product_id: string;
   body: string;
 }) {
+  await ensureFreshSession();
   return withAuthRefresh(async (options) => {
     return getClient().customer.messageThreads.askAboutProduct(params, options);
   });

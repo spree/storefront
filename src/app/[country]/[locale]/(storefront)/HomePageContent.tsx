@@ -1,7 +1,7 @@
 import { connection } from "next/server";
+import { MarketplaceHomeEditorialHero } from "@/components/home/MarketplaceHomeEditorialHero";
 import { MarketplaceHomeSections } from "@/components/home/MarketplaceHomeSections";
 import { ThemePageRenderer } from "@/components/theme/ThemePageRenderer";
-import { ThemeTemplateRenderer } from "@/components/theme/ThemeTemplateRenderer";
 import { resolveCurrency } from "@/lib/data/markets";
 import { getMerchandisingPlacements } from "@/lib/data/merchandising";
 import { getHomePersonalizationComposition } from "@/lib/data/storefront-personalization";
@@ -12,8 +12,6 @@ import {
   getResolvedTemplate,
   themeGroupHasContent,
 } from "@/lib/theme/resolver";
-import { defaultHomeTemplate } from "./home-template";
-
 export async function HomePageContent({
   country,
   locale,
@@ -70,10 +68,7 @@ export async function HomePageContent({
 
   return (
     <div className="bg-marketplace-background">
-      <ThemeTemplateRenderer
-        data={defaultHomeTemplate()}
-        context={{ kind: "home", basePath, locale, country, currency }}
-      />
+      <MarketplaceHomeEditorialHero basePath={basePath} locale={locale} />
       <MarketplaceHomeSections
         basePath={basePath}
         locale={locale}

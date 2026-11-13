@@ -53,6 +53,9 @@ export function PrePurchaseMessageComposer({
         const thread = productId
           ? await askAboutProduct({ product_id: productId, body: text })
           : await contactSeller({ seller_id: sellerSlug!, body: text });
+        if (!thread?.id) {
+          throw new Error("missing_thread");
+        }
         onClose();
         router.push(`${basePath}/account/messages/${thread.id}`);
       } catch {

@@ -21,7 +21,9 @@ vi.mock("@/components/products/ProductGrid", () => ({
   ),
 }));
 vi.mock("@/components/shops/ShopCard", () => ({
-  ShopCard: () => <div data-testid="shop-card" />,
+  ShopCard: ({ className }: { className?: string }) => (
+    <div data-testid="shop-card" className={className} />
+  ),
 }));
 vi.mock("@/components/theme/ProductsTabs", () => ({
   ProductsTabs: () => <div data-testid="products-tabs" />,
@@ -402,6 +404,33 @@ describe("Avone section catalog storefront coverage", () => {
     expect(html).toContain("gift-ideas.jpg");
     expect(html).toContain("group-hover:opacity-100");
     expect(html).toContain("Next collections");
+    expect(html).toContain("collection-theme-swiper { overflow:hidden;");
+  });
+
+  it("renders an intentional monogram tile when a category has no image", async () => {
+    const section = await renderMarketplaceSection(
+      {
+        id: "category-no-image",
+        type: "category_tiles",
+        settings: { source: "all", display_style: "text_below" },
+        blocks: {
+          card: {
+            type: "category_card",
+            settings: {
+              title: "[dev-dataset] Merch Fixtures",
+              category_id: "cat_fixtures",
+            },
+          },
+        },
+        blockOrder: ["card"],
+      },
+      context,
+    );
+
+    const html = renderToStaticMarkup(section);
+    expect(html).toContain("background-color:#f2e8df");
+    expect(html).toContain(">MF</span>");
+    expect(html).not.toContain('name="categories"');
   });
 
   it.each([
@@ -592,6 +621,22 @@ describe("homepage merchandising section sources", () => {
       vi.mocked(getClient).mockReturnValue(originalClient);
       warn.mockRestore();
     }
+  });
+
+  it("renders shop cards in a navigable carousel", async () => {
+    const section = await renderMarketplaceSection(
+      {
+        id: "popular-shops-widths",
+        type: "shop_rail",
+        settings: { heading: "Popular shops", source: "popular", limit: 4 },
+      },
+      context,
+    );
+
+    const html = renderToStaticMarkup(section);
+    expect(html).toContain("data-theme-carousel");
+    expect(html).toContain("Next shops");
+    expect(html).toContain("h-full w-full");
   });
 
   it("renders the selected collection placement with its campaign image", async () => {

@@ -8,6 +8,7 @@ export type CmsNavigationItemWire = {
   seller_id?: string;
   cms_page_id?: string;
   enabled?: boolean;
+  icon?: string;
   children?: CmsNavigationItemWire[];
 };
 

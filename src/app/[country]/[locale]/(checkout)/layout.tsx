@@ -1,11 +1,11 @@
 "use client";
 
 import { ArrowLeft, ChevronDown, ShoppingBag } from "lucide-react";
-import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { useState } from "react";
+import { StoreBrandLogo } from "@/components/layout/StoreBrandLogo";
 import {
   CheckoutProvider,
   CheckoutSummary,
@@ -33,24 +33,25 @@ function CheckoutHeader() {
 
   return (
     <header className="relative flex h-16 items-center justify-between">
-      <Link
-        href={basePath || "/"}
-        className="flex items-center space-x-2"
+      <div
+        className="flex min-w-0 items-center"
         style={{
           order: logoPosition === "right" ? 2 : 1,
           marginInline: logoPosition === "center" ? "auto" : undefined,
         }}
       >
-        <Image
-          src={String(checkout?.logo_image_url || "/spree.png")}
-          alt={storeName}
-          width={120}
-          height={32}
-          unoptimized
-          fetchPriority="high"
-          loading="eager"
+        <StoreBrandLogo
+          basePath={basePath || "/"}
+          compact
+          appearance="etsy"
+          logoImageUrl={
+            checkout?.logo_image_url
+              ? String(checkout.logo_image_url)
+              : undefined
+          }
+          logoImageAlt={storeName}
         />
-      </Link>
+      </div>
       <Link
         href={basePath || "/"}
         className="text-sm text-gray-600 hover:text-gray-900 flex items-center gap-1"
@@ -218,10 +219,10 @@ function CheckoutLayoutContent({ children }: CheckoutLayoutProps) {
           </div>
         </div>
 
-        {/* Desktop summary sidebar — Shopify: light gray bg with left border */}
+        {/* Desktop summary sidebar — separated by its background tone, without a divider */}
         {themeSettingEnabled(checkout?.show_order_summary, true) && (
           <div
-            className={`hidden lg:block ${summaryBelow ? "lg:col-start-2 lg:col-span-1 border-t" : "lg:col-start-3 border-l"} border-gray-200 bg-gray-50`}
+            className={`hidden lg:block ${summaryBelow ? "lg:col-start-2 lg:col-span-1 border-t border-gray-200" : "lg:col-start-3"} bg-gray-50`}
             style={{ backgroundColor: "var(--checkout-summary, #f9fafb)" }}
           >
             <div className="sticky top-0 px-10 py-10">

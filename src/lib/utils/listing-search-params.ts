@@ -26,6 +26,7 @@ export const LISTING_PARAM_KEYS = {
   /** Marketplace personalization filter. */
   personalizable: "personalizable",
   ratingMin: "rating_min",
+  // Retained as an owned legacy key so rewrites discard stale seller filters.
   seller: "seller",
 } as const;
 
@@ -106,9 +107,6 @@ export function parseListingSearchParams(
     readFirst(params, LISTING_PARAM_KEYS.ratingMin),
   );
 
-  const sellerId =
-    readFirst(params, LISTING_PARAM_KEYS.seller)?.trim() || undefined;
-
   const filters: ActiveFilters = {
     optionValues,
     ...(priceMin !== undefined ? { priceMin } : {}),
@@ -116,7 +114,6 @@ export function parseListingSearchParams(
     ...(availability ? { availability } : {}),
     ...(personalizable ? { personalizable } : {}),
     ...(ratingMin !== undefined ? { ratingMin } : {}),
-    ...(sellerId ? { sellerId } : {}),
     ...(sortBy ? { sortBy } : {}),
   };
 
@@ -165,9 +162,6 @@ export function buildListingSearchParams(
     if (filters.ratingMin !== undefined) {
       out.set(LISTING_PARAM_KEYS.ratingMin, String(filters.ratingMin));
     }
-    if (filters.sellerId) {
-      out.set(LISTING_PARAM_KEYS.seller, filters.sellerId);
-    }
   }
 
   return out;
@@ -193,7 +187,6 @@ export function listingKey(state: ListingSearchParams): string {
     a: state.filters.availability ?? "",
     pers: state.filters.personalizable ? 1 : 0,
     rating: state.filters.ratingMin ?? "",
-    seller: state.filters.sellerId ?? "",
     o: [...state.filters.optionValues].sort(),
   });
 }

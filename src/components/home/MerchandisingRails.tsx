@@ -12,6 +12,7 @@ import {
 } from "@/components/marketplace";
 import { ProductRecommendationRail } from "@/components/products/ProductRecommendationRail";
 import { getCountry } from "@/lib/data/countries";
+import { getCollectionStockImage } from "@/lib/marketplace-stock-images";
 
 function destinationHref(basePath: string, value?: string | null) {
   if (!value) return `${basePath}/products`;
@@ -150,7 +151,10 @@ export async function MerchandisingCollectionTiles({
                 href={`${basePath}/collections/${collection.permalink}`}
                 title={collection.name}
                 eyebrow={collection.cta_label || t("shopNow")}
-                imageUrl={collection.image_url}
+                imageUrl={
+                  collection.image_url ||
+                  getCollectionStockImage(0, collection.name)
+                }
                 aspect="landscape"
               />
             );

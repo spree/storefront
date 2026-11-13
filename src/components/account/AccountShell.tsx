@@ -147,26 +147,28 @@ export function AccountShell({ children }: { children: React.ReactNode }) {
   };
 
   return (
-    <MarketplacePage className="max-w-[1600px] bg-transparent py-6 pb-24 lg:py-10 lg:pb-10">
+    <MarketplacePage className="max-w-[1600px] bg-transparent py-6 lg:py-10">
       <div className="mb-6 lg:hidden">
-        <AccountIdentity user={user} fallback={t("myAccount")} compact />
-        <AccountNavigation
+        <div className="flex items-center justify-between gap-2">
+          <div className="min-w-0 flex-1">
+            <AccountIdentity user={user} fallback={t("myAccount")} compact />
+          </div>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={handleLogout}
+            className="shrink-0 gap-1.5 rounded-full px-2.5 text-xs text-marketplace-muted-foreground hover:text-marketplace-foreground"
+          >
+            <LogOut className="size-3.5" aria-hidden="true" />
+            {t("signOut")}
+          </Button>
+        </div>
+        <AccountMobileNavigation
           groups={navGroups}
           basePath={basePath}
           pathname={pathname}
           className="mt-3"
-          compact
         />
-        <div className="mt-3 border-t border-marketplace-border-subtle pt-2">
-          <Button
-            variant="ghost"
-            onClick={handleLogout}
-            className="w-full justify-start text-marketplace-muted-foreground hover:text-marketplace-foreground"
-          >
-            <LogOut className="size-4" />
-            {t("signOut")}
-          </Button>
-        </div>
       </div>
 
       <div className="flex gap-8 xl:gap-12">
@@ -210,6 +212,58 @@ export function AccountShell({ children }: { children: React.ReactNode }) {
         </main>
       </div>
     </MarketplacePage>
+  );
+}
+
+function AccountMobileNavigation({
+  groups,
+  basePath,
+  pathname,
+  className,
+}: {
+  groups: AccountNavGroup[];
+  basePath: string;
+  pathname: string;
+  className?: string;
+}) {
+  const items = groups
+    .flatMap((group) => group.items)
+    .filter((item) => item.primary);
+
+  return (
+    <nav aria-label="Account" className={className}>
+      <ul className="-mx-1 flex gap-1.5 overflow-x-auto overscroll-x-contain px-1 pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+        {items.map((item) => {
+          const href = `${basePath}${item.href}`;
+          const isActive =
+            pathname === href ||
+            (item.href !== "/account" && pathname.startsWith(`${href}/`)) ||
+            (item.href === "/account/messages" &&
+              isCommunicationPath(pathname, basePath)) ||
+            (item.href.startsWith("/account/settings") &&
+              pathname.startsWith(`${basePath}/account/settings`));
+
+          return (
+            <li key={item.href} className="shrink-0">
+              <Link
+                href={href}
+                aria-current={isActive ? "page" : undefined}
+                data-account-nav-link="true"
+                className={cn(
+                  "flex min-h-10 items-center gap-2 rounded-full border border-marketplace-border/70 bg-marketplace-surface/80 px-3 text-sm font-medium text-marketplace-muted-foreground transition-colors",
+                  isActive &&
+                    "border-marketplace-brand/20 bg-marketplace-curator text-marketplace-brand",
+                )}
+              >
+                <item.icon className="size-4" aria-hidden="true" />
+                <span>{item.label}</span>
+                {item.badge === "messages" ? <MessagesNavBadge /> : null}
+              </Link>
+            </li>
+          );
+        })}
+      </ul>
+    </nav>
   );
 }
 

@@ -103,11 +103,11 @@ export function SponsoredDiscoveryRail({
     >
       <MarketplacePage>
         <MarketplaceSectionHeader density="etsy" title={title} />
-        <div className="-mx-1 flex gap-3 overflow-x-auto px-1 pb-2 snap-x snap-mandatory">
+        <div className="-mx-1 flex snap-x snap-mandatory gap-4 overflow-x-auto px-1 pb-2">
           {rows.map((row, index) => (
             <div
               key={`${row.ad.ad_listing_id}-${row.product.id}`}
-              className="w-[42vw] max-w-[200px] shrink-0 snap-start sm:w-[28vw] md:max-w-[220px]"
+              className="w-[42vw] max-w-[240px] shrink-0 snap-start sm:w-[28vw] md:max-w-[240px]"
             >
               <SponsoredProductCard
                 row={row}

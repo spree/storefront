@@ -171,14 +171,16 @@ export async function Footer({
   );
   const footerLinksFor = (key: string) => {
     const navigation = footerNavigations.get(key);
-    return navigation ? flattenNavigation(navigation.items, basePath) : null;
+    const links = navigation
+      ? flattenNavigation(navigation.items, basePath)
+      : [];
+    return links.length ? links : null;
   };
   const customMode =
     themeSettingEnabled(settings.footer_blocks_initialized) ||
     customBlocks.length > 0;
   const footerSchemes: Record<string, { background: string; text: string }> = {
-    // Match storefront cream so the footer doesn't flash white under account pages.
-    "scheme-1": { background: "#f2efed", text: "#242027" },
+    "scheme-1": { background: "#ffffff", text: "#242027" },
     "scheme-2": { background: "#f6f1e8", text: "#6c315d" },
     "scheme-3": { background: "#e8f4ef", text: "#173b32" },
     "scheme-4": { background: "#f0f3fa", text: "#24365f" },
@@ -200,11 +202,11 @@ export async function Footer({
   const spotlightEnabled = settings.footer_spotlight_enabled !== false;
   const spotlightBackground = footerColor(
     settings.footer_spotlight_background_color,
-    "#f26432",
+    "#c2522b",
   );
   const spotlightText = footerColor(
     settings.footer_spotlight_text_color,
-    "#251e24",
+    "#fffaf6",
   );
   const spotlightButtonBackground = footerColor(
     settings.footer_spotlight_button_background_color,
@@ -246,16 +248,11 @@ export async function Footer({
   const footerStyle: CSSProperties = {
     ...(background ? { backgroundColor: background } : {}),
     ...(textColor ? { color: textColor } : {}),
-    ["--marketplace-background" as string]: background,
     ["--marketplace-foreground" as string]: textColor,
     ["--marketplace-muted-foreground" as string]: `color-mix(in srgb, ${textColor} 68%, transparent)`,
     ["--marketplace-border" as string]: `color-mix(in srgb, ${textColor} 18%, transparent)`,
     ["--marketplace-border-subtle" as string]: `color-mix(in srgb, ${textColor} 10%, transparent)`,
     ["--footer-pad-bottom" as string]: `${paddingBottom}px`,
-  };
-  const footerPadding: CSSProperties = {
-    maxWidth,
-    paddingTop: `${paddingTop}px`,
   };
   const copyrights = customBlocks.filter(
     ({ block }) =>
@@ -279,7 +276,7 @@ export async function Footer({
           style={{ backgroundColor: spotlightBackground, color: spotlightText }}
         >
           <div
-            className="mx-auto flex flex-col items-start justify-between gap-5 px-4 py-6 sm:px-6 md:flex-row md:items-center lg:px-8"
+            className="mx-auto flex flex-col items-start justify-between gap-4 px-4 py-5 sm:gap-5 sm:px-6 sm:py-6 md:flex-row md:items-center lg:px-8"
             style={{ maxWidth }}
           >
             <h2
@@ -313,8 +310,11 @@ export async function Footer({
       )}
       <div
         data-theme-footer-content
-        className="mx-auto max-w-[1440px] px-4 sm:px-6 lg:px-8"
-        style={footerPadding}
+        className="mx-auto max-w-[1440px] px-4 pt-[min(var(--footer-content-padding-top),2rem)] sm:px-6 md:pt-[var(--footer-content-padding-top)] lg:px-8"
+        style={{
+          maxWidth,
+          ["--footer-content-padding-top" as string]: `${paddingTop}px`,
+        }}
       >
         <div
           data-theme-footer-layout
@@ -397,6 +397,7 @@ export async function Footer({
                   const links = navigation
                     ? flattenNavigation(navigation.items, basePath)
                     : parseFooterMenuLinks(blockSettings.links);
+                  if (!links.length) return null;
                   return (
                     <FooterGroup
                       key={id}
@@ -428,7 +429,9 @@ export async function Footer({
                       className="min-w-0"
                     >
                       {title && (
-                        <h2 className="text-sm font-semibold">{title}</h2>
+                        <h2 className="font-sans text-sm font-semibold">
+                          {title}
+                        </h2>
                       )}
                       {text && (
                         <p className="mt-3 whitespace-pre-line text-sm leading-6 text-marketplace-muted-foreground">
@@ -496,6 +499,7 @@ export async function Footer({
                     String(blockSettings.title ?? "Policies").trim() ||
                     "Policies";
                   const links = parseFooterMenuLinks(blockSettings.links);
+                  if (!links.length) return null;
                   return (
                     <FooterGroup
                       key={id}
@@ -729,7 +733,11 @@ export async function Footer({
                 )}
               </FooterGroup>
 
-              <FooterGroup title={t("marketplace")}>
+              <FooterGroup
+                title={t("marketplace")}
+                className="col-span-2 md:col-span-1"
+                listClassName="mt-3 flex flex-wrap gap-x-5 gap-y-2"
+              >
                 {footerLinksFor(
                   String(settings.marketplace_menu_key ?? "footer_marketplace"),
                 )?.map(({ label, url }) => (
@@ -767,7 +775,7 @@ export async function Footer({
         data-theme-footer-bottom
         className="w-full border-t border-marketplace-border"
       >
-        <div className="mx-auto flex max-w-[1440px] flex-col gap-3 px-4 py-4 pb-[calc(var(--footer-pad-bottom,3rem)+5.5rem)] sm:px-6 md:pb-[var(--footer-pad-bottom,3rem)] lg:flex-row lg:items-center lg:justify-between lg:gap-6 lg:px-8">
+        <div className="mx-auto flex max-w-[1440px] flex-col gap-3 px-4 py-4 pb-[var(--footer-pad-bottom,3rem)] sm:px-6 lg:flex-row lg:items-center lg:justify-between lg:gap-6 lg:px-8">
           <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
             <div
               data-theme-footer-region
@@ -887,7 +895,7 @@ function FooterSocialGroup({
       data-theme-footer-block-id={dataBlockId}
       data-theme-footer-block-type={dataBlockType}
     >
-      <h2 className="text-sm font-semibold">{title}</h2>
+      <h2 className="font-sans text-sm font-semibold">{title}</h2>
       <ul className="mt-4 flex flex-wrap items-center gap-4">
         {links.map(({ network, href }) => (
           <li key={network}>
@@ -942,12 +950,16 @@ function PaymentMethodMark({ method }: { method: string }) {
 function FooterGroup({
   title,
   children,
+  className,
+  listClassName,
   dataBlockId,
   dataBlockType = "footer_menu",
   dataMenuKey,
 }: {
   title: string;
   children: ReactNode;
+  className?: string;
+  listClassName?: string;
   dataBlockId?: string;
   dataBlockType?: string;
   dataMenuKey?: string;
@@ -957,10 +969,10 @@ function FooterGroup({
       data-theme-footer-block-id={dataBlockId}
       data-theme-footer-block-type={dataBlockId ? dataBlockType : undefined}
       data-theme-footer-menu-key={dataMenuKey}
-      className="min-w-0"
+      className={`min-w-0 ${className ?? ""}`}
     >
-      <h2 className="text-sm font-semibold">{title}</h2>
-      <ul className="mt-4 space-y-3">{children}</ul>
+      <h2 className="font-sans text-sm font-semibold">{title}</h2>
+      <ul className={listClassName ?? "mt-4 space-y-3"}>{children}</ul>
     </div>
   );
 }

@@ -2,7 +2,10 @@ import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import type { Page } from "@playwright/test";
 import { createClient } from "@spree/sdk";
-import { MARKETPLACE_E2E_REQUIRED } from "./marketplace-fixtures";
+import {
+  MARKETPLACE_E2E_REQUIRED,
+  storefrontGoto,
+} from "./marketplace-fixtures";
 
 export type DiscoveryAttribution = {
   source_type: string;
@@ -28,6 +31,8 @@ export type StoreCart = {
   token?: string;
   items?: CartLineItem[];
   shipping_address?: { address1?: string | null } | null;
+  discount_total?: string | null;
+  discounts?: Array<{ code?: string | null; name?: string | null }>;
 };
 
 function normalizeSdkBaseUrl(raw: string): string {
@@ -92,6 +97,67 @@ function cartCookies(page: Page) {
   return page.context().cookies();
 }
 
+function storefrontCookieOrigin(page: Page): string {
+  if (page.url() && !page.url().startsWith("about:")) {
+    return new URL(page.url()).origin;
+  }
+  const port = process.env.STOREFRONT_E2E_PORT;
+  const configured =
+    process.env.NEXT_PUBLIC_SITE_URL ||
+    process.env.MERCH_E2E_STOREFRONT_URL ||
+    process.env.BASE_URL ||
+    (port ? `http://127.0.0.1:${port}` : "http://127.0.0.1:3001");
+  return configured.replace(/\/$/, "");
+}
+
+/**
+ * Aligns with the storefront DTC cart cookies (same channel/surface as UI add-to-cart).
+ * Clears any prior cart so the next navigation provisions a fresh incomplete cart.
+ */
+export async function ensureEmptyStorefrontDtcCart(
+  page: Page,
+  expectedEmail: string,
+): Promise<void> {
+  const { baseUrl, publishableKey } = loadSpreeEnv();
+  const client = createClient({ baseUrl, publishableKey });
+  await storefrontGoto(page, "/us/en");
+  const cookies = await cartCookies(page);
+  const jwt = cookies.find((cookie) => cookie.name === "_spree_jwt")?.value;
+  if (!jwt) throw new Error("Buyer JWT cookie missing after login.");
+
+  const customer = await client.customer.get({ token: jwt });
+  if (customer.email?.toLowerCase() !== expectedEmail.toLowerCase()) {
+    throw new Error(
+      `Authenticated buyer mismatch: expected ${expectedEmail}, got ${customer.email ?? "no email"}.`,
+    );
+  }
+
+  const incomplete = await client.carts.list({ token: jwt });
+  for (const cart of incomplete.data ?? []) {
+    if (!cart.id || !cart.token) continue;
+    try {
+      await client.carts.delete(cart.id, {
+        token: jwt,
+        spreeToken: cart.token,
+      });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      if (!/cart not found/i.test(message)) throw error;
+    }
+  }
+  const { hostname } = new URL(storefrontCookieOrigin(page));
+  await page.context().clearCookies({
+    domain: hostname,
+    name: "_spree_cart_token_id",
+  });
+  await page.context().clearCookies({
+    domain: hostname,
+    name: "_spree_cart_token",
+  });
+  await storefrontGoto(page, "/us/en/cart");
+  await storefrontGoto(page, "/us/en");
+}
+
 /** Verify the buyer session and provision a new empty cart for this browser context. */
 export async function startAuthenticatedEmptyCart(
   page: Page,
@@ -116,22 +182,31 @@ export async function startAuthenticatedEmptyCart(
     throw new Error("Store API did not return both cart ID and cart token.");
   }
 
+  await storefrontGoto(page, "/us/en");
+  const origin = storefrontCookieOrigin(page);
+  const { hostname } = new URL(origin);
+  const cookieSecure =
+    process.env.COOKIE_SECURE !== "false" && /^https:/i.test(origin);
+  const cookieBase = {
+    domain: hostname,
+    path: "/",
+    httpOnly: true,
+    secure: cookieSecure,
+    sameSite: "Lax" as const,
+  };
   await page.context().addCookies([
     {
       name: "_spree_cart_token_id",
       value: cart.id,
-      url: new URL(page.url()).origin,
-      httpOnly: true,
-      sameSite: "Lax",
+      ...cookieBase,
     },
     {
       name: "_spree_cart_token",
       value: cart.token,
-      url: new URL(page.url()).origin,
-      httpOnly: true,
-      sameSite: "Lax",
+      ...cookieBase,
     },
   ]);
+  await storefrontGoto(page, "/us/en");
 
   const resolved = await client.carts.get(cart.id, {
     token: jwt,
@@ -256,13 +331,31 @@ export async function removeSellerShopDiscoveryLines(
   const cartId = cookies.find(
     (cookie) => cookie.name === "_spree_cart_token_id",
   )?.value;
-  if (!cartId) return;
+  if (!jwt && !cartId) return;
 
   const client = createClient({ baseUrl, publishableKey });
-  const cart = await client.carts.get(cartId, { token: jwt, spreeToken });
-  // This is a seeded, suite-only buyer account. Deleting the cart guarantees
-  // repeat adds of the same variant cannot retain old discovery attribution.
-  await client.carts.delete(cart.id, { token: jwt, spreeToken });
+  const cartIds = new Set<string>();
+  if (cartId) cartIds.add(cartId);
+  // Form login does not plant the cart cookie, so the buyer's existing cart
+  // is easy to miss. A later add then increments that cart and can be refused
+  // once the line is already at the available quantity.
+  if (jwt) {
+    const response = await client.carts.list({ token: jwt });
+    for (const cart of response.data ?? []) {
+      if (cart.id) cartIds.add(cart.id);
+    }
+  }
+
+  for (const id of cartIds) {
+    const cart = await client.carts
+      .get(id, { token: jwt, spreeToken })
+      .catch(() => null);
+    if (!cart) continue;
+    await client.carts.delete(cart.id, {
+      token: jwt,
+      spreeToken: cart.token ?? spreeToken,
+    });
+  }
   await page.context().clearCookies({ name: "_spree_cart_token_id" });
   await page.context().clearCookies({ name: "_spree_cart_token" });
 }
@@ -348,6 +441,25 @@ export function findLineByProductSku(
       line.name?.includes(productSku) ||
       (productName ? line.name === productName : false),
   );
+}
+
+/** Assert a cart line exists for the marketplace dev-dataset product slug. */
+export function assertCartContainsProductSlug(
+  cart: StoreCart,
+  productSlug: string,
+): CartLineItem {
+  const line = findLineByProductSku(cart, productSlug);
+  if (!line) {
+    const summary =
+      cart.items?.map((item) => ({
+        slug: item.slug,
+        name: item.name,
+      })) ?? [];
+    throw new Error(
+      `Cart ${cart.id} missing line for slug ${productSlug}. Lines: ${JSON.stringify(summary)}`,
+    );
+  }
+  return line;
 }
 
 export function assertSearchAttribution(

@@ -108,6 +108,7 @@ export default async function CategoryPage({
                 categoryId: category.id,
                 categoryName: category.name,
                 categorySlug: category.permalink,
+                listingSearchParams: rawSearchParams,
                 basePath,
                 locale,
                 country,

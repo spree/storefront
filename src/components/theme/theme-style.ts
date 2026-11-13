@@ -1,8 +1,33 @@
 import type { CmsTheme } from "@spree/sdk";
-import { applyNamedThemeFonts } from "@/components/theme/theme-fonts";
+import {
+  applyNamedThemeFonts,
+  themeTypographyScaleCustomized,
+} from "@/components/theme/theme-fonts";
 import { themeSettingEnabled } from "@/lib/theme/setting-value";
 
 type SettingsGroup = Record<string, unknown>;
+
+/** Page shell and default section canvas stay white; theme cream tokens do not override. */
+export const STOREFRONT_SHELL_BACKGROUND = "#ffffff";
+
+const SHELL_COLOR_KEYS_SKIP = new Set([
+  "background",
+  "surface_warm",
+  "surface_subtle",
+]);
+
+export function shouldSkipShellThemeColorKey(key: string) {
+  return SHELL_COLOR_KEYS_SKIP.has(key);
+}
+
+export function pinStorefrontShellBackground(style: Record<string, string>) {
+  style["--marketplace-background"] = STOREFRONT_SHELL_BACKGROUND;
+  style["--marketplace-canvas"] = STOREFRONT_SHELL_BACKGROUND;
+  style["--marketplace-surface"] = STOREFRONT_SHELL_BACKGROUND;
+  style["--marketplace-surface-warm"] = STOREFRONT_SHELL_BACKGROUND;
+  style["--marketplace-surface-subtle"] = "#f4f4f5";
+  style["--marketplace-muted"] = "#f4f4f5";
+}
 
 export function themeGlobalDataAttributes(
   theme?: CmsTheme | null,
@@ -15,6 +40,9 @@ export function themeGlobalDataAttributes(
       : "false";
   return {
     "data-theme-global-settings": "",
+    ...(themeTypographyScaleCustomized(settings.typography)
+      ? { "data-theme-typography-scale": "custom" }
+      : {}),
     "data-theme-global-social-links": enabled("social", "show_social_links"),
     "data-theme-global-wishlist": enabled("general", "enable_wishlist"),
     "data-theme-global-animations":
@@ -122,6 +150,7 @@ export function themeInlineStyle(theme?: CmsTheme | null): React.CSSProperties {
     arrow_icon: "--theme-arrow-icon",
   };
   for (const [key, variable] of Object.entries(colorVariables)) {
+    if (shouldSkipShellThemeColorKey(key)) continue;
     const value = colors[key];
     if (typeof value === "string" && /^#[0-9a-fA-F]{6}$/.test(value))
       style[variable] = value;
@@ -350,5 +379,6 @@ export function themeInlineStyle(theme?: CmsTheme | null): React.CSSProperties {
       navigationSizes[String(navigation.font_size)];
   if (navigation.text_case === "uppercase")
     style["--theme-navigation-text-transform"] = "uppercase";
+  pinStorefrontShellBackground(style);
   return style;
 }

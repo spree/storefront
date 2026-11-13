@@ -13,7 +13,6 @@ export function activeFiltersToSavedSearchFilters(
     ...(filters.ratingMin !== undefined
       ? { rating_min: filters.ratingMin }
       : {}),
-    ...(filters.sellerId ? { seller_id: filters.sellerId } : {}),
     ...(filters.optionValues.length
       ? { option_values: filters.optionValues }
       : {}),
@@ -35,7 +34,6 @@ export function appendSavedSearchFiltersToParams(
   if (filters.sort) params.set("sort", String(filters.sort));
   if (filters.rating_min != null)
     params.set("rating_min", String(filters.rating_min));
-  if (filters.seller_id) params.set("seller", String(filters.seller_id));
   const optionValues = filters.option_values;
   if (Array.isArray(optionValues)) {
     for (const value of optionValues) params.append("option", String(value));

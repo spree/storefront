@@ -4,7 +4,7 @@ import type { Product } from "@spree/sdk";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
 import { type MouseEvent, memo, useState } from "react";
-import { MessageCircle, Star } from "@/components/icons";
+import { Star } from "@/components/icons";
 import { FavoriteButton } from "@/components/products/FavoriteButton";
 import { FeaturedCollectionQuickAdd } from "@/components/products/FeaturedCollectionQuickAdd";
 import { HiddenPricePrompt } from "@/components/products/HiddenPricePrompt";
@@ -13,7 +13,6 @@ import {
   type MerchandisingSignal,
 } from "@/components/products/MerchandisingBadges";
 import { MerchandisingReason } from "@/components/products/MerchandisingReason";
-import { MerchandisingSellerTrust } from "@/components/products/MerchandisingSellerTrust";
 import { RecommendationDismissButton } from "@/components/products/RecommendationDismissButton";
 import { StarSellerAvatar } from "@/components/shops/StarSellerAvatar";
 import { ProductImage } from "@/components/ui/product-image";
@@ -29,6 +28,7 @@ import {
   selectProductCardImageBadges,
 } from "@/lib/merchandising/presentation";
 import { useIsMobile } from "@/lib/merchandising/use-is-mobile";
+import { filterMerchandisingSignalsForSellerBadges } from "@/lib/seller-badges/presentation";
 import { themeSettingEnabled } from "@/lib/theme/setting-value";
 
 interface ProductCardProps {
@@ -44,7 +44,14 @@ interface ProductCardProps {
   onFavoriteChange?: (productId: string, favorited: boolean) => void;
   showFavorite?: boolean;
   href?: string;
-  density?: "default" | "standard" | "compact" | "editorial" | "rail";
+  density?:
+    | "default"
+    | "standard"
+    | "compact"
+    | "editorial"
+    | "rail"
+    /** Full Etsy-style card for PDP “You may also like” grids (ignores theme compact). */
+    | "discovery";
   showSecondImageOnHover?: boolean;
   merchandisingSurface?: MerchandisingSurface;
   suppressRelevanceReason?: boolean;
@@ -174,6 +181,11 @@ export const ProductCard = memo(function ProductCard({
   const isCompact = effectiveDensity === "compact";
   const isRail = effectiveDensity === "rail";
   const isEditorial = effectiveDensity === "editorial";
+  const isDiscovery = effectiveDensity === "discovery";
+  const skuLabel =
+    product.default_variant?.sku ||
+    product.variants?.find((variant) => variant.sku)?.sku ||
+    null;
   const personalizable = (product.personalization_fields?.length ?? 0) > 0;
   const isMobile = useIsMobile();
   const merchTheme = parseMerchandisingThemeSettings(
@@ -195,13 +207,12 @@ export const ProductCard = memo(function ProductCard({
         merchandising_signals?: MerchandisingSignal[];
       }
     ).merchandising_signals ?? [];
-  const merchandisingSignals = filterSignalsForSurface(
-    rawMerchandisingSignals,
-    merchandisingSurface,
-    {
+  const merchandisingSignals = filterMerchandisingSignalsForSellerBadges(
+    filterSignalsForSurface(rawMerchandisingSignals, merchandisingSurface, {
       sellerSlug,
       suppressRelevanceReason,
-    },
+    }),
+    product.seller?.badges,
   );
   const merchandisingProductId =
     product.default_variant?.sku ||
@@ -246,7 +257,7 @@ export const ProductCard = memo(function ProductCard({
         data-merchandising-product={merchandisingProductId}
       >
         <div
-          className={`relative overflow-hidden rounded-[var(--marketplace-product-card-radius)] bg-marketplace-surface-subtle ${useNaturalImageRatio ? "" : "aspect-square"}`}
+          className={`relative overflow-hidden rounded-lg bg-marketplace-surface-subtle ${useNaturalImageRatio ? "" : "aspect-square"}`}
           style={imageRatio}
         >
           <Link
@@ -266,7 +277,7 @@ export const ProductCard = memo(function ProductCard({
                 ? "h-auto w-full object-cover"
                 : "object-cover"
             }
-            sizes="160px"
+            sizes="(max-width: 640px) 48vw, (max-width: 1280px) 20vw, 240px"
             iconClassName="size-10"
             fetchPriority={fetchPriority}
           />
@@ -288,6 +299,9 @@ export const ProductCard = memo(function ProductCard({
             personalizable={personalizable}
             saleLabel={t("sale")}
             personalizableLabel={t("personalizable")}
+            clearDismissControl={
+              dismissibleRecommendation && Boolean(onDismissRecommendation)
+            }
           />
           {dismissibleRecommendation && onDismissRecommendation ? (
             <div className="pointer-events-none absolute left-2 top-2 z-[3]">
@@ -333,31 +347,6 @@ export const ProductCard = memo(function ProductCard({
               ))}
             </nav>
           ) : null}
-          <div
-            className="pointer-events-none absolute bottom-2 right-2 z-[2] max-w-[calc(100%-1rem)] rounded-full bg-white/95 px-2.5 py-1 shadow-[var(--marketplace-shadow-card)] backdrop-blur-[2px]"
-            data-theme-product-price-pill
-          >
-            {displayPrice ? (
-              <span className="flex flex-wrap items-baseline gap-x-1.5 text-xs font-semibold tabular-nums">
-                <span
-                  className={
-                    onSale
-                      ? "text-marketplace-sale"
-                      : "text-marketplace-foreground"
-                  }
-                >
-                  {displayPrice}
-                </span>
-                {onSale && strikethroughPrice ? (
-                  <span className="font-medium text-marketplace-muted-foreground line-through">
-                    {strikethroughPrice}
-                  </span>
-                ) : null}
-              </span>
-            ) : (
-              <HiddenPricePrompt />
-            )}
-          </div>
         </div>
         <div className="pt-1.5">
           {sponsoredDisclosure ? (
@@ -368,11 +357,25 @@ export const ProductCard = memo(function ProductCard({
               {sponsoredDisclosure}
             </p>
           ) : null}
-          <h3 className="line-clamp-2 text-sm leading-snug text-marketplace-foreground">
+          <h3 className="line-clamp-1 text-xs leading-snug text-marketplace-foreground sm:text-sm">
             <Link href={productHref} onClick={handleClick}>
               {product.name}
             </Link>
           </h3>
+          {displayPrice ? (
+            <span className="mt-0.5 flex flex-wrap items-baseline gap-x-1.5 text-xs font-semibold tabular-nums">
+              <span className="text-[#3f6b24]">{displayPrice}</span>
+              {onSale && strikethroughPrice ? (
+                <span className="font-normal text-marketplace-muted-foreground line-through">
+                  {strikethroughPrice}
+                </span>
+              ) : null}
+            </span>
+          ) : (
+            <div className="mt-0.5 text-xs">
+              <HiddenPricePrompt />
+            </div>
+          )}
         </div>
       </article>
     );
@@ -417,6 +420,9 @@ export const ProductCard = memo(function ProductCard({
             personalizable={personalizable}
             saleLabel={t("sale")}
             personalizableLabel={t("personalizable")}
+            clearDismissControl={
+              dismissibleRecommendation && Boolean(onDismissRecommendation)
+            }
           />
           {showCardFavorite ? (
             <div className="absolute right-2 top-2 z-[2]">
@@ -481,17 +487,15 @@ export const ProductCard = memo(function ProductCard({
       data-merchandising-product={merchandisingProductId}
       data-theme-product-card
     >
-      {showVendor && sellerName ? (
+      {(showVendor || isDiscovery) && sellerName ? (
         <div className="relative z-[2] mb-2 flex min-w-0 items-center gap-2">
-          {product.seller?.badges?.some(
-            (badge) => badge.key === "star_seller",
-          ) ? (
+          {product.seller ? (
             <StarSellerAvatar
               seller={product.seller}
               href={
                 sellerSlug ? `${basePath}/sellers/${sellerSlug}` : undefined
               }
-              sizeClassName="size-9"
+              sizeClassName={isDiscovery ? "size-7" : "size-9"}
               imageSizes="36px"
             />
           ) : sellerAvatarUrl ? (
@@ -511,25 +515,20 @@ export const ProductCard = memo(function ProductCard({
           {sellerSlug ? (
             <Link
               href={`${basePath}/sellers/${sellerSlug}`}
-              className="line-clamp-1 text-sm font-medium text-marketplace-foreground hover:text-marketplace-brand hover:underline focus-visible:rounded-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-marketplace-brand"
+              className="min-w-0 flex-1 truncate text-sm font-medium text-marketplace-foreground hover:text-marketplace-brand hover:underline focus-visible:rounded-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-marketplace-brand"
             >
               {sellerName}
             </Link>
           ) : (
-            <p className="line-clamp-1 text-sm font-medium text-marketplace-foreground">
+            <p className="min-w-0 flex-1 truncate text-sm font-medium text-marketplace-foreground">
               {sellerName}
             </p>
           )}
-          <MerchandisingSellerTrust
-            signals={merchandisingSignals}
-            sellerBadges={product.seller?.badges}
-            show={merchTheme.showSellerTrust}
-          />
         </div>
       ) : null}
       <div
-        className={`relative overflow-hidden rounded-[var(--marketplace-product-card-radius)] bg-marketplace-surface-subtle ${useNaturalImageRatio ? "" : "aspect-[var(--marketplace-product-image-ratio)]"}`}
-        style={imageRatio}
+        className={`relative overflow-hidden rounded-[var(--marketplace-product-card-radius,1rem)] bg-marketplace-surface-subtle ${useNaturalImageRatio ? "" : isDiscovery ? "aspect-square" : "aspect-[var(--marketplace-product-image-ratio)]"}`}
+        style={isDiscovery ? undefined : imageRatio}
       >
         <Link
           href={productHref}
@@ -558,7 +557,7 @@ export const ProductCard = memo(function ProductCard({
         ) : null}
         <ProductCardBadges
           signals={merchandisingSignals}
-          show={showBadges}
+          show={showBadges && !isDiscovery}
           maxBadges={maxBadges}
           merchTheme={merchTheme}
           position={badgePosition}
@@ -566,6 +565,9 @@ export const ProductCard = memo(function ProductCard({
           personalizable={personalizable}
           saleLabel={t("sale")}
           personalizableLabel={t("personalizable")}
+          clearDismissControl={
+            dismissibleRecommendation && Boolean(onDismissRecommendation)
+          }
         />
         {dismissibleRecommendation && onDismissRecommendation ? (
           <div className="pointer-events-none absolute left-2 top-2 z-[3]">
@@ -575,7 +577,7 @@ export const ProductCard = memo(function ProductCard({
             />
           </div>
         ) : null}
-        {showCardFavorite ? (
+        {showCardFavorite && !isDiscovery ? (
           <div className="pointer-events-none absolute right-2 top-2 z-[2] opacity-100 transition-opacity duration-150 [@media(hover:hover)]:opacity-0 [@media(hover:hover)]:group-hover/card:opacity-100 [@media(hover:hover)]:group-focus-within/card:opacity-100 motion-reduce:transition-none">
             <FavoriteButton
               productId={product.id}
@@ -586,7 +588,7 @@ export const ProductCard = memo(function ProductCard({
             />
           </div>
         ) : null}
-        {cardImages.length > 1 ? (
+        {!isDiscovery && cardImages.length > 1 ? (
           <nav
             className="absolute bottom-3 left-3 z-[3] flex items-center gap-1.5"
             aria-label={t("galleryPagination", {
@@ -616,8 +618,13 @@ export const ProductCard = memo(function ProductCard({
           </nav>
         ) : null}
         <div
-          className="pointer-events-none absolute bottom-3 right-3 z-[2] flex max-w-[calc(100%-1.5rem)] items-center gap-1 rounded-full bg-[#f4f2ee]/95 px-2.5 py-1 shadow-[0_1px_3px_rgba(0,0,0,0.08)] backdrop-blur-[2px]"
+          className={
+            isDiscovery
+              ? "pointer-events-none absolute bottom-2.5 right-2.5 z-[2] flex max-w-[calc(100%-1.25rem)] items-center rounded-md bg-[#fffdf8]/95 px-2 py-1 text-[13px] shadow-[0_1px_2px_rgba(34,34,34,0.1)] backdrop-blur-[2px] ring-1 ring-black/[0.04]"
+              : "pointer-events-none absolute bottom-3 right-3 z-[2] flex max-w-[calc(100%-1.5rem)] items-center gap-1 rounded-full bg-white px-2.5 py-1 shadow-[0_1px_3px_rgba(0,0,0,0.12)]"
+          }
           data-theme-product-price-pill
+          data-price-variant={isDiscovery ? "discovery" : "default"}
         >
           {displayPrice ? (
             <ProductCardPricePill
@@ -628,16 +635,12 @@ export const ProductCard = memo(function ProductCard({
           ) : (
             <HiddenPricePrompt />
           )}
-          <span
-            className="text-sm leading-none text-marketplace-muted-foreground"
-            aria-hidden
-          >
-            ›
-          </span>
         </div>
       </div>
 
-      <div className={`min-w-0 space-y-1 ${isEditorial ? "pt-4" : "pt-2.5"}`}>
+      <div
+        className={`min-w-0 space-y-1 ${isEditorial ? "pt-4" : isDiscovery ? "pt-2" : "pt-2.5"}`}
+      >
         {sponsoredDisclosure ? (
           <p
             className="text-[10px] font-semibold uppercase tracking-wide text-marketplace-muted-foreground"
@@ -657,14 +660,19 @@ export const ProductCard = memo(function ProductCard({
             {product.name}
           </Link>
         </h3>
-        {showPersonalizedSignals && showRelevanceReason ? (
+        {skuLabel ? (
+          <p className="relative z-[1] truncate text-xs text-marketplace-muted-foreground">
+            {skuLabel}
+          </p>
+        ) : null}
+        {showPersonalizedSignals && showRelevanceReason && !isDiscovery ? (
           <MerchandisingReason
             signals={merchandisingSignals}
             allowedSignals={allowedPersonalizedSignals}
             className="relative z-[1]"
           />
         ) : null}
-        {showRating && rating != null && reviewsCount > 0 ? (
+        {(showRating || isDiscovery) && rating != null && reviewsCount > 0 ? (
           <div className="relative z-[1] flex flex-wrap items-center gap-x-1 gap-y-0.5 text-xs text-marketplace-muted-foreground">
             <span className="font-medium text-marketplace-foreground">
               {rating.toFixed(1)}
@@ -674,18 +682,9 @@ export const ProductCard = memo(function ProductCard({
               aria-hidden
             />
             <span>({reviewsCount.toLocaleString()})</span>
-            {product.messaging_available !== false ? (
-              <>
-                <MessageCircle
-                  className="size-3.5 text-marketplace-foreground"
-                  aria-hidden
-                />
-                <span>({reviewsCount.toLocaleString()})</span>
-              </>
-            ) : null}
           </div>
         ) : null}
-        {swatches.length > 0 ? (
+        {!isDiscovery && swatches.length > 0 ? (
           <ProductCardSwatches
             options={swatches}
             total={productSwatches.length}
@@ -698,7 +697,10 @@ export const ProductCard = memo(function ProductCard({
             {t("outOfStock")}
           </span>
         ) : null}
-        {showQuickAdd && product.purchasable && !personalizable ? (
+        {!isDiscovery &&
+        showQuickAdd &&
+        product.purchasable &&
+        !personalizable ? (
           <div className="relative z-[2] mt-1">
             <FeaturedCollectionQuickAdd
               variantId={product.default_variant_id}
@@ -719,25 +721,11 @@ function ProductCardPricePill({
   onSale: boolean;
   strikethroughPrice: string | null;
 }) {
-  const centsMatch = amount.match(/^(.+?)(\.\d{2})(\s.*)?$/);
-
   return (
     <span
-      className={`flex flex-wrap items-baseline gap-x-1 text-xs font-semibold tabular-nums ${onSale ? "text-marketplace-sale" : "text-marketplace-foreground"}`}
+      className={`flex flex-wrap items-baseline gap-x-1.5 text-xs font-semibold tabular-nums ${onSale ? "text-marketplace-sale" : "text-marketplace-foreground"}`}
     >
-      {centsMatch ? (
-        <>
-          <span>{centsMatch[1]}</span>
-          <span className="text-[10px] font-semibold leading-none align-super">
-            {centsMatch[2]}
-          </span>
-          {centsMatch[3] ? (
-            <span className="text-[10px] font-medium">{centsMatch[3]}</span>
-          ) : null}
-        </>
-      ) : (
-        <span>{amount}</span>
-      )}
+      <span>{amount}</span>
       {onSale && strikethroughPrice ? (
         <span className="text-[10px] font-medium text-marketplace-muted-foreground line-through">
           {strikethroughPrice}
@@ -757,6 +745,7 @@ function ProductCardBadges({
   personalizable,
   saleLabel,
   personalizableLabel,
+  clearDismissControl = false,
 }: {
   signals: MerchandisingSignal[];
   show: boolean;
@@ -767,6 +756,7 @@ function ProductCardBadges({
   personalizable: boolean;
   saleLabel: string;
   personalizableLabel: string;
+  clearDismissControl?: boolean;
 }) {
   if (!show) return null;
 
@@ -797,7 +787,11 @@ function ProductCardBadges({
   return (
     <div
       className={`pointer-events-none absolute top-2.5 z-[1] flex max-w-[calc(100%-3rem)] flex-wrap gap-1 ${
-        position === "top_right" ? "right-2.5 mr-10 justify-end" : "left-2.5"
+        position === "top_right"
+          ? "right-2.5 mr-10 justify-end"
+          : clearDismissControl
+            ? "left-12"
+            : "left-2.5"
       }`}
     >
       <MerchandisingBadges

@@ -12,6 +12,10 @@ vi.mock("next-intl/server", () => ({
           : key,
 }));
 
+vi.mock("next-intl", () => ({
+  useTranslations: () => (key: string) => key,
+}));
+
 import { SellerStorefrontAbout } from "./SellerStorefrontAbout";
 
 describe("SellerStorefrontAbout", () => {
@@ -35,12 +39,13 @@ describe("SellerStorefrontAbout", () => {
       }),
     );
 
-    expect(html).toContain("Shop photos and video");
-    expect(html).toContain("Add a shop link");
-    expect(html).toContain("Shop members");
-    expect(html).toContain("Frequently asked questions");
-    expect(html).toContain("Seller details");
-    expect(html).toContain("Edit seller details");
+    expect(html).toContain("data-shop-inline-editor");
+    expect(html).toContain("addHeadline");
+    expect(html).toContain("mediaTitle");
+    expect(html).toContain("shopLinksTitle");
+    expect(html).toContain("membersTitle");
+    expect(html).toContain("faqsTitle");
+    expect(html).toContain("sellerDetailsTitle");
   });
 
   it("keeps empty optional sections hidden from public shop pages", async () => {
@@ -66,5 +71,103 @@ describe("SellerStorefrontAbout", () => {
     expect(html).not.toContain("Shop members");
     expect(html).not.toContain("Frequently asked questions");
     expect(html).not.toContain("Seller details");
+  });
+
+  it("shows shop member portraits and roles when the seller provides them", async () => {
+    const html = renderToStaticMarkup(
+      await SellerStorefrontAbout({
+        shopName: "Test shop",
+        marketplaceName: "Spree",
+        shopPage: {
+          story_headline: null,
+          video_url: null,
+          video_captions_url: null,
+          photos: [],
+          links: [],
+          member_bios: [
+            {
+              name: "Jamie",
+              role: "Maker",
+              bio: "Made by hand.",
+              photo_url: "https://cdn.example/jamie.jpg",
+            },
+          ],
+          faqs: [],
+          seller_details_public: false,
+          seller_details: {},
+        },
+      }),
+    );
+
+    expect(html).toContain('src="https://cdn.example/jamie.jpg"');
+    expect(html).toContain("Maker");
+    expect(html).toContain("Made by hand.");
+  });
+
+  it("uses a readable accent text color for the shop tagline on dark accents", async () => {
+    const html = renderToStaticMarkup(
+      await SellerStorefrontAbout({
+        shopName: "Test shop",
+        marketplaceName: "Spree",
+        tagline: "Welcome to our shop.",
+        accentColor: "#661a35",
+        shopPage: {
+          story_headline: null,
+          video_url: null,
+          video_captions_url: null,
+          photos: [],
+          links: [],
+          member_bios: [],
+          faqs: [],
+          seller_details_public: false,
+          seller_details: {},
+        },
+      }),
+    );
+
+    expect(html).toContain("--marketplace-seller-accent-text:#ffffff");
+    expect(html).toContain('data-seller-accent-story-tagline="true"');
+    expect(html).toMatch(/style="color:#ffffff"[^>]*>Welcome to our shop\./);
+    expect(html).toContain("Welcome to our shop.");
+  });
+
+  it("puts the shop video and photos into one buyer-facing carousel", async () => {
+    const html = renderToStaticMarkup(
+      await SellerStorefrontAbout({
+        shopName: "Test shop",
+        marketplaceName: "Spree",
+        shopPage: {
+          story_headline: null,
+          video_url: "https://cdn.example/shop.mp4",
+          video_caption: "A look inside our workshop.",
+          video_captions_url: "https://cdn.example/shop.vtt",
+          photos: [
+            {
+              id: 1,
+              url: "https://cdn.example/photo-1.jpg",
+              caption: "Handmade detail.",
+            },
+            {
+              id: 2,
+              url: "https://cdn.example/photo-2.jpg",
+              caption: "Packed with care.",
+            },
+          ],
+          links: [],
+          member_bios: [],
+          faqs: [],
+          seller_details_public: false,
+          seller_details: {},
+        },
+      }),
+    );
+
+    expect(html).toContain('data-shop-story-carousel="true"');
+    expect(html).toContain('src="https://cdn.example/shop.mp4"');
+    expect(html).toContain('src="https://cdn.example/shop.vtt"');
+    expect(html).toContain("A look inside our workshop.");
+    expect(html).toContain('aria-label="Next shop photo or video"');
+    expect(html).toContain('aria-label="Previous shop photo or video"');
+    expect(html).not.toContain('src="https://cdn.example/photo-1.jpg"');
   });
 });

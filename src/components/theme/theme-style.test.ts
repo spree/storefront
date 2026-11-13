@@ -209,6 +209,18 @@ describe("theme global style resolution", () => {
     ).toBe("100%");
   });
 
+  it("keeps the page shell background white even when theme colors set background", () => {
+    const theme = {
+      settings: { colors: { background: "#f8f4f0", brand: "#112233" } },
+    } as unknown as CmsTheme;
+
+    const style = themeInlineStyle(theme) as Record<string, string>;
+    expect(style["--marketplace-background"]).toBe("#ffffff");
+    expect(style["--marketplace-canvas"]).toBe("#ffffff");
+    expect(style["--marketplace-surface-warm"]).toBe("#ffffff");
+    expect(style["--marketplace-brand"]).toBe("#112233");
+  });
+
   it("clamps full-width section side margins to the supported range", () => {
     const theme = {
       settings: { layout: { full_width_side_margin: 240 } },

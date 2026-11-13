@@ -49,7 +49,9 @@ describe("recommendation attribution separation", () => {
     });
     expect(beacon.sendRecommendationMetricEvents).not.toHaveBeenCalled();
     expect(
-      window.dataLayer?.some((e) => e.event === "spree_recommendation_dismiss"),
+      (window.dataLayer as { event?: string }[] | undefined)?.some(
+        (e) => e.event === "spree_recommendation_dismiss",
+      ),
     ).toBe(true);
   });
 });

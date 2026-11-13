@@ -27,6 +27,7 @@ type CollectionTileCarouselProps = {
   arrowColor: string;
   arrowBackground: string;
   paginationColor: string;
+  itemLabel?: string;
 };
 
 export function CollectionTileCarousel(props: CollectionTileCarouselProps) {
@@ -49,7 +50,7 @@ export function CollectionTileCarousel(props: CollectionTileCarouselProps) {
       <button
         ref={previous}
         type="button"
-        aria-label="Previous collections"
+        aria-label={`Previous ${props.itemLabel || "collections"}`}
         className={`collection-theme-arrow collection-theme-arrow-prev ${props.arrowsMobile ? "" : "collection-theme-arrow-mobile-hidden"} ${props.arrowsDesktop ? "" : "collection-theme-arrow-desktop-hidden"}`}
         style={{
           color: props.arrowColor,
@@ -61,7 +62,7 @@ export function CollectionTileCarousel(props: CollectionTileCarouselProps) {
       <button
         ref={next}
         type="button"
-        aria-label="Next collections"
+        aria-label={`Next ${props.itemLabel || "collections"}`}
         className={`collection-theme-arrow collection-theme-arrow-next ${props.arrowsMobile ? "" : "collection-theme-arrow-mobile-hidden"} ${props.arrowsDesktop ? "" : "collection-theme-arrow-desktop-hidden"}`}
         style={{
           color: props.arrowColor,
@@ -109,10 +110,10 @@ export function CollectionTileCarousel(props: CollectionTileCarouselProps) {
       </SwiperComponent>
       <style>{`
         .collection-theme-carousel .collection-theme-arrow { position:absolute; z-index:3; top:42%; display:flex; width:36px; height:36px; align-items:center; justify-content:center; border:0; border-radius:9999px; box-shadow:0 2px 8px #0002; cursor:pointer }
-        .collection-theme-carousel .collection-theme-arrow-prev { left:-12px }
-        .collection-theme-carousel .collection-theme-arrow-next { right:-12px }
+        .collection-theme-carousel .collection-theme-arrow-prev { left:8px }
+        .collection-theme-carousel .collection-theme-arrow-next { right:8px }
         .collection-theme-carousel .collection-theme-arrow.swiper-button-disabled { visibility:hidden }
-        .collection-theme-carousel .collection-theme-swiper { overflow:visible; padding-bottom:26px }
+        .collection-theme-carousel .collection-theme-swiper { overflow:hidden; padding-bottom:26px }
         .collection-theme-carousel .swiper-pagination { bottom:0; line-height:8px }
         .collection-theme-carousel .collection-theme-bullet { display:inline-block; width:7px; height:7px; margin:0 4px; border-radius:50%; background:${props.paginationColor}; opacity:.45; cursor:pointer }
         .collection-theme-carousel .collection-theme-bullet-active { opacity:1 }

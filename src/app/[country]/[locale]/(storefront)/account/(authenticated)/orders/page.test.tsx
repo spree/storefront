@@ -32,7 +32,7 @@ function response(page: number, pages: number) {
         completed_at: "2026-10-01T12:00:00Z",
       },
     ],
-    meta: { page, pages, count: pages * 10, limit: 10 },
+    meta: { page, pages, count: pages * 25, limit: 25 },
   };
 }
 
@@ -52,9 +52,8 @@ describe("OrdersPage pagination", () => {
 
     expect(mocks.getOrders).toHaveBeenCalledWith({
       page: 2,
-      limit: 10,
+      limit: 25,
       sort: "completed_at desc",
-      state_eq: "complete",
     });
     expect(screen.getByText("Page 2 of 3")).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "previousPage" })).toHaveAttribute(
@@ -80,9 +79,8 @@ describe("OrdersPage pagination", () => {
 
     expect(mocks.getOrders).toHaveBeenNthCalledWith(2, {
       page: 2,
-      limit: 10,
+      limit: 25,
       sort: "completed_at desc",
-      state_eq: "complete",
     });
     expect(screen.getByText("Page 2 of 2")).toBeInTheDocument();
     expect(screen.queryByRole("link", { name: "nextPage" })).toBeNull();

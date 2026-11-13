@@ -26,10 +26,14 @@ export function CartButton({ compact = false }: CartButtonProps) {
         onClick={openCart}
         data-header-hover-trigger="true"
         aria-label={t("openCart")}
-        className="relative flex size-10 items-center justify-center rounded-full text-[#2f2933] transition-[background-color,color] duration-200 ease-out hover:bg-marketplace-accent motion-reduce:transition-none"
+        className="relative flex size-9 items-center justify-center rounded-full text-[#2f2933] transition-[background-color,color] duration-200 ease-out hover:bg-marketplace-accent motion-reduce:transition-none sm:size-10"
       >
         <span className="relative">
-          <ShoppingCart className="size-6" weight="regular" aria-hidden />
+          <ShoppingCart
+            className="size-5 sm:size-6"
+            weight="regular"
+            aria-hidden
+          />
           {mounted && itemCount > 0 ? (
             <span className="absolute -right-2 -top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-marketplace-brand px-0.5 text-[9px] font-semibold text-marketplace-brand-foreground">
               {itemCount > 99 ? "99+" : itemCount}

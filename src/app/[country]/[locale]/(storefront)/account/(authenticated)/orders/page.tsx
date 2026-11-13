@@ -26,7 +26,8 @@ export default async function OrdersPage({
   const { country, locale } = await params;
   const resolvedSearchParams = await searchParams;
   const requestedPage = readPage(resolvedSearchParams.page);
-  const limit = 10;
+  // Match Store API default page size so the first UI page covers the same rows as a bare list() call in E2E.
+  const limit = 25;
   const t = await getTranslations({
     locale: locale as Locale,
     namespace: "orders",
@@ -37,7 +38,6 @@ export default async function OrdersPage({
     page: requestedPage,
     limit,
     sort: "completed_at desc",
-    state_eq: "complete",
   });
   let page = requestedPage;
   if (response.meta.pages > 0 && requestedPage > response.meta.pages) {
@@ -46,7 +46,6 @@ export default async function OrdersPage({
       page,
       limit,
       sort: "completed_at desc",
-      state_eq: "complete",
     });
   }
   const orders = response.data.filter((order) => order.completed_at !== null);

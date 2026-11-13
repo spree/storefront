@@ -27,7 +27,6 @@ import {
   CardDescription,
   CardFooter,
   CardHeader,
-  CardTitle,
 } from "@/components/ui/card";
 import { Field, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
@@ -177,16 +176,16 @@ export function AccountPageClient({ discovery }: { discovery?: ReactNode }) {
       <div className="max-w-md mx-auto px-4 sm:px-6 lg:px-8 py-16">
         <Card>
           <CardHeader className="text-center">
-            <CardTitle>{t("myAccount")}</CardTitle>
+            <h1
+              className="font-sans text-2xl font-bold leading-none"
+              style={{ fontSize: "1.5rem", lineHeight: 1 }}
+            >
+              {t("myAccount")}
+            </h1>
             <CardDescription>{t("signInDescription")}</CardDescription>
           </CardHeader>
 
           <CardContent>
-            <SocialLoginButtons
-              providers={authProviders}
-              returnTo={redirectUrl || `${basePath}/account`}
-              disabled={loading}
-            />
             <form onSubmit={handleSubmit} className="space-y-4">
               {error && (
                 <Alert variant="destructive">
@@ -293,6 +292,11 @@ export function AccountPageClient({ discovery }: { discovery?: ReactNode }) {
                 </Button>
               </div>
             </form>
+            <SocialLoginButtons
+              providers={authProviders}
+              returnTo={redirectUrl || `${basePath}/account`}
+              disabled={loading}
+            />
           </CardContent>
 
           <CardFooter className="justify-center">

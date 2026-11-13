@@ -7,17 +7,14 @@ export function PersonalizationProofNotice() {
   const t = useTranslations("personalization");
 
   return (
-    <div
-      className="flex items-start gap-3 rounded-xl border border-marketplace-border-subtle bg-marketplace-surface px-4 py-3.5 shadow-[var(--marketplace-shadow-card)]"
-      role="note"
-    >
+    <div className="flex items-start gap-2.5" role="note">
       <span
-        className="flex size-10 shrink-0 items-center justify-center rounded-full bg-marketplace-muted text-marketplace-foreground ring-1 ring-marketplace-border-subtle"
+        className="mt-0.5 shrink-0 text-marketplace-muted-foreground"
         aria-hidden
       >
-        <ClipboardCheck className="size-[18px]" strokeWidth={1.75} />
+        <ClipboardCheck className="size-4" strokeWidth={1.75} />
       </span>
-      <div className="min-w-0 pt-0.5">
+      <div className="min-w-0">
         <p className="text-sm font-semibold leading-snug text-marketplace-foreground">
           {t("proofRequiredTitle")}
         </p>

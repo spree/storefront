@@ -4,7 +4,6 @@ import { connection } from "next/server";
 import { cache, Suspense } from "react";
 import { Footer, FooterCategoryLinks } from "@/components/layout/Footer";
 import { Header, HeaderMobileMenu } from "@/components/layout/Header";
-import { MarketplaceBottomNav } from "@/components/layout/MarketplaceBottomNav";
 import { MarketplaceCategoryRow } from "@/components/layout/MarketplaceCategoryRow";
 import { StorefrontFooterGate } from "@/components/layout/StorefrontFooterGate";
 import {
@@ -17,7 +16,6 @@ import { REQUEST_PATHNAME_HEADER, REQUEST_SEARCH_HEADER } from "@/i18n/routing";
 import { getCategoryNavigationTree } from "@/lib/data/categories";
 import { getPublishedNavigation } from "@/lib/data/cms-navigation";
 import { getPersonalizationInterestSummary } from "@/lib/data/storefront-personalization";
-import { isWholesaleEnabled } from "@/lib/spree";
 import { themeSectionGroupsEnabled } from "@/lib/theme/flags";
 import { getActiveTheme } from "@/lib/theme/resolver";
 
@@ -114,22 +112,6 @@ async function StorefrontCategoryNavigation({
   );
 }
 
-async function StorefrontBottomNavigation({
-  basePath,
-  country,
-  locale,
-}: StorefrontNavigationProps) {
-  const rootCategories = await getRootCategories(country, locale);
-
-  return (
-    <MarketplaceBottomNav
-      rootCategories={rootCategories}
-      basePath={basePath}
-      wholesaleEnabled={isWholesaleEnabled()}
-    />
-  );
-}
-
 async function StorefrontFooterCategoryLinks({
   basePath,
   country,
@@ -142,7 +124,20 @@ async function StorefrontFooterCategoryLinks({
   );
 }
 
-export default async function StorefrontLayout({
+/**
+ * Pathname / shop-editor checks read request headers. Keep that runtime data
+ * behind one Suspense boundary so Cache Components can still ship a static
+ * shell for storefront navigations.
+ */
+export default function StorefrontLayout(props: StorefrontLayoutProps) {
+  return (
+    <Suspense fallback={null}>
+      <StorefrontLayoutContent {...props} />
+    </Suspense>
+  );
+}
+
+export async function StorefrontLayoutContent({
   children,
   params,
 }: StorefrontLayoutProps) {
@@ -155,9 +150,6 @@ export default async function StorefrontLayout({
     new URLSearchParams(search).get("shop_editor") === "1";
   if (pathname?.startsWith(`${basePath}/theme/preview/`) || isShopEditorPreview)
     return <>{children}</>;
-  const normalizedPath = (pathname ?? "").replace(/\/+$/, "");
-  const isCartPage =
-    normalizedPath === `${basePath}/cart` || normalizedPath.endsWith("/cart");
   const theme = themeSectionGroupsEnabled()
     ? await getActiveTheme().catch(() => null)
     : null;
@@ -174,6 +166,9 @@ export default async function StorefrontLayout({
         <Header
           basePath={basePath}
           locale={locale as Locale}
+          mobileProductLayout={Boolean(
+            pathname?.startsWith(`${basePath}/products/`),
+          )}
           hideCategoryRow
           mobileNavigation={
             <Suspense fallback={<MobileNavigationFallback />}>
@@ -198,34 +193,25 @@ export default async function StorefrontLayout({
         </Suspense>
       )}
       <main className="flex-1 bg-marketplace-background">{children}</main>
-      {!isCartPage && (
-        <StorefrontFooterGate>
-          {useThemeFooter && theme ? (
-            <StorefrontThemeFooter theme={theme} context={chromeContext} />
-          ) : (
-            <Footer
-              basePath={basePath}
-              locale={locale as Locale}
-              categoryLinks={
-                <Suspense fallback={<FooterCategoryLinksFallback />}>
-                  <StorefrontFooterCategoryLinks
-                    basePath={basePath}
-                    country={country}
-                    locale={locale}
-                  />
-                </Suspense>
-              }
-            />
-          )}
-          <Suspense fallback={null}>
-            <StorefrontBottomNavigation
-              basePath={basePath}
-              country={country}
-              locale={locale}
-            />
-          </Suspense>
-        </StorefrontFooterGate>
-      )}
+      <StorefrontFooterGate>
+        {useThemeFooter && theme ? (
+          <StorefrontThemeFooter theme={theme} context={chromeContext} />
+        ) : (
+          <Footer
+            basePath={basePath}
+            locale={locale as Locale}
+            categoryLinks={
+              <Suspense fallback={<FooterCategoryLinksFallback />}>
+                <StorefrontFooterCategoryLinks
+                  basePath={basePath}
+                  country={country}
+                  locale={locale}
+                />
+              </Suspense>
+            }
+          />
+        )}
+      </StorefrontFooterGate>
     </div>
   );
 }

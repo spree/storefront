@@ -2,25 +2,19 @@ import type { StoreMerchandisingPlacement } from "@spree/sdk";
 import { getTranslations } from "next-intl/server";
 import { Suspense } from "react";
 import { CategoryBrowseGrid } from "@/components/home/CategoryBrowseGrid";
-import { CategoryQuickLinks } from "@/components/home/CategoryQuickLinks";
+import { FeaturedShopsShowcase } from "@/components/home/FeaturedShopsShowcase";
+import { HomeCuratedProductRail } from "@/components/home/HomeCuratedProductRail";
 import { HomeEditorialBanners } from "@/components/home/HomeEditorialBanners";
-import { HomeGiftTagPills } from "@/components/home/HomeGiftTagPills";
 import { HomeServiceTrustBar } from "@/components/home/HomeServiceTrustBar";
+import { HomeTrustSection } from "@/components/home/HomeTrustSection";
 import {
   MerchandisingCollectionTiles,
   MerchandisingProductRails,
   MerchandisingShopRails,
 } from "@/components/home/MerchandisingRails";
 import { PersonalizedHomeRails } from "@/components/home/PersonalizedHomeRails";
-import { ShopByOccasionSection } from "@/components/home/ShopByOccasionSection";
-import {
-  MarketplacePage,
-  MarketplaceSection,
-  MarketplaceSectionHeader,
-} from "@/components/marketplace";
 import { ProductCardSkeleton } from "@/components/products/ProductCardSkeleton";
 import { ProductRecommendationRail } from "@/components/products/ProductRecommendationRail";
-import { ShopCard } from "@/components/shops/ShopCard";
 import { PRODUCT_CARD_FIELDS } from "@/lib/data/cached";
 import { getCategories } from "@/lib/data/categories";
 import { cachedListProducts } from "@/lib/data/products";
@@ -157,19 +151,17 @@ async function FollowedShopsRail({
   );
 }
 
-async function PopularShopsRail({
+async function FeaturedShopsShowcaseRail({
   basePath,
   locale,
 }: {
   basePath: string;
   locale: string;
 }) {
-  const t = await getTranslations("home");
-
   let sellers;
   try {
     sellers = await getClient().sellers.list({
-      limit: 4,
+      limit: 6,
       sort: "-average_rating",
     });
   } catch {
@@ -178,25 +170,12 @@ async function PopularShopsRail({
 
   if (!sellers.data?.length) return null;
 
-  const cards = sellers.data.map((seller) => (
-    <ShopCard
-      key={seller.id}
-      seller={seller}
+  return (
+    <FeaturedShopsShowcase
+      sellers={sellers.data}
       basePath={basePath}
       locale={locale}
-      variant="compact"
     />
-  ));
-
-  return (
-    <MarketplaceSection surface="warm">
-      <MarketplacePage>
-        <MarketplaceSectionHeader title={t("popularShops")} />
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          {cards}
-        </div>
-      </MarketplacePage>
-    </MarketplaceSection>
   );
 }
 
@@ -217,28 +196,11 @@ async function HomeCategoryDiscovery({
   if (!categories.length) return null;
 
   return (
-    <>
-      <CategoryBrowseGrid
-        categories={categories}
-        basePath={basePath}
-        locale={locale}
-      />
-      <ShopByOccasionSection
-        categories={categories}
-        basePath={basePath}
-        locale={locale}
-      />
-      <HomeGiftTagPills
-        categories={categories}
-        basePath={basePath}
-        locale={locale}
-      />
-      <CategoryQuickLinks
-        categories={categories}
-        basePath={basePath}
-        locale={locale}
-      />
-    </>
+    <CategoryBrowseGrid
+      categories={categories}
+      basePath={basePath}
+      locale={locale}
+    />
   );
 }
 
@@ -275,6 +237,11 @@ export async function MarketplaceHomeSections({
           country={country}
         />
       </Suspense>
+      {hasShopRails ? null : (
+        <Suspense fallback={null}>
+          <FeaturedShopsShowcaseRail basePath={basePath} locale={locale} />
+        </Suspense>
+      )}
       <MerchandisingProductRails
         placements={placements}
         basePath={basePath}
@@ -299,11 +266,6 @@ export async function MarketplaceHomeSections({
           />
         </Suspense>
       )}
-      {hasShopRails ? null : (
-        <Suspense fallback={null}>
-          <PopularShopsRail basePath={basePath} locale={locale} />
-        </Suspense>
-      )}
       <Suspense fallback={<RailSkeleton />}>
         <ProductRail
           basePath={basePath}
@@ -312,6 +274,13 @@ export async function MarketplaceHomeSections({
           currency={currency}
           titleKey="customerFavorites"
           sort="-reviews_count"
+        />
+      </Suspense>
+      <Suspense fallback={<RailSkeleton />}>
+        <HomeCuratedProductRail
+          basePath={basePath}
+          locale={locale}
+          currency={currency}
         />
       </Suspense>
       {hasProductRails ? null : (
@@ -345,6 +314,9 @@ export async function MarketplaceHomeSections({
       </Suspense>
       <HomeEditorialBanners basePath={basePath} locale={locale} />
       <HomeServiceTrustBar locale={locale} />
+      <Suspense fallback={null}>
+        <HomeTrustSection basePath={basePath} locale={locale} />
+      </Suspense>
     </>
   );
 }

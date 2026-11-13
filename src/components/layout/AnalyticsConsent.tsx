@@ -6,6 +6,7 @@ import { resolveAnalyticsTags } from "@/lib/analytics/config";
 import {
   type AnalyticsConsentChoice,
   analyticsConsentChoice,
+  analyticsConsentRequired,
   setAnalyticsConsent,
 } from "@/lib/analytics/consent";
 import type { StorefrontIntegrationsConfig } from "@/lib/data/storefront-integrations";
@@ -17,12 +18,19 @@ export function AnalyticsConsent({
   integrations?: StorefrontIntegrationsConfig;
   fallbackGtmId?: string;
 }) {
+  const consentRequired = analyticsConsentRequired();
   const [choice, setChoice] = useState<AnalyticsConsentChoice | null>(null);
   const { gtmId, gaId } = resolveAnalyticsTags(integrations, fallbackGtmId);
+  const hasAnalyticsTags = Boolean(gtmId || gaId);
+  const analyticsAllowed = consentRequired
+    ? choice === "granted"
+    : hasAnalyticsTags;
 
   useEffect(() => {
-    setChoice(analyticsConsentChoice());
-  }, []);
+    if (consentRequired) {
+      setChoice(analyticsConsentChoice());
+    }
+  }, [consentRequired]);
 
   const choose = (value: AnalyticsConsentChoice) => {
     setAnalyticsConsent(value);
@@ -31,14 +39,14 @@ export function AnalyticsConsent({
 
   return (
     <>
-      {choice === "granted" ? (
+      {analyticsAllowed ? (
         gtmId ? (
           <GoogleTagManager gtmId={gtmId} />
         ) : gaId ? (
           <GoogleAnalytics gaId={gaId} />
         ) : null
       ) : null}
-      {choice === null && (gtmId || gaId) ? (
+      {consentRequired && choice === null && hasAnalyticsTags ? (
         <aside
           aria-label="Privacy choices"
           className="fixed inset-x-4 bottom-4 z-[100] mx-auto flex max-w-xl flex-col gap-3 rounded-md border border-border bg-background p-4 shadow-lg sm:flex-row sm:items-center sm:justify-between"

@@ -1,8 +1,8 @@
 "use client";
 
 import type { Cart, Fulfillment } from "@spree/sdk";
-import { PackageCheck, Store } from "lucide-react";
-import { useTranslations } from "next-intl";
+import { CalendarDays, PackageCheck, Store } from "lucide-react";
+import { useLocale, useTranslations } from "next-intl";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 
 interface DeliveryMethodSectionProps {
@@ -23,8 +23,9 @@ export function DeliveryMethodSection({
   processing,
   errors,
 }: DeliveryMethodSectionProps) {
-  const tRoot = useTranslations();
+  const tProducts = useTranslations("products");
   const t = useTranslations("checkout");
+  const locale = useLocale();
 
   return (
     <div>
@@ -79,7 +80,9 @@ export function DeliveryMethodSection({
                           className="h-3.5 w-3.5 flex-shrink-0 text-gray-500"
                           aria-hidden="true"
                         />
-                        <span className="text-gray-500">{tRoot("soldBy")}</span>
+                        <span className="text-gray-500">
+                          {tProducts("soldBy")}
+                        </span>
                         <span className="truncate">
                           {sellerNames.join(", ")}
                         </span>
@@ -113,16 +116,37 @@ export function DeliveryMethodSection({
                   {fulfillment.delivery_rates.map((rate) => (
                     <label
                       key={rate.id}
-                      className={`flex items-center justify-between border-t border-gray-100 px-4 py-3.5 cursor-pointer transition-colors ${
+                      className={`flex items-center justify-between px-4 py-3.5 cursor-pointer transition-colors ${
                         rate.selected
                           ? "bg-blue-50"
                           : "bg-white hover:bg-gray-50"
                       }`}
                     >
-                      <div className="flex items-center gap-3">
+                      <div className="flex min-w-0 items-center gap-3">
                         <RadioGroupItem value={rate.id} />
-                        <span className="text-sm font-medium text-gray-900">
-                          {rate.name}
+                        <span className="min-w-0">
+                          <span className="block text-sm font-medium text-gray-900">
+                            {rate.name}
+                          </span>
+                          {(rate.estimated_delivery_date_min ||
+                            rate.estimated_delivery_date) && (
+                            <span className="mt-1 flex items-center gap-1.5 text-xs text-gray-600">
+                              <CalendarDays
+                                className="h-3.5 w-3.5 flex-shrink-0"
+                                aria-hidden="true"
+                              />
+                              {t("estimatedDelivery", {
+                                date: formatEstimatedDeliveryRange(
+                                  rate.estimated_delivery_date_min ??
+                                    rate.estimated_delivery_date,
+                                  rate.estimated_delivery_date_max ??
+                                    rate.estimated_delivery_date_min ??
+                                    rate.estimated_delivery_date,
+                                  locale,
+                                ),
+                              })}
+                            </span>
+                          )}
                         </span>
                       </div>
                       <span className="text-sm font-semibold text-gray-900">
@@ -138,4 +162,28 @@ export function DeliveryMethodSection({
       )}
     </div>
   );
+}
+
+function formatEstimatedDeliveryRange(
+  minimum: string | null,
+  maximum: string | null,
+  locale: string,
+): string {
+  const formatDate = (value: string) => {
+    const date = new Date(`${value.slice(0, 10)}T12:00:00`);
+    if (Number.isNaN(date.getTime())) return value;
+
+    return new Intl.DateTimeFormat(locale, {
+      month: "short",
+      day: "numeric",
+      ...(date.getFullYear() !== new Date().getFullYear() && {
+        year: "numeric",
+      }),
+    }).format(date);
+  };
+
+  if (!minimum) return maximum ? formatDate(maximum) : "";
+  if (!maximum || minimum === maximum) return formatDate(minimum);
+
+  return `${formatDate(minimum)}–${formatDate(maximum)}`;
 }

@@ -12,6 +12,7 @@ import {
 import Link from "next/link";
 import { useTranslations } from "next-intl";
 import { type ReactNode, useMemo, useState } from "react";
+import { BuyerOfferActions } from "@/components/account/BuyerOfferActions";
 import { MessageSellerButton } from "@/components/account/MessageSellerButton";
 import { EmptyStateIllustration } from "@/components/empty-states/EmptyStateIllustration";
 import { ProductCard } from "@/components/products/ProductCard";
@@ -140,7 +141,7 @@ export function OffersList({
                     type="button"
                     aria-pressed={filter === item.id}
                     onClick={() => setFilter(item.id)}
-                    className={`inline-flex shrink-0 items-center gap-2 rounded-full px-3.5 py-2 text-sm transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#f26432] focus-visible:ring-offset-2 ${
+                    className={`inline-flex shrink-0 items-center gap-2 rounded-full px-3.5 py-2 text-sm transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-marketplace-brand-accent focus-visible:ring-offset-2 ${
                       filter === item.id
                         ? "bg-[#302936] font-medium text-white"
                         : "text-[#625a62] hover:bg-[#f4f0ed] hover:text-[#302936]"
@@ -181,7 +182,7 @@ export function OffersList({
                       <article className="grid gap-4 sm:grid-cols-[112px_minmax(0,1fr)_auto] sm:items-center sm:gap-6">
                         <Link
                           href={productHref}
-                          className="relative aspect-square w-24 overflow-hidden rounded-lg bg-[#f0e9e2] ring-1 ring-black/5 transition-shadow duration-200 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#f26432] sm:w-28"
+                          className="relative aspect-square w-24 overflow-hidden rounded-lg bg-[#f0e9e2] ring-1 ring-black/5 transition-shadow duration-200 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-marketplace-brand-accent sm:w-28"
                           aria-label={product?.name || t("offerForItem")}
                         >
                           <ProductImage
@@ -275,6 +276,7 @@ export function OffersList({
                         </div>
 
                         <div className="flex flex-wrap items-center gap-2 sm:flex-col sm:items-stretch">
+                          <BuyerOfferActions offer={offer} />
                           <Button
                             asChild
                             variant="outline"

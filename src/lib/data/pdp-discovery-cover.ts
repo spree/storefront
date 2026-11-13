@@ -83,7 +83,7 @@ export async function resolveSearchTermCoverImage(
 
   try {
     const response = await getProducts({
-      q: query,
+      search: query,
       limit: SAMPLE_LIMIT,
       sort: LISTING_SORT,
       fields: PRODUCT_CARD_FIELDS,

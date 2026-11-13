@@ -42,8 +42,20 @@ _seller_page.html
 
 # env files (can opt-in for committing if needed)
 .env
+.env.*
+!.env.example
 .env.local
 .env.e2e
+.tmp-*
+.tmp-vitest-run/
+.vitest-tmp/
+.codex-*
+node_modules.broken*/
+*.stderr.log
+*.stdout.log
+storefront-launch*.log
+tmp-next-*
+tsc-errors.txt
 
 # vercel
 .vercel

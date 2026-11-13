@@ -1,4 +1,4 @@
-import { Search } from "lucide-react";
+import { ChevronLeft, ChevronRight, Search } from "lucide-react";
 import { getTranslations } from "next-intl/server";
 import { SponsoredDiscoveryRailSection } from "@/components/ads/SponsoredDiscoveryRailSection";
 import { ProductGrid } from "@/components/products/ProductGrid";
@@ -15,6 +15,8 @@ import { SellerShopProductFilters } from "./SellerShopProductFilters";
 import { SellerShopSidebar } from "./SellerShopSidebar";
 import { SellerShopSortForm } from "./SellerShopSortForm";
 import { ShopEditorAction } from "./ShopEditorAction";
+
+const SELLER_SHOP_PRODUCTS_PER_PAGE = 24;
 
 interface SellerStorefrontProductsProps {
   slug: string;
@@ -38,7 +40,7 @@ interface SellerStorefrontProductsProps {
   maxPrice?: string;
   minRating?: string;
   personalizable?: string;
-  featuredLayout?: "standard" | "mixed_grid";
+  featuredLayout?: "standard" | "mixed_grid" | "none";
   editorPreview?: boolean;
 }
 
@@ -80,13 +82,38 @@ export async function SellerStorefrontProducts({
   const products = await getSellerProducts(slug, {
     sellerId,
     page,
-    limit: 48,
+    limit: SELLER_SHOP_PRODUCTS_PER_PAGE,
     section,
     sort: sort || undefined,
     q: catalogQuery,
   });
 
   const shopProductsPath = `${basePath}/sellers/${slug}`;
+  const catalogLinkParams = {
+    section,
+    q: query,
+    sort,
+    sale: onSale,
+    min_price: minPrice,
+    max_price: maxPrice,
+    min_rating: minRating,
+    personalizable,
+  };
+  const pageCount = Math.max(products.meta.pages || 1, 1);
+  const paginationItems: Array<number | string> = [];
+  const visiblePageNumbers = Array.from(
+    new Set(
+      [1, page - 1, page, page + 1, pageCount].filter(
+        (pageNumber) => pageNumber >= 1 && pageNumber <= pageCount,
+      ),
+    ),
+  ).sort((a, b) => a - b);
+  visiblePageNumbers.forEach((pageNumber, index) => {
+    if (index > 0 && pageNumber - visiblePageNumbers[index - 1] > 1) {
+      paginationItems.push(`ellipsis-${pageNumber}`);
+    }
+    paginationItems.push(pageNumber);
+  });
 
   const showFeatured =
     (editorPreview || page === 1) &&
@@ -97,7 +124,8 @@ export async function SellerStorefrontProducts({
     !maxPrice &&
     !minRating &&
     !personalizable &&
-    (featuredIds.length > 0 || editorPreview);
+    (featuredIds.length > 0 || editorPreview) &&
+    featuredLayout !== "none";
   const featuredProducts = showFeatured
     ? await getProductsByIds(featuredIds.slice(0, 8))
     : [];
@@ -127,7 +155,7 @@ export async function SellerStorefrontProducts({
 
           <div className="min-w-0 md:pt-0">
             {showFeatured ? (
-              <section className="mb-10">
+              <section className="mb-10" data-seller-featured-section>
                 <div className="mb-4 flex items-center justify-between gap-3">
                   <h2 className="text-lg font-semibold text-[#222]">
                     {t("featuredTitle")}
@@ -239,6 +267,20 @@ export async function SellerStorefrontProducts({
                 </p>
               </div>
               <div className="flex flex-wrap items-center gap-3 sm:justify-end">
+                {editorPreview && featuredLayout === "none" ? (
+                  <div className="flex items-center gap-1">
+                    <ShopEditorAction
+                      action="featured-layout"
+                      label="Change featured layout"
+                      className="inline-flex size-8 items-center justify-center rounded-sm text-marketplace-muted-foreground hover:bg-marketplace-surface-subtle hover:text-marketplace-foreground"
+                    />
+                    <ShopEditorAction
+                      action="featured"
+                      label="Edit featured listings"
+                      className="inline-flex size-8 items-center justify-center rounded-sm text-marketplace-muted-foreground hover:bg-marketplace-surface-subtle hover:text-marketplace-foreground"
+                    />
+                  </div>
+                ) : null}
                 <SellerShopProductFilters
                   action={shopProductsPath}
                   section={section}
@@ -273,42 +315,83 @@ export async function SellerStorefrontProducts({
               }}
             />
 
-            {products.meta.pages > 1 ? (
+            {pageCount > 1 ? (
               <nav
-                className="mt-10 flex justify-center gap-4"
+                className="mt-10 flex items-center justify-center gap-2"
                 aria-label={t("productPages")}
               >
                 {page > 1 ? (
                   <a
-                    className="text-sm font-medium text-[#222] underline"
                     href={sellerShopCatalogPath(basePath, slug, {
+                      ...catalogLinkParams,
                       page: String(page - 1),
-                      section,
-                      q: query,
-                      sort,
-                      sale: onSale,
                     })}
+                    aria-label={t("previous")}
+                    className="inline-flex size-9 items-center justify-center rounded-full bg-[#f1eeeb] text-[#39332e] transition-colors hover:bg-[#e8e2dc]"
                   >
-                    {t("previous")}
+                    <ChevronLeft className="size-4" aria-hidden />
                   </a>
-                ) : null}
-                <span className="text-sm text-[#757575]">
-                  {t("pageOf", { page, pages: products.meta.pages })}
-                </span>
-                {page < products.meta.pages ? (
+                ) : (
+                  <span
+                    aria-hidden="true"
+                    className="inline-flex size-9 items-center justify-center rounded-full bg-[#f1eeeb] text-[#c0b9b3]"
+                  >
+                    <ChevronLeft className="size-4" />
+                  </span>
+                )}
+                {paginationItems.map((pageItem) =>
+                  typeof pageItem === "string" ? (
+                    <span
+                      key={pageItem}
+                      aria-hidden="true"
+                      className="px-1 text-sm text-[#8a817a]"
+                    >
+                      …
+                    </span>
+                  ) : pageItem === page ? (
+                    <span
+                      key={pageItem}
+                      aria-current="page"
+                      className="inline-flex size-9 items-center justify-center rounded-full border border-[#39332e] bg-white text-sm font-semibold tabular-nums text-[#39332e]"
+                    >
+                      {pageItem}
+                    </span>
+                  ) : (
+                    <a
+                      key={pageItem}
+                      href={sellerShopCatalogPath(basePath, slug, {
+                        ...catalogLinkParams,
+                        page: String(pageItem),
+                      })}
+                      aria-label={t("pageOf", {
+                        page: pageItem,
+                        pages: pageCount,
+                      })}
+                      className="inline-flex size-9 items-center justify-center rounded-full bg-[#f1eeeb] text-sm font-medium tabular-nums text-[#39332e] transition-colors hover:bg-[#e8e2dc]"
+                    >
+                      {pageItem}
+                    </a>
+                  ),
+                )}
+                {page < pageCount ? (
                   <a
-                    className="text-sm font-medium text-[#222] underline"
                     href={sellerShopCatalogPath(basePath, slug, {
+                      ...catalogLinkParams,
                       page: String(page + 1),
-                      section,
-                      q: query,
-                      sort,
-                      sale: onSale,
                     })}
+                    aria-label={t("next")}
+                    className="inline-flex size-9 items-center justify-center rounded-full bg-[#f1eeeb] text-[#39332e] transition-colors hover:bg-[#e8e2dc]"
                   >
-                    {t("next")}
+                    <ChevronRight className="size-4" aria-hidden />
                   </a>
-                ) : null}
+                ) : (
+                  <span
+                    aria-hidden="true"
+                    className="inline-flex size-9 items-center justify-center rounded-full bg-[#f1eeeb] text-[#c0b9b3]"
+                  >
+                    <ChevronRight className="size-4" />
+                  </span>
+                )}
               </nav>
             ) : null}
 

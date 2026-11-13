@@ -5,6 +5,8 @@ import { useEffect, useState } from "react";
 import {
   type AnalyticsConsentChoice,
   analyticsConsentChoice,
+  analyticsConsentGranted,
+  analyticsConsentRequired,
 } from "@/lib/analytics/consent";
 import type { StorefrontIntegrationsConfig } from "@/lib/data/storefront-integrations";
 
@@ -35,7 +37,9 @@ export function EngagementIntegrations({
   const [choice, setChoice] = useState<AnalyticsConsentChoice | null>(null);
 
   useEffect(() => {
-    setChoice(analyticsConsentChoice());
+    if (analyticsConsentRequired()) {
+      setChoice(analyticsConsentChoice());
+    }
     const onConsent = (event: Event) => {
       const next = (event as CustomEvent<AnalyticsConsentChoice>).detail;
       setChoice(next);
@@ -48,7 +52,7 @@ export function EngagementIntegrations({
       window.removeEventListener("spree-analytics-consent", onConsent);
   }, []);
 
-  const granted = choice === "granted";
+  const granted = analyticsConsentGranted();
 
   return (
     <>

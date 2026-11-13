@@ -299,8 +299,8 @@ describe("ProductCard", () => {
       />,
     );
 
-    const link = screen.getByRole("link", { name: "Classic T-Shirt" });
-    expect(link).toHaveAttribute("href", "/us/en/products/classic-t-shirt");
+    const links = screen.getAllByRole("link", { name: "Classic T-Shirt" });
+    expect(links[0]).toHaveAttribute("href", "/us/en/products/classic-t-shirt");
   });
 
   it("shows seller attribution with shop link", () => {
@@ -327,7 +327,7 @@ describe("ProductCard", () => {
 
     expect(container.querySelector("a a, a button")).toBeNull();
     const seller = screen.getByRole("link", { name: "Oak Studio" });
-    const product = screen.getByRole("link", { name: "Classic T-Shirt" });
+    const product = screen.getAllByRole("link", { name: "Classic T-Shirt" })[0];
     expect(
       seller.compareDocumentPosition(product) &
         Node.DOCUMENT_POSITION_FOLLOWING,
@@ -342,9 +342,11 @@ describe("ProductCard", () => {
         showFavorite={false}
       />,
     );
-    expect(container.querySelector("article > div")).toHaveClass(
-      "aspect-[var(--marketplace-product-image-ratio)]",
-    );
+    expect(
+      container.querySelector(
+        "article [class*='marketplace-product-image-ratio']",
+      ),
+    ).toBeTruthy();
   });
 
   it("shows a personalizable badge without nesting it inside the product link", () => {
@@ -493,7 +495,7 @@ describe("ProductCard", () => {
   it("uses empty basePath by default", () => {
     render(<ProductCard product={baseProduct} showFavorite={false} />);
 
-    const link = screen.getByRole("link", { name: "Classic T-Shirt" });
-    expect(link).toHaveAttribute("href", "/products/classic-t-shirt");
+    const links = screen.getAllByRole("link", { name: "Classic T-Shirt" });
+    expect(links[0]).toHaveAttribute("href", "/products/classic-t-shirt");
   });
 });

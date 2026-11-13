@@ -46,13 +46,19 @@ function pickParam(value: string | string[] | undefined): string | undefined {
   return value;
 }
 
-async function loadStorefront(slug: string): Promise<SellerStorefrontPayload> {
+async function loadStorefront(
+  slug: string,
+  options: { editorPreview?: boolean } = {},
+): Promise<SellerStorefrontPayload> {
   try {
-    return await getSellerStorefront(slug);
+    return await getSellerStorefront(slug, options);
   } catch (error) {
-    const storefrontMissing =
-      error instanceof SpreeError && error.status === 404;
-    if (!storefrontMissing) throw error;
+    // Prefer a plain seller show over a hard failure when the composed
+    // storefront endpoint is unavailable (404 or transient 5xx).
+    const recoverable =
+      error instanceof SpreeError &&
+      (error.status === 404 || error.status >= 500);
+    if (!recoverable) throw error;
 
     const seller = await getSeller(slug);
     return {
@@ -80,6 +86,7 @@ const LEGACY_SELLER_SLUG_ALIASES: Record<string, string> = {
 
 async function loadStorefrontWithSlugAlias(
   slug: string,
+  options: { editorPreview?: boolean } = {},
 ): Promise<SellerStorefrontPayload> {
   const candidates = [
     slug,
@@ -92,7 +99,7 @@ async function loadStorefrontWithSlugAlias(
   let lastError: unknown;
   for (const candidate of candidates) {
     try {
-      return await loadStorefront(candidate);
+      return await loadStorefront(candidate, options);
     } catch (error) {
       lastError = error;
       if (!(error instanceof SpreeError) || error.status !== 404) {
@@ -147,12 +154,19 @@ export default async function SellerShopPage({
   const { country, locale, slug } = await params;
   const raw = await searchParams;
   const editorPreview = pickParam(raw.shop_editor) === "1";
+  const aboutEditMode =
+    editorPreview && pickParam(raw.shop_editor_about_edit) === "1";
   const basePath = `/${country}/${locale}`;
   const tab = parseSellerStorefrontTab(pickParam(raw.tab));
   const page = Math.max(
     Number.parseInt(pickParam(raw.page) ?? "1", 10) || 1,
     1,
   );
+  const reviewPage = Math.max(
+    Number.parseInt(pickParam(raw.review_page) ?? "1", 10) || 1,
+    1,
+  );
+  const reviewSort = pickParam(raw.review_sort);
   const section = pickParam(raw.section);
   const query = pickParam(raw.q);
   const sort = pickParam(raw.sort);
@@ -164,9 +178,33 @@ export default async function SellerShopPage({
 
   let payload: SellerStorefrontPayload;
   try {
-    payload = await loadStorefrontWithSlugAlias(slug);
+    payload = await loadStorefrontWithSlugAlias(slug, {
+      editorPreview,
+    });
   } catch {
     notFound();
+  }
+
+  // Shop identity (about, announcement, vacation) must reflect the latest seller
+  // profile write; the composed storefront payload is cached for catalog perf.
+  const liveSeller = await getSeller(payload.seller.slug).catch(() => null);
+  if (liveSeller) {
+    payload = {
+      ...payload,
+      seller: {
+        ...payload.seller,
+        name: liveSeller.name,
+        seller_since: liveSeller.seller_since,
+        tagline: liveSeller.tagline,
+        about: liveSeller.about,
+        about_html: liveSeller.about_html,
+        shop_accent_color: liveSeller.shop_accent_color,
+        shop_announcement: liveSeller.shop_announcement,
+        shop_announcement_html: liveSeller.shop_announcement_html,
+        on_vacation: liveSeller.on_vacation,
+        accepts_custom_orders: liveSeller.accepts_custom_orders,
+      },
+    };
   }
 
   const {
@@ -193,6 +231,7 @@ export default async function SellerShopPage({
     ...seller,
     reviews_count: reviewsCount,
     average_rating: payload.stats?.average_rating ?? seller.average_rating,
+    sales_count: seller.sales_count ?? payload.stats?.sales_count ?? 0,
   };
   const shopPath = `${basePath}/sellers/${seller.slug}`;
 
@@ -293,6 +332,7 @@ export default async function SellerShopPage({
               sellerSlug: seller.slug,
               seller: payload,
               editorPreview,
+              aboutEditMode,
               basePath,
               locale,
               country,
@@ -322,9 +362,14 @@ export default async function SellerShopPage({
             sellerId={seller.id}
             sections={sections}
             featuredIds={featured_product_ids}
+            aboutHtml={seller.about_html}
+            about={seller.about}
             featuredLayout={payload.featured_layout}
             productCount={productCount}
             page={page}
+            reviewPage={reviewPage}
+            reviewSort={reviewSort}
+            reviewDistribution={seller.rating_distribution}
             section={section}
             query={query}
             sort={sort}
@@ -342,13 +387,11 @@ export default async function SellerShopPage({
             policies={seller.policies ?? []}
             marketplaceName={marketplaceName}
             seller={shopSeller}
-            aboutHtml={seller.about_html}
-            about={seller.about}
+            shopPage={payload.shop_page}
             reviewsCount={reviewsCount}
             sellable={seller.sellable}
             onVacation={seller.on_vacation}
             editorPreview={editorPreview}
-            shopPage={payload.shop_page}
           />
         )
       ) : null}
@@ -397,12 +440,8 @@ export default async function SellerShopPage({
             aboutHtml={seller.about_html}
             about={seller.about}
             salesCount={seller.sales_count ?? payload.stats.sales_count}
-            sellerSince={
-              "seller_since" in seller &&
-              typeof seller.seller_since === "string"
-                ? seller.seller_since
-                : null
-            }
+            accentColor={seller.shop_accent_color}
+            sellerSince={seller.seller_since}
             shopPage={payload.shop_page}
             editorPreview={editorPreview}
           />

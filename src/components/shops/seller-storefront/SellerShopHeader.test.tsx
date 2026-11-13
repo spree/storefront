@@ -19,6 +19,17 @@ vi.mock("./SellerShopEditorThemeBridge", () => ({
   SellerShopEditorThemeBridge: () => null,
 }));
 vi.mock("./ShopEditorAction", () => ({ ShopEditorAction: () => null }));
+vi.mock("@/components/seller-badges/SellerBadgeRow", () => ({
+  SellerBadgeRow: ({ badges }: { badges: Array<{ key: string }> }) => (
+    <div data-testid="seller-badge-row">
+      {badges.map((badge) => (
+        <span key={badge.key} data-seller-badge={badge.key}>
+          {badge.key}
+        </span>
+      ))}
+    </div>
+  ),
+}));
 
 import { SellerShopHeader } from "./SellerShopHeader";
 
@@ -34,6 +45,25 @@ const seller = (badges: Seller["badges"]) =>
   }) as Seller;
 
 describe("SellerShopHeader trust signals", () => {
+  it("does not fall back to the seller cover when the banner layout is none", async () => {
+    const html = renderToStaticMarkup(
+      await SellerShopHeader({
+        seller: {
+          ...seller([]),
+          cover_photo_url: "https://example.test/cover.jpg",
+        } as Seller,
+        basePath: "/us/en",
+        following: false,
+        shopPath: "/us/en/sellers/test-maker",
+        shopBanner: { layout: "none", slides: [] } as never,
+        editorPreview: true,
+      }),
+    );
+
+    expect(html).not.toContain("https://example.test/cover.jpg");
+    expect(html).not.toContain("data-seller-shop-cover-fallback");
+  });
+
   it("shows the seller's public shipping location below shop stats", async () => {
     const html = renderToStaticMarkup(
       await SellerShopHeader({
@@ -63,6 +93,7 @@ describe("SellerShopHeader trust signals", () => {
     );
     expect(html).toContain("--marketplace-seller-accent:#273a35");
     expect(html).toContain("--marketplace-seller-accent-text:#ffffff");
+    expect(html).not.toContain("border-y border-[#e3ddd8]");
     expect(html).toContain(
       "text-[var(--marketplace-seller-accent-text,#29252d)]",
     );
@@ -93,8 +124,8 @@ describe("SellerShopHeader trust signals", () => {
       }),
     );
 
-    expect(html).toContain("smoothShipping");
-    expect(html).toContain("speedyReplies");
+    expect(html).toContain('data-seller-badge="on_time_shipping"');
+    expect(html).toContain('data-seller-badge="fast_responder"');
   });
 
   it("hides unawarded or missing trust badges", async () => {

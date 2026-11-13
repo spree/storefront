@@ -1,4 +1,4 @@
-import { SpreeError } from "@spree/sdk";
+import { type CustomOrderRequest, SpreeError } from "@spree/sdk";
 import {
   ArrowLeft,
   CalendarDays,
@@ -156,24 +156,26 @@ export default async function CustomOrderPage({
                 {t("attachmentsLabel")}
               </h2>
               <ul className="mt-3 divide-y divide-marketplace-border-subtle border-y border-marketplace-border-subtle">
-                {request.attachments.map((attachment) => (
-                  <li key={attachment.id}>
-                    <a
-                      href={attachment.url}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="flex items-center gap-3 py-3 text-sm font-medium text-marketplace-brand hover:underline"
-                    >
-                      <FileImage
-                        aria-hidden="true"
-                        className="size-4 shrink-0"
-                      />
-                      <span className="min-w-0 truncate">
-                        {attachment.filename}
-                      </span>
-                    </a>
-                  </li>
-                ))}
+                {request.attachments.map(
+                  (attachment: CustomOrderRequest["attachments"][number]) => (
+                    <li key={attachment.id}>
+                      <a
+                        href={attachment.url}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="flex items-center gap-3 py-3 text-sm font-medium text-marketplace-brand hover:underline"
+                      >
+                        <FileImage
+                          aria-hidden="true"
+                          className="size-4 shrink-0"
+                        />
+                        <span className="min-w-0 truncate">
+                          {attachment.filename}
+                        </span>
+                      </a>
+                    </li>
+                  ),
+                )}
               </ul>
             </div>
           ) : null}

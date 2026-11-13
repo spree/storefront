@@ -5,7 +5,6 @@ import type {
   OptionFilter,
   ProductFiltersResponse,
   RatingFilter,
-  SellerFilter,
 } from "@spree/sdk";
 import { Check, X } from "lucide-react";
 import { useTranslations } from "next-intl";
@@ -42,6 +41,7 @@ export function MobileFilterDrawer({
   onApply,
 }: MobileFilterDrawerProps) {
   const t = useTranslations("products");
+  const common = useTranslations("common");
   const [stagedFilters, setStagedFilters] =
     useState<ActiveFilters>(activeFilters);
 
@@ -77,7 +77,6 @@ export function MobileFilterDrawer({
       availability: undefined,
       personalizable: undefined,
       ratingMin: undefined,
-      sellerId: undefined,
       sortBy: prev.sortBy,
     }));
   }, []);
@@ -98,26 +97,29 @@ export function MobileFilterDrawer({
     >
       <SheetContent
         side="left"
-        className="w-full max-w-sm flex flex-col p-0 gap-0"
+        className="flex w-full max-w-sm flex-col gap-0 border-marketplace-border bg-marketplace-surface p-0 text-marketplace-foreground shadow-2xl"
         showCloseButton={false}
+        overlayClassName="bg-marketplace-foreground/35 backdrop-blur-[1px]"
         aria-describedby={undefined}
       >
         <SheetTitle className="sr-only">{t("filters")}</SheetTitle>
 
-        <div className="flex items-center justify-between p-4 border-b border-gray-200">
+        <div className="flex min-h-16 items-center justify-between border-b border-marketplace-border px-6 py-4">
+          <h2 className="font-serif text-2xl font-medium tracking-tight text-marketplace-foreground">
+            {t("filters")}
+          </h2>
           <Button
             variant="ghost"
             size="icon"
             onClick={onClose}
             aria-label={t("closeFilters")}
+            className="rounded-full text-marketplace-muted-foreground hover:bg-marketplace-surface-subtle hover:text-marketplace-foreground"
           >
-            <X className="w-6 h-6" />
+            <X className="size-5" />
           </Button>
-          <h2 className="text-lg font-semibold uppercase">{t("filters")}</h2>
-          <div className="w-10" />
         </div>
 
-        <div className="flex-1 overflow-y-auto p-5 space-y-7">
+        <div className="min-h-0 flex-1 space-y-7 overflow-y-auto px-6 py-5">
           {filtersData?.filters.map((filter) => {
             switch (filter.type) {
               case "option":
@@ -161,17 +163,6 @@ export function MobileFilterDrawer({
                     }
                   />
                 );
-              case "seller":
-                return (
-                  <MobileSellerSection
-                    key={filter.id}
-                    filter={filter as SellerFilter}
-                    selectedSellerId={stagedFilters.sellerId}
-                    onChange={(sellerId) =>
-                      setStagedFilters((prev) => ({ ...prev, sellerId }))
-                    }
-                  />
-                );
               default:
                 return null;
             }
@@ -204,15 +195,31 @@ export function MobileFilterDrawer({
           </div>
         </div>
 
-        <div className="border-t border-gray-200 p-4 space-y-2">
+        <div className="border-t border-marketplace-border bg-marketplace-surface px-5 pt-3 pb-[max(1rem,env(safe-area-inset-bottom))]">
           {stagedCount > 0 && (
-            <Button variant="ghost" className="w-full" onClick={handleClearAll}>
+            <Button
+              variant="ghost"
+              className="mb-2 h-9 w-full text-sm text-marketplace-muted-foreground hover:text-marketplace-foreground"
+              onClick={handleClearAll}
+            >
               {t("clearAllFiltersCount", { count: stagedCount })}
             </Button>
           )}
-          <Button className="w-full" onClick={handleApply}>
-            {t("showResults")}
-          </Button>
+          <div className="flex gap-3">
+            <Button
+              variant="outline"
+              className="h-11 flex-1 rounded-full border-marketplace-border bg-marketplace-surface font-medium text-marketplace-foreground hover:bg-marketplace-surface-subtle"
+              onClick={onClose}
+            >
+              {common("cancel")}
+            </Button>
+            <Button
+              className="h-11 flex-1 rounded-full bg-marketplace-foreground font-semibold text-marketplace-surface hover:bg-marketplace-foreground/90"
+              onClick={handleApply}
+            >
+              {common("apply")}
+            </Button>
+          </div>
         </div>
       </SheetContent>
     </Sheet>
@@ -259,54 +266,6 @@ function MobileRatingSection({
             >
               <span>{t("ratingStarsUp", { count: option.minimum })}</span>
               {active ? <Check className="h-4 w-4" /> : null}
-            </button>
-          );
-        })}
-      </div>
-    </div>
-  );
-}
-
-function MobileSellerSection({
-  filter,
-  selectedSellerId,
-  onChange,
-}: {
-  filter: SellerFilter;
-  selectedSellerId?: string;
-  onChange: (sellerId?: string) => void;
-}) {
-  const t = useTranslations("products");
-  if (!filter.options.length) return null;
-
-  return (
-    <div>
-      <h3 className="mb-3 text-xs font-semibold uppercase tracking-wider text-gray-500">
-        {t("sellerFilter")}
-      </h3>
-      <div className="max-h-48 space-y-1 overflow-y-auto">
-        <button
-          type="button"
-          onClick={() => onChange(undefined)}
-          className={`flex w-full rounded-xl px-3 py-2.5 text-left text-sm ${
-            !selectedSellerId ? "bg-gray-50 font-medium" : ""
-          }`}
-        >
-          {t("anySeller")}
-        </button>
-        {filter.options.map((option) => {
-          const active = selectedSellerId === option.id;
-          return (
-            <button
-              key={option.id}
-              type="button"
-              onClick={() => onChange(option.id)}
-              className={`flex w-full items-center justify-between gap-2 rounded-xl px-3 py-2.5 text-left text-sm ${
-                active ? "bg-gray-50 font-medium text-primary" : ""
-              }`}
-            >
-              <span className="truncate">{option.name}</span>
-              {active ? <Check className="h-4 w-4 shrink-0" /> : null}
             </button>
           );
         })}

@@ -7,6 +7,7 @@ import { MarketplacePage, MarketplaceSection } from "@/components/marketplace";
 import { DiscoveryRecommendationRail } from "@/components/products/DiscoveryRecommendationRail";
 import { ProductListing } from "@/components/products/ProductListing";
 import { ThemePageRenderer } from "@/components/theme/ThemePageRenderer";
+import { CategoryImage } from "@/components/ui/category-image";
 import type { SupportedLocale } from "@/i18n/locales";
 import { getCollection, getCollectionProducts } from "@/lib/data/collections";
 import { resolveCurrency } from "@/lib/data/markets";
@@ -84,6 +85,7 @@ export default async function CollectionPage({
               collectionId: collection.id,
               collectionName: collection.name,
               collectionSlug: collection.permalink,
+              listingSearchParams: rawSearchParams,
               basePath,
               locale,
               country,
@@ -134,7 +136,7 @@ export default async function CollectionPage({
         <div
           className={`mx-auto grid max-w-[var(--marketplace-container)] ${hero ? "md:grid-cols-[minmax(0,1fr)_minmax(0,42%)]" : ""}`}
         >
-          <MarketplacePage className="flex min-w-0 flex-col justify-center py-10 md:py-14">
+          <MarketplacePage className="order-2 flex min-w-0 flex-col justify-center py-8 md:order-1 md:py-14">
             <h1 className="marketplace-listing-title text-balance text-marketplace-foreground">
               {collection.name}
             </h1>
@@ -152,9 +154,17 @@ export default async function CollectionPage({
           {hero ? (
             <div
               aria-hidden="true"
-              className="hidden min-h-64 bg-cover bg-center md:block"
-              style={{ backgroundImage: `url(${hero})` }}
-            />
+              className="relative order-1 aspect-[4/3] overflow-hidden md:order-2 md:aspect-auto md:min-h-72"
+            >
+              <CategoryImage
+                src={hero}
+                alt=""
+                fill
+                priority
+                sizes="(max-width: 768px) 100vw, 42vw"
+                className="object-cover"
+              />
+            </div>
           ) : null}
         </div>
       </MarketplaceSection>

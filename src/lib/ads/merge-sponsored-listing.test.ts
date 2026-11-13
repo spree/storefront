@@ -39,7 +39,7 @@ describe("mergeOrganicWithSponsored", () => {
 
     const cells = mergeOrganicWithSponsored(
       [...organic] as unknown as import("@spree/sdk").Product[],
-      sponsored,
+      sponsored as import("@spree/sdk").SponsoredSearchResult[],
     );
 
     expect(cells.filter((c) => c.kind === "sponsored")).toHaveLength(1);

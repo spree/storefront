@@ -74,8 +74,10 @@ export async function ProductPageRecommendations({
           listId="recommendation-similar"
           listName="You may also like"
           dismissSurface="pdp:similar"
+          dismissible={false}
           analyticsSurface="pdp"
           personalized
+          mobileSlidesPerView={2}
         />
       ) : null}
     </>

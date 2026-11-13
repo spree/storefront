@@ -10,12 +10,12 @@ import {
 import Link from "next/link";
 import { getLocale, getTranslations } from "next-intl/server";
 import { MarketplacePage, MarketplaceSection } from "@/components/marketplace";
-import { ProductCard } from "@/components/products/ProductCard";
+import { ProductCarousel } from "@/components/products/ProductCarousel";
 import {
   type MeetTheMakerFollowerSample,
   ProductPageMeetTheMakerAside,
 } from "@/components/products/ProductPageMeetTheMakerAside";
-import { StarRatingDisplay } from "@/components/reviews/StarRating";
+import { ProductShopReviewsCarousel } from "@/components/products/ProductShopReviewsCarousel";
 import { ContactShopButton } from "@/components/shops/ContactShopButton";
 import { ShopFollowersButton } from "@/components/shops/ShopFollowersButton";
 import { StarSellerAvatar } from "@/components/shops/StarSellerAvatar";
@@ -25,8 +25,6 @@ import {
   getSellerReviews,
   getSellerStorefront,
 } from "@/lib/data/sellers";
-import { sellerShopProductHrefForProduct } from "@/lib/discovery-context";
-import { formatShopReviewDate } from "@/lib/utils/format";
 import { sellerDisplayName } from "@/lib/utils/seller-display";
 import { sellerShopPath } from "@/lib/utils/seller-storefront";
 
@@ -38,6 +36,8 @@ type ProductPageSellerShowcaseProps = {
   basePath: string;
   currency?: string;
   excludeProductId?: string;
+  messagingAvailable?: boolean;
+  hideProductRail?: boolean;
 };
 
 function formatStatCount(value: number, locale: string): string {
@@ -80,6 +80,8 @@ export async function ProductPageSellerShowcase({
   basePath,
   currency,
   excludeProductId,
+  messagingAvailable = true,
+  hideProductRail = false,
 }: ProductPageSellerShowcaseProps) {
   const t = await getTranslations("products");
   const tSellers = await getTranslations("sellers");
@@ -200,7 +202,8 @@ export async function ProductPageSellerShowcase({
     catalogProducts,
     excludeProductId,
   );
-  const showMoreFromMakerSection = productsCount > 1 || railProducts.length > 0;
+  const showMoreFromMakerSection =
+    !hideProductRail && (productsCount > 1 || railProducts.length > 0);
   const sellerReviewsHref = sellerShopPath(
     basePath,
     sellerProfile.slug,
@@ -212,8 +215,11 @@ export async function ProductPageSellerShowcase({
     <MarketplaceSection data-pdp-discovery-section="seller-showcase">
       <MarketplacePage className="bg-transparent">
         <section className="border-y border-[#e2ddd8] py-6 sm:py-7">
+          <h2 className="mb-5 text-sm font-semibold text-[#39343c] md:hidden">
+            {t("meetTheMaker")}
+          </h2>
           <header className="flex flex-col justify-between gap-5 md:flex-row md:items-center">
-            <div className="flex min-w-0 items-center gap-4 sm:gap-5">
+            <div className="flex min-w-0 flex-col items-center gap-3 text-center md:flex-row md:gap-5 md:text-left">
               <StarSellerAvatar
                 seller={sellerProfile}
                 href={shopHref}
@@ -221,8 +227,8 @@ export async function ProductPageSellerShowcase({
                 imageSizes="92px"
               />
 
-              <div className="min-w-0">
-                <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+              <div className="flex min-w-0 flex-col items-center md:items-start">
+                <div className="flex flex-wrap items-center justify-center gap-x-2 gap-y-1 md:justify-start">
                   <Link
                     href={shopHref}
                     className="font-display text-xl leading-tight text-[#39343c] hover:underline sm:text-2xl"
@@ -241,7 +247,7 @@ export async function ProductPageSellerShowcase({
                     {sellerProfile.tagline}
                   </p>
                 ) : null}
-                <div className="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-[#39343c]">
+                <div className="mt-1.5 flex flex-wrap items-center justify-center gap-x-2 gap-y-1 text-sm text-[#39343c] md:justify-start">
                   {hasRating ? (
                     <span className="inline-flex items-center gap-1">
                       <Star
@@ -280,7 +286,7 @@ export async function ProductPageSellerShowcase({
                   </span>
                 </div>
                 {trustSignals.length > 0 ? (
-                  <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1.5">
+                  <div className="mt-2 flex flex-wrap items-center justify-center gap-x-3 gap-y-1.5 md:justify-start">
                     {trustSignals.map(({ key, Icon, title, description }) => (
                       <span
                         key={key}
@@ -304,7 +310,7 @@ export async function ProductPageSellerShowcase({
               </div>
             </div>
 
-            <div className="flex shrink-0 flex-col items-center gap-2">
+            <div className="flex w-full shrink-0 flex-col items-center gap-2 md:w-auto md:items-end">
               <ProductPageMeetTheMakerAside
                 sellerId={sellerProfile.id}
                 sellerSlug={sellerProfile.slug}
@@ -316,6 +322,7 @@ export async function ProductPageSellerShowcase({
                   <ContactShopButton
                     basePath={basePath}
                     sellerSlug={sellerProfile.slug}
+                    messagingAvailable={messagingAvailable}
                     className="!h-11 !min-w-40 !justify-center !rounded-full !border-[#39343c] !bg-white !px-5 !text-xs !font-semibold !text-[#39343c] !shadow-none hover:!bg-[#f7f4f1]"
                   />
                 }
@@ -345,58 +352,15 @@ export async function ProductPageSellerShowcase({
                   {t("makerShowAllReviews")}
                 </Link>
               </div>
-              <div className="-mx-1 flex snap-x gap-3 overflow-x-auto px-1 pb-2">
-                {shopReviews.slice(0, 3).map((review) => (
-                  <article
-                    key={review.id}
-                    className="flex w-[min(82vw,19rem)] shrink-0 snap-start flex-col rounded-md border border-[#e2ddd8] bg-white p-4 sm:w-[19rem]"
-                  >
-                    <StarRatingDisplay
-                      rating={review.rating}
-                      size="sm"
-                      tone="dark"
-                    />
-                    {review.title ? (
-                      <h3 className="mt-2 line-clamp-1 text-sm font-semibold text-[#39343c]">
-                        {review.title}
-                      </h3>
-                    ) : null}
-                    {review.body ? (
-                      <p className="mt-1 line-clamp-4 min-h-16 text-sm leading-snug text-[#39343c]">
-                        {review.body}
-                      </p>
-                    ) : null}
-                    <div className="mt-auto pt-4 text-xs text-[#716a68]">
-                      <p className="truncate">
-                        <span className="font-semibold text-[#39343c]">
-                          {review.customer_name?.trim() ||
-                            tReviews("anonymousReviewer")}
-                        </span>
-                        {review.published_at || review.created_at ? (
-                          <>
-                            <span aria-hidden="true"> · </span>
-                            {formatShopReviewDate(
-                              review.published_at ?? review.created_at,
-                              locale,
-                            )}
-                          </>
-                        ) : null}
-                      </p>
-                      {review.product_name && review.product_slug ? (
-                        <p className="mt-1 truncate">
-                          {t("makerPurchasedLabel")}:{" "}
-                          <Link
-                            href={`${basePath}/products/${review.product_slug}`}
-                            className="underline underline-offset-2"
-                          >
-                            {review.product_name}
-                          </Link>
-                        </p>
-                      ) : null}
-                    </div>
-                  </article>
-                ))}
-              </div>
+              <ProductShopReviewsCarousel
+                reviews={shopReviews}
+                basePath={basePath}
+                locale={locale}
+                anonymousReviewer={tReviews("anonymousReviewer")}
+                purchasedLabel={t("makerPurchasedLabel")}
+                previousLabel={tReviews("previousPage")}
+                nextLabel={tReviews("nextPage")}
+              />
             </section>
           ) : null}
 
@@ -415,27 +379,19 @@ export async function ProductPageSellerShowcase({
                 </Link>
               </div>
               {railProducts.length > 0 ? (
-                <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-                  {railProducts.slice(0, 4).map((product, index) => (
-                    <ProductCard
-                      key={product.id}
-                      product={product}
-                      basePath={basePath}
-                      currency={currency}
-                      density="rail"
-                      showFavorite={false}
-                      index={index}
-                      listId="seller-shop-products"
-                      listName="More from maker"
-                      href={sellerShopProductHrefForProduct(basePath, product, {
-                        sellerId: sellerProfile.id,
-                        listId: "seller-shop-products",
-                        position: index,
-                        section: "product-page-showcase",
-                      })}
-                    />
-                  ))}
-                </div>
+                <ProductCarousel
+                  products={railProducts}
+                  basePath={basePath}
+                  currency={currency}
+                  listId="seller-shop-products"
+                  listName="More from maker"
+                  sellerShopDiscovery={{
+                    sellerId: sellerProfile.id,
+                    listId: "seller-shop-products",
+                    section: "product-page-showcase",
+                  }}
+                  mobileSlidesPerView={2}
+                />
               ) : (
                 <Link
                   href={shopHref}

@@ -5,7 +5,6 @@ export function filtersEqual(a: ActiveFilters, b: ActiveFilters): boolean {
   if (a.availability !== b.availability) return false;
   if (a.personalizable !== b.personalizable) return false;
   if (a.ratingMin !== b.ratingMin) return false;
-  if (a.sellerId !== b.sellerId) return false;
   if (a.sortBy !== b.sortBy) return false;
   if (a.optionValues.length !== b.optionValues.length) return false;
   const aVals = [...a.optionValues].sort();
@@ -22,8 +21,7 @@ export function getActiveFilterCount(filters: ActiveFilters): number {
     (filters.priceMin !== undefined || filters.priceMax !== undefined ? 1 : 0) +
     (filters.availability ? 1 : 0) +
     (filters.personalizable ? 1 : 0) +
-    (filters.ratingMin !== undefined ? 1 : 0) +
-    (filters.sellerId ? 1 : 0)
+    (filters.ratingMin !== undefined ? 1 : 0)
   );
 }
 

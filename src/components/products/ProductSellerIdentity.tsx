@@ -164,6 +164,36 @@ export function ProductSellerIdentity({
     );
   }
 
+  if (!showLogo && !showVisitShop) {
+    return (
+      <div data-theme-product-seller className="space-y-1">
+        <p className="text-sm text-marketplace-muted-foreground">
+          {t("soldBy")}{" "}
+          <Link
+            href={shopHref}
+            className="font-medium text-marketplace-foreground hover:underline"
+          >
+            {seller.name}
+          </Link>
+        </p>
+        {hasReviews ? (
+          <p className="text-sm text-marketplace-muted-foreground">
+            {seller.average_rating!.toFixed(1)} ({seller.reviews_count})
+          </p>
+        ) : null}
+        {productId && productName ? (
+          <AskAboutProductButton
+            basePath={basePath}
+            productId={productId}
+            productName={productName}
+            messagingAvailable={messagingAvailable !== false}
+            buttonClassName="h-9 w-fit justify-start px-3"
+          />
+        ) : null}
+      </div>
+    );
+  }
+
   return (
     <div
       data-theme-product-seller

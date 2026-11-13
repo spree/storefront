@@ -21,7 +21,7 @@ describe("ThemeSettingsProvider font libraries", () => {
       </ThemeSettingsProvider>,
     );
 
-    expect(html).toContain("fonts.googleapis.com/css2?family=Playfair+Display");
+    expect(html).not.toContain("fonts.googleapis.com");
     expect(html).toContain(
       "--marketplace-body-font:&quot;Roboto&quot;, sans-serif",
     );

@@ -42,10 +42,6 @@ export function buildProductQueryParams(
     params.average_rating_gte = filters.ratingMin;
   }
 
-  if (filters.sellerId) {
-    params.seller_id_eq = filters.sellerId;
-  }
-
   const sort =
     filters.sortBy && filters.sortBy !== "manual"
       ? filters.sortBy

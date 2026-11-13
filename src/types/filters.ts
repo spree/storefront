@@ -20,7 +20,5 @@ export interface ActiveFilters {
   personalizable?: boolean;
   /** Minimum average rating (e.g. 3, 4). */
   ratingMin?: number;
-  /** Seller prefixed ID from facet selection. */
-  sellerId?: string;
   sortBy?: string;
 }

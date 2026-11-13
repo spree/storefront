@@ -44,6 +44,49 @@ export async function ThemeTemplateRenderer({
   const sections = data.sections || {};
   const order = data.order || [];
   const deferProductDiscoveryToFooter = context.kind === "product";
+  const enabledProductSections = order.filter(
+    (id) =>
+      ["product", "product_main"].includes(sections[id]?.type || "") &&
+      !themeSettingEnabled(sections[id]?.disabled),
+  );
+  const enabledReviewSections = order.filter(
+    (id) =>
+      sections[id]?.type === "product_reviews" &&
+      !themeSettingEnabled(sections[id]?.disabled),
+  );
+  const mainSection =
+    enabledProductSections.length === 1
+      ? sections[enabledProductSections[0]]
+      : undefined;
+  const mainVisibility =
+    (
+      mainSection as typeof mainSection & {
+        visibility?: { mobile?: boolean; tablet?: boolean; desktop?: boolean };
+      }
+    )?.visibility ??
+    (mainSection?.settings?.visibility as
+      | { mobile?: boolean; tablet?: boolean; desktop?: boolean }
+      | undefined);
+  const mainVisibleEverywhere =
+    mainSection &&
+    [
+      mainVisibility?.mobile ?? mainSection.settings?.mobileVisible,
+      mainVisibility?.tablet ?? mainSection.settings?.tabletVisible,
+      mainVisibility?.desktop ?? mainSection.settings?.desktopVisible,
+    ].every((value) => themeSettingEnabled(value, true));
+  // Preserve the editor's section boundaries and avoid guessing when a template
+  // contains multiple product or review sections.
+  const embeddedReviewId =
+    !editorMode &&
+    context.kind === "product" &&
+    mainVisibleEverywhere &&
+    enabledReviewSections.length === 1 &&
+    !sections[enabledReviewSections[0]]?.block_order?.length
+      ? enabledReviewSections[0]
+      : undefined;
+  const embeddedReview = embeddedReviewId
+    ? sections[embeddedReviewId]
+    : undefined;
 
   const configuredResourceSections = {
     deferToFooterDiscovery: deferProductDiscoveryToFooter,
@@ -63,6 +106,24 @@ export async function ThemeTemplateRenderer({
         sections[id]?.type === "product_reviews" &&
         !themeSettingEnabled(sections[id]?.disabled),
     ),
+    embeddedProductReview: embeddedReview
+      ? {
+          settings: embeddedReview.settings || {},
+          visibility:
+            (
+              embeddedReview as typeof embeddedReview & {
+                visibility?: {
+                  mobile?: boolean;
+                  tablet?: boolean;
+                  desktop?: boolean;
+                };
+              }
+            ).visibility ??
+            (embeddedReview.settings?.visibility as
+              | { mobile?: boolean; tablet?: boolean; desktop?: boolean }
+              | undefined),
+        }
+      : undefined,
     hasCollectionBanner: order.some(
       (id) => sections[id]?.type === "collection_banner",
     ),
@@ -76,6 +137,13 @@ export async function ThemeTemplateRenderer({
       const raw = sections[sectionId];
       if (!raw || (themeSettingEnabled(raw.disabled) && !editorMode))
         return null;
+      if (
+        !editorMode &&
+        context.kind === "product" &&
+        raw.type === "product_details"
+      )
+        return null;
+      if (sectionId === embeddedReviewId) return null;
       const visibility =
         (
           raw as typeof raw & {
@@ -517,8 +585,8 @@ function sectionPresentation(settings: Record<string, unknown>): CSSProperties {
   return {
     backgroundColor: /^#[0-9a-fA-F]{6}$/.test(background)
       ? background
-      : background === "palette"
-        ? "var(--marketplace-surface-warm)"
+      : background === "palette" || background === "default"
+        ? "var(--marketplace-background, #ffffff)"
         : undefined,
     color: /^#[0-9a-fA-F]{6}$/.test(text)
       ? text

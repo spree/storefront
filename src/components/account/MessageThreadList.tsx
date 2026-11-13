@@ -17,11 +17,12 @@ interface MessageThreadListProps {
 }
 
 export function MessageThreadList({
-  threads,
+  threads: threadsProp,
   basePath,
   locale,
 }: MessageThreadListProps) {
   const t = useTranslations("messages");
+  const threads = Array.isArray(threadsProp) ? threadsProp : [];
   const [query, setQuery] = useState("");
   const [unreadOnly, setUnreadOnly] = useState(false);
   const unreadCount = threads.filter((thread) => thread.unread).length;

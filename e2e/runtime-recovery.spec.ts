@@ -101,13 +101,12 @@ test("published homepage renders at supported recovery viewports", async ({
     ),
   );
   expect(observations.every((item) => item.headingCount > 0)).toBe(true);
+  // Marketplace homepage (THEME_TEMPLATE_HOME disabled) — editorial hero + discovery sections.
   for (const expected of [
-    "Find thoughtful gifts from independent sellers",
-    "Explore categories",
-    "Featured collections",
-    "Popular gifts",
-    "One of a kind, made by someone",
-    "Shop with confidence",
+    "Meaningful things, made by real people.",
+    "Jump into featured interests",
+    "Featured shops",
+    "Gift guides",
   ]) {
     expect(
       observations.every((item) => item.cmsHeadings.includes(expected)),

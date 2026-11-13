@@ -30,7 +30,7 @@ vi.mock("@/components/layout/Footer", () => ({
 
 import { Footer } from "@/components/layout/Footer";
 import { Header } from "@/components/layout/Header";
-import StorefrontLayout from "./layout";
+import StorefrontLayout, { StorefrontLayoutContent } from "./layout";
 
 interface LayoutElementProps {
   children?: ReactNode;
@@ -40,6 +40,16 @@ interface LayoutElementProps {
 }
 
 describe("StorefrontLayout", () => {
+  it("wraps header-dependent chrome behind a Suspense boundary", () => {
+    const layout = StorefrontLayout({
+      children: <section>Storefront content</section>,
+      params: Promise.resolve({ country: "us", locale: "en" }),
+    }) as ReactElement<LayoutElementProps>;
+
+    expect(layout.type).toBe(Suspense);
+    expect(layout.props.fallback).toBeNull();
+  });
+
   it("keeps page chrome outside the category navigation Suspense boundaries", async () => {
     const content = <section>Storefront content</section>;
     mocks.headers.mockResolvedValue(
@@ -48,7 +58,7 @@ describe("StorefrontLayout", () => {
         [REQUEST_SEARCH_HEADER]: "",
       }),
     );
-    const layout = (await StorefrontLayout({
+    const layout = (await StorefrontLayoutContent({
       children: content,
       params: Promise.resolve({ country: "us", locale: "en" }),
     })) as ReactElement<LayoutElementProps>;
@@ -58,23 +68,20 @@ describe("StorefrontLayout", () => {
     const [header, categoryNavigation, main, footerGate] = Children.toArray(
       layout.props.children,
     ) as ReactElement<LayoutElementProps>[];
-    const [footer, bottomNavigation] = Children.toArray(
-      footerGate.props.children,
-    ) as ReactElement<LayoutElementProps>[];
+    const footer = footerGate.props
+      .children as ReactElement<LayoutElementProps>;
 
     expect(header.type).toBe(Header);
     expect(categoryNavigation.type).toBe(Suspense);
     expect(main.type).toBe("main");
     expect(main.props.children).toBe(content);
     expect(footer.type).toBe(Footer);
-    expect(bottomNavigation.type).toBe(Suspense);
 
     const mobileNavigation = header.props.mobileNavigation;
     const categoryLinks = footer.props.categoryLinks;
 
     expect(mobileNavigation?.type).toBe(Suspense);
     expect(mobileNavigation?.props.fallback).not.toBeNull();
-    expect(bottomNavigation.props.fallback).toBeNull();
     expect(categoryLinks?.type).toBe(Suspense);
     expect(categoryLinks?.props.fallback).not.toBeNull();
   });
@@ -88,7 +95,7 @@ describe("StorefrontLayout", () => {
       }),
     );
 
-    const layout = (await StorefrontLayout({
+    const layout = (await StorefrontLayoutContent({
       children: content,
       params: Promise.resolve({ country: "us", locale: "en" }),
     })) as ReactElement<{ children?: ReactNode }>;

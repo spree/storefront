@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" role="img" aria-labelledby="title">
+  <title id="title">Fast responder</title>
+  <path d="M5 4.75h14c.97 0 1.75.78 1.75 1.75v8.5c0 .97-.78 1.75-1.75 1.75h-5.35L8.4 20.35v-3.6H5c-.97 0-1.75-.78-1.75-1.75V6.5c0-.97.78-1.75 1.75-1.75Z" stroke="#514C49" stroke-width="1.5" stroke-linejoin="round"/>
+  <path d="M13.4 7.35 9.85 12h2.7l-1.2 3.85 4.2-5.15h-2.75l.6-3.35Z" fill="#514C49"/>
+</svg>

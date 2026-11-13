@@ -405,7 +405,7 @@ export function SearchBar({
             align="inline-end"
             className={
               appearance === "etsy"
-                ? "m-1 size-10 rounded-full bg-[#f1641e] p-0 text-white [&_svg]:size-6"
+                ? "m-1 size-10 rounded-full bg-marketplace-brand-accent p-0 text-white transition-colors hover:bg-marketplace-brand-accent-hover [&_svg]:size-6"
                 : appearance === "marketplace"
                   ? "m-1 rounded-md bg-marketplace-brand px-3 text-marketplace-brand-foreground [&_svg]:size-5"
                   : undefined

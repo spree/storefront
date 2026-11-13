@@ -1,7 +1,16 @@
 "use client";
 
-import { Store } from "lucide-react";
-import { WandSparkles } from "@/components/icons";
+import type { ComponentType } from "react";
+import {
+  Eye,
+  Gift,
+  Heart,
+  Package,
+  Search,
+  type SpreeIconProps,
+  Star,
+  Store,
+} from "@/components/icons";
 import {
   type MerchandisingSignal,
   selectMerchandisingReason,
@@ -13,6 +22,19 @@ type MerchandisingReasonProps = {
   excludeKeys?: string[];
   followedShopLabel?: string;
   className?: string;
+};
+
+type ReasonIcon = ComponentType<Omit<SpreeIconProps, "name">>;
+
+const REASON_ICONS: Record<string, ReasonIcon> = {
+  followed_shop: Store,
+  new_from_followed_shop: Store,
+  recent_search_match: Search,
+  similar_to_favorites: Heart,
+  viewed_similar: Eye,
+  similar_to_purchase: Package,
+  complementary_item: Gift,
+  recommended_for_you: Star,
 };
 
 export function MerchandisingReason({
@@ -30,6 +52,7 @@ export function MerchandisingReason({
   if (!reason) return null;
   const isFollowedShopReason =
     reason.key === "followed_shop" || reason.key === "new_from_followed_shop";
+  const Icon = REASON_ICONS[reason.key] ?? Star;
 
   return (
     <p
@@ -42,7 +65,7 @@ export function MerchandisingReason({
           <Store className="size-3.5" aria-hidden="true" strokeWidth={2} />
         </span>
       ) : (
-        <WandSparkles
+        <Icon
           className="mt-0.5 size-3.5 shrink-0 text-marketplace-brand"
           aria-hidden
         />

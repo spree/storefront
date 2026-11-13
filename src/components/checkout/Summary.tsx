@@ -11,8 +11,8 @@ interface SummaryProps {
 }
 
 export function Summary({ cart }: SummaryProps) {
-  const tRoot = useTranslations();
   const tc = useTranslations("common");
+  const tProducts = useTranslations("products");
   const t = useTranslations("checkout");
   const items = cart.items || [];
   const sellerGroups = items.reduce((groups, item) => {
@@ -30,20 +30,20 @@ export function Summary({ cart }: SummaryProps) {
   return (
     <div>
       <h2 className="mb-5 text-lg font-semibold text-gray-950">
-        {tRoot("orderSummary")}
+        {tc("orderSummary")}
       </h2>
 
       <div className="divide-y divide-gray-200 pb-6">
         {[...sellerGroups.entries()].map(([key, group]) => (
           <section key={key} className="py-4 first:pt-0 last:pb-0">
             {group.name && (
-              <h3 className="mb-3 flex items-center gap-2 text-sm font-semibold text-gray-900">
+              <h3 className="mb-2 flex items-center gap-2 text-sm font-semibold text-gray-900">
                 <Store className="h-4 w-4 text-gray-500" aria-hidden="true" />
-                <span className="text-gray-500">{tRoot("soldBy")}</span>
+                <span className="text-gray-500">{tProducts("soldBy")}</span>
                 <span className="truncate">{group.name}</span>
               </h3>
             )}
-            <div className="space-y-4">
+            <div className="space-y-3">
               {group.items.map((item) => (
                 <div key={item.id} className="flex items-start gap-3">
                   <div className="relative h-16 w-16 flex-shrink-0">
@@ -74,6 +74,7 @@ export function Summary({ cart }: SummaryProps) {
                       proofRequired={item.proof_required}
                       files={item.personalization_files}
                       compact
+                      proofNoticeVariant="quiet"
                     />
                   </div>
                   <div className="whitespace-nowrap text-sm font-medium text-gray-900">

@@ -1,5 +1,6 @@
 "use server";
 
+import type { CustomOrderRequest } from "@spree/sdk";
 import { getClient, withAuthRefresh } from "@/lib/spree";
 
 export async function getCustomOrderRequests() {
@@ -8,7 +9,9 @@ export async function getCustomOrderRequests() {
   );
 }
 
-export async function getCustomOrderRequest(id: string) {
+export async function getCustomOrderRequest(
+  id: string,
+): Promise<CustomOrderRequest> {
   return withAuthRefresh((options) =>
     getClient().customer.customOrderRequests.get(id, options),
   );

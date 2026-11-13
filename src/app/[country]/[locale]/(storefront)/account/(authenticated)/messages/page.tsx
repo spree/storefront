@@ -17,12 +17,13 @@ export default async function MessagesPage({ params }: MessagesPageProps) {
   });
   const basePath = `/${country}/${locale}`;
   const response = await getMessageThreads({ limit: 50 });
+  const threads = Array.isArray(response?.data) ? response.data : [];
 
   return (
     <div>
       <AccountPageHeader title={t("inboxTitle")} />
       <MessageThreadList
-        threads={response.data}
+        threads={threads}
         basePath={basePath}
         locale={locale}
       />

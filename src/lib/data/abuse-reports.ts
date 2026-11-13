@@ -13,6 +13,29 @@ export async function getSellerAbuseReportReasons() {
   );
 }
 
+export async function getListingAbuseReportReasons() {
+  return withFallback(async () => getClient().abuseReports.reasons("product"), {
+    data: [],
+  });
+}
+
+export async function reportListing(params: {
+  productId: string;
+  body: string;
+  reasonId?: string;
+}) {
+  const payload = {
+    subject_type: "product",
+    subject_id: params.productId,
+    body: params.body,
+    reason_id: params.reasonId,
+  } as const;
+
+  return withAuthRefresh((authenticated) =>
+    getClient().abuseReports.create(payload, authenticated),
+  );
+}
+
 export async function getProductReviewAbuseReportReasons() {
   return withFallback(
     async () => {

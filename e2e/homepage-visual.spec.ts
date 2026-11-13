@@ -88,7 +88,9 @@ test.describe("homepage visual", () => {
     await storefrontGoto(page, cartJourneyHref!);
     await expect(page).toHaveURL(/\/products\//, { timeout: 20_000 });
     await completeRequiredPersonalization(page);
-    const addToCart = page.getByRole("button", { name: /add to cart/i });
+    const addToCart = page
+      .getByRole("main")
+      .getByRole("button", { name: /add to cart/i });
     await expect(addToCart).toBeEnabled({ timeout: 15_000 });
     await addToCart.click();
     await expect

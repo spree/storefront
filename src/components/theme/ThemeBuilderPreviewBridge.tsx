@@ -2237,7 +2237,7 @@ function applySectionSettings(node: HTMLElement, entry: SectionEntry) {
         "[data-theme-footer-layout]",
       );
       const schemes: Record<string, { background: string; text: string }> = {
-        "scheme-1": { background: "#f2efed", text: "#242027" },
+        "scheme-1": { background: "#ffffff", text: "#242027" },
         "scheme-2": { background: "#f6f1e8", text: "#6c315d" },
         "scheme-3": { background: "#e8f4ef", text: "#173b32" },
         "scheme-4": { background: "#f0f3fa", text: "#24365f" },
@@ -2257,10 +2257,6 @@ function applySectionSettings(node: HTMLElement, entry: SectionEntry) {
           ? textColor
           : palette.text;
       footer.style.setProperty("--marketplace-foreground", footer.style.color);
-      footer.style.setProperty(
-        "--marketplace-background",
-        footer.style.backgroundColor,
-      );
       footer.style.setProperty(
         "--marketplace-muted-foreground",
         `color-mix(in srgb, ${footer.style.color} 68%, transparent)`,
@@ -2289,11 +2285,11 @@ function applySectionSettings(node: HTMLElement, entry: SectionEntry) {
         spotlight.style.display = visible ? "" : "none";
         spotlight.style.backgroundColor = color(
           settings.footer_spotlight_background_color,
-          "#f26432",
+          "#c2522b",
         );
         spotlight.style.color = color(
           settings.footer_spotlight_text_color,
-          "#251e24",
+          "#fffaf6",
         );
         const spotlightContent =
           spotlight.firstElementChild as HTMLElement | null;

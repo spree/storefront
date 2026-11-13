@@ -305,6 +305,7 @@ export async function updateCustomer(data: {
   return actionResult(async () => {
     let customer;
     try {
+      await ensureFreshSession();
       customer = await withAuthRefresh(async (options) => {
         return getClient().customer.update(data, options);
       });

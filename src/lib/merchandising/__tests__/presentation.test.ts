@@ -155,7 +155,7 @@ describe("filterSignalsForSurface", () => {
 });
 
 describe("sellerTrustMerchandisingSignals", () => {
-  it("drops legacy top_shop merchandising when Star Seller is earned", () => {
+  it("never surfaces Top Shop / Star Seller as a text trust chip", () => {
     const signals = [
       {
         key: "top_shop",
@@ -167,9 +167,12 @@ describe("sellerTrustMerchandisingSignals", () => {
       marketplace("new", 40),
     ];
     expect(
-      sellerTrustMerchandisingSignals(signals, [
-        { key: "star_seller", id: "badge_1", label: "Star Seller" },
-      ]).map((signal) => signal.key),
+      sellerTrustMerchandisingSignals(signals, null).map((s) => s.key),
+    ).toEqual(["new"]);
+    expect(
+      sellerTrustMerchandisingSignals(signals, [{ key: "star_seller" }]).map(
+        (signal) => signal.key,
+      ),
     ).toEqual(["new"]);
   });
 });

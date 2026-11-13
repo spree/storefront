@@ -40,14 +40,14 @@ export function MarketplaceHeaderActions({
 
   if (variant === "etsy" && isAuthenticated) {
     return (
-      <div className="flex shrink-0 items-center gap-1 sm:gap-2">
+      <div className="flex min-w-0 shrink-0 items-center gap-0 sm:gap-1">
         {showWishlist ? (
           <HeaderIconLink
             href={wishlistHref}
             label={t("favorites")}
             icon={
               <span className="relative">
-                <Heart className="size-6" strokeWidth={1.9} />
+                <Heart className="size-5 sm:size-6" strokeWidth={1.9} />
                 <span
                   aria-hidden="true"
                   className="absolute -right-0.5 -top-0.5 size-2 rounded-full bg-marketplace-sale ring-2 ring-marketplace-header-surface"
@@ -202,7 +202,7 @@ function HeaderIconLink({
 }) {
   const iconOnly =
     variant === "icon"
-      ? "relative flex size-10 items-center justify-center rounded-full text-marketplace-foreground transition-[background-color,color] duration-200 ease-out hover:bg-marketplace-accent focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-marketplace-brand motion-reduce:transition-none"
+      ? "relative flex size-9 items-center justify-center rounded-full text-marketplace-foreground transition-[background-color,color] duration-200 ease-out hover:bg-marketplace-accent focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-marketplace-brand motion-reduce:transition-none sm:size-10"
       : "";
   const stacked =
     variant === "default"

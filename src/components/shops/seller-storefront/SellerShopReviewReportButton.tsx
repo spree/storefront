@@ -31,7 +31,7 @@ export function SellerShopReviewReportButton({
         className="inline-flex min-h-9 items-center gap-2 rounded-md px-2 text-sm font-medium text-[#5b5148] transition-colors hover:bg-[#f5f1ec] hover:text-[#26221f] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#75644e] focus-visible:ring-offset-2"
       >
         <Flag className="size-4" aria-hidden />
-        {t("signInToReportReview")}
+        {t("reportReview")}
       </Link>
     );
   }

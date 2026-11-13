@@ -11,6 +11,7 @@ const threadDefaults = {
   closes_at: null,
   subject_id: "",
   seller_id: "sel_test",
+  seller_slug: "shop",
   last_message_product_name: null,
   last_message_preview: null,
   last_message_sender_type: null,

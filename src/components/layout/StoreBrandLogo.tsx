@@ -8,7 +8,7 @@ interface StoreBrandLogoProps {
   compact?: boolean;
   logoImageUrl?: string;
   logoImageAlt?: string;
-  /** Etsy-style orange wordmark without icon or tagline. */
+  /** Accent-colored wordmark without icon or tagline. */
   appearance?: "default" | "etsy";
   logoColor?: string;
 }
@@ -35,7 +35,7 @@ export function StoreBrandLogo({
       href={basePath || "/"}
       className={
         isEtsy
-          ? "shrink-0 rounded-sm font-display text-[2rem] font-semibold leading-none tracking-tight text-[#f1641e] focus-visible:outline-2 focus-visible:outline-[#f1641e] sm:text-[2.15rem]"
+          ? "shrink-0 rounded-sm font-display text-[1.6rem] font-semibold leading-none tracking-tight text-marketplace-brand-accent focus-visible:outline-2 focus-visible:outline-marketplace-brand-accent sm:text-[2.15rem]"
           : compact
             ? "shrink-0 rounded-sm font-display text-[2.15rem] font-semibold leading-none tracking-tight text-marketplace-brand focus-visible:outline-2 focus-visible:outline-marketplace-brand"
             : "group flex min-w-0 max-w-[11rem] items-center gap-2.5 rounded-sm focus-visible:outline-2 focus-visible:outline-marketplace-brand sm:max-w-none sm:gap-3"

@@ -8,11 +8,20 @@ import {
 } from "lucide-react";
 import { getLocale, getTranslations } from "next-intl/server";
 import type { CSSProperties } from "react";
+import { SellerBadgeRow } from "@/components/seller-badges/SellerBadgeRow";
 import { ContactShopButton } from "@/components/shops/ContactShopButton";
 import { FollowShopButton } from "@/components/shops/FollowShopButton";
 import { StarSellerAvatar } from "@/components/shops/StarSellerAvatar";
 import type { SellerShopBannerPayload } from "@/lib/data/seller-storefront-types";
-import { sellerShopShellClass } from "@/lib/utils/seller-storefront";
+import {
+  maxBadgesForSurface,
+  selectVisibleSellerBadges,
+} from "@/lib/seller-badges/presentation";
+import {
+  getSellerAccentMutedTextColor,
+  getSellerAccentTextColor,
+  sellerShopShellClass,
+} from "@/lib/utils/seller-storefront";
 import { SellerShopBanner } from "./SellerShopBanner";
 import { SellerShopEditorReadyBeacon } from "./SellerShopEditorReadyBeacon";
 import { SellerShopEditorThemeBridge } from "./SellerShopEditorThemeBridge";
@@ -39,7 +48,6 @@ interface SellerShopHeaderProps {
   marketplaceName?: string;
   editorPreview?: boolean;
 }
-
 export async function SellerShopHeader({
   seller,
   basePath,
@@ -54,18 +62,31 @@ export async function SellerShopHeader({
   const locale = await getLocale();
   const cover = seller.cover_photo_url;
   const onVacation = seller.on_vacation === true;
-  const salesCount = new Intl.NumberFormat(locale, {
-    notation: "compact",
-    maximumFractionDigits: 1,
-  })
-    .format(seller.sales_count)
-    .replace(/K$/, "k");
+  const rawSalesCount = Number(seller.sales_count ?? 0);
+  const salesCount =
+    Number.isFinite(rawSalesCount) && rawSalesCount > 0
+      ? new Intl.NumberFormat(locale, {
+          notation: "compact",
+          maximumFractionDigits: 1,
+        })
+          .format(rawSalesCount)
+          .replace(/K$/, "k")
+      : null;
+  const visibleSellerBadges = selectVisibleSellerBadges(seller.badges, {
+    showSellerBadges: true,
+    allowedSellerBadges: null,
+    maxSellerBadges: maxBadgesForSurface(
+      { showSellerBadges: true, allowedSellerBadges: null, maxSellerBadges: 8 },
+      "seller_shop",
+    ),
+  });
   const bannerHasImages = shopBanner?.slides.some((slide) =>
     Boolean(slide.image_url?.trim()),
   );
+  const bannerHidden = shopBanner?.layout === "none";
   const accentColor = seller.shop_accent_color?.trim() || null;
-  const lightAccent = accentColor ? isLightAccent(accentColor) : null;
-  const accentText = accentColor ? (lightAccent ? "#222222" : "#ffffff") : null;
+  const accentText = accentColor ? getSellerAccentTextColor(accentColor) : null;
+  const lightAccent = accentText === "#222222";
   const actionBackground = "#ffffff";
   const actionBorder = "#29252d";
   const actionText = "#29252d";
@@ -73,16 +94,14 @@ export async function SellerShopHeader({
     ? ({
         "--marketplace-seller-accent": accentColor,
         "--marketplace-seller-accent-text": accentText,
-        "--marketplace-seller-accent-muted": lightAccent
-          ? "rgb(34 34 34 / 72%)"
-          : "rgb(255 255 255 / 82%)",
+        "--marketplace-seller-accent-muted": getSellerAccentMutedTextColor(
+          accentText ?? "#222222",
+        ),
         "--marketplace-seller-action-bg": actionBackground,
         "--marketplace-seller-action-border": actionBorder,
         "--marketplace-seller-action-text": actionText,
-        "--marketplace-seller-rating-star": isLightAccent(accentColor)
-          ? "#5a3c12"
-          : "#ffffff",
-        "--marketplace-seller-rating-empty": isLightAccent(accentColor)
+        "--marketplace-seller-rating-star": lightAccent ? "#5a3c12" : "#ffffff",
+        "--marketplace-seller-rating-empty": lightAccent
           ? "var(--marketplace-border)"
           : "rgb(255 255 255 / 55%)",
       } as CSSProperties)
@@ -101,14 +120,17 @@ export async function SellerShopHeader({
     >
       <SellerShopEditorThemeBridge enabled={editorPreview} />
       {editorPreview ? <SellerShopEditorReadyBeacon /> : null}
-      {shopBanner && bannerHasImages ? (
+      {bannerHidden ? null : shopBanner && bannerHasImages ? (
         <SellerShopBanner
           banner={shopBanner}
           basePath={basePath}
           editorPreview={editorPreview}
         />
       ) : cover ? (
-        <div className="relative h-[var(--marketplace-seller-cover-height-mobile)] w-full overflow-hidden bg-marketplace-surface-warm md:h-[var(--marketplace-seller-cover-height-desktop)]">
+        <div
+          data-seller-shop-cover-fallback
+          className="relative h-[var(--marketplace-seller-cover-height-mobile)] w-full overflow-hidden bg-marketplace-surface-warm md:h-[var(--marketplace-seller-cover-height-desktop)]"
+        >
           {/* biome-ignore lint/performance/noImgElement: remote seller cover URLs */}
           <img src={cover} alt="" className="h-full w-full object-cover" />
           {editorPreview ? (
@@ -157,7 +179,7 @@ export async function SellerShopHeader({
           backgroundColor: "var(--marketplace-seller-accent, #ffffff)",
         }}
       >
-        <div className={`${sellerShopShellClass} border-y border-[#e3ddd8]`}>
+        <div className={sellerShopShellClass}>
           <div className="flex flex-col gap-5 py-6 sm:min-h-[152px] sm:flex-row sm:items-center sm:justify-between sm:gap-8 sm:py-7">
             <div className="flex min-w-0 items-center gap-4">
               <StarSellerAvatar
@@ -188,8 +210,14 @@ export async function SellerShopHeader({
                   {seller.average_rating != null && seller.reviews_count > 0 ? (
                     <span aria-hidden="true">·</span>
                   ) : null}
-                  <span>{t("salesCountCompact", { count: salesCount })}</span>
-                  <span aria-hidden="true">·</span>
+                  {salesCount ? (
+                    <>
+                      <span>
+                        {t("salesCountCompact", { count: salesCount })}
+                      </span>
+                      <span aria-hidden="true">·</span>
+                    </>
+                  ) : null}
                   <span>{t("followersCount", { count: followersCount })}</span>
                 </div>
                 {seller.ships_from?.trim() ? (
@@ -200,32 +228,48 @@ export async function SellerShopHeader({
                     </span>
                   </div>
                 ) : null}
-                <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs font-medium text-[var(--marketplace-seller-accent-text,#29252d)]">
-                  {seller.badges?.some(
-                    (badge) =>
-                      badge.key === "on_time_shipping" &&
-                      badge.awarded_at != null,
-                  ) ? (
-                    <span className="inline-flex items-center gap-1">
-                      <PackageCheck className="size-3.5" aria-hidden="true" />
-                      {t("smoothShipping")}
-                    </span>
-                  ) : null}
-                  {seller.badges?.some(
-                    (badge) =>
-                      badge.key === "fast_responder" &&
-                      badge.awarded_at != null,
-                  ) ? (
-                    <span className="inline-flex items-center gap-1">
-                      <MailCheck className="size-3.5" aria-hidden="true" />
-                      {t("speedyReplies")}
-                    </span>
-                  ) : null}
-                </div>
+                {visibleSellerBadges.length > 0 ? (
+                  <SellerBadgeRow
+                    badges={visibleSellerBadges}
+                    surface="seller_shop"
+                    className="mt-2"
+                  />
+                ) : (
+                  <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs font-medium text-[var(--marketplace-seller-accent-text,#29252d)]">
+                    {seller.badges?.some(
+                      (badge) =>
+                        badge.key === "on_time_shipping" &&
+                        badge.awarded_at != null,
+                    ) ? (
+                      <span className="inline-flex items-center gap-1">
+                        <PackageCheck className="size-3.5" aria-hidden="true" />
+                        {t("smoothShipping")}
+                      </span>
+                    ) : null}
+                    {seller.badges?.some(
+                      (badge) =>
+                        badge.key === "fast_responder" &&
+                        badge.awarded_at != null,
+                    ) ? (
+                      <span className="inline-flex items-center gap-1">
+                        <MailCheck className="size-3.5" aria-hidden="true" />
+                        {t("speedyReplies")}
+                      </span>
+                    ) : null}
+                  </div>
+                )}
               </div>
             </div>
 
             <div className="flex w-full shrink-0 flex-col gap-2 sm:w-40">
+              {editorPreview && bannerHidden ? (
+                <ShopEditorAction
+                  action="banner-layout"
+                  label="Change layout"
+                  showLabel
+                  className="inline-flex h-9 items-center justify-center gap-2 rounded-full border border-[#29252d] bg-white px-3 text-xs font-semibold text-[#29252d] shadow-none hover:bg-[#f8f6f4]"
+                />
+              ) : null}
               <FollowShopButton
                 sellerId={seller.id}
                 sellerSlug={seller.slug}
@@ -275,21 +319,4 @@ export async function SellerShopHeader({
       </div>
     </header>
   );
-}
-
-function isLightAccent(hex: string): boolean {
-  const normalized = hex.trim().replace(/^#/, "");
-  if (!/^(?:[\da-f]{3}|[\da-f]{6})$/i.test(normalized)) return true;
-  const expanded =
-    normalized.length === 3
-      ? normalized
-          .split("")
-          .map((character) => character + character)
-          .join("")
-      : normalized;
-  const value = Number.parseInt(expanded, 16);
-  const r = (value >> 16) & 255;
-  const g = (value >> 8) & 255;
-  const b = value & 255;
-  return (0.299 * r + 0.587 * g + 0.114 * b) / 255 > 0.55;
 }

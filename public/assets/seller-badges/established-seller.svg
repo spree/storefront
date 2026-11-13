@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" role="img" aria-labelledby="title">
+  <title id="title">Established seller</title>
+  <path d="M4 10.4 12 3.9l8 6.5V20.1H4V10.4Z" stroke="#514C49" stroke-width="1.5" stroke-linejoin="round"/>
+  <path d="M9.35 20.1v-4.85a2.65 2.65 0 0 1 5.3 0V20.1" stroke="#514C49" stroke-width="1.5" stroke-linejoin="round"/>
+  <rect x="7.35" y="10.35" width="2.2" height="2.2" rx="0.35" stroke="#514C49" stroke-width="1.25"/>
+  <rect x="14.45" y="10.35" width="2.2" height="2.2" rx="0.35" stroke="#514C49" stroke-width="1.25"/>
+</svg>

@@ -1,9 +1,11 @@
 "use client";
 
+import type { CSSProperties } from "react";
 import { useState } from "react";
 
 interface SellerAboutContentProps {
   html: string;
+  accentTextColor?: string;
   readMoreLabel: string;
   readLessLabel: string;
   /** Plain-text length above which the excerpt + read more toggle appears. */
@@ -13,6 +15,7 @@ interface SellerAboutContentProps {
 
 export function SellerAboutContent({
   html,
+  accentTextColor,
   readMoreLabel,
   readLessLabel,
   collapseThreshold = 480,
@@ -24,7 +27,12 @@ export function SellerAboutContent({
   return (
     <div>
       <article
-        className={`prose prose-sm max-w-3xl prose-p:text-[#222] prose-headings:font-semibold prose-headings:text-[#222] prose-a:text-[#222] prose-a:underline ${
+        style={
+          {
+            "--seller-about-story-color": accentTextColor ?? "#222222",
+          } as CSSProperties
+        }
+        className={`prose prose-sm max-w-3xl prose-p:text-[var(--marketplace-seller-accent-text,var(--seller-about-story-color,#222))] prose-headings:font-semibold prose-headings:text-[var(--marketplace-seller-accent-text,var(--seller-about-story-color,#222))] prose-a:text-[var(--marketplace-seller-accent-text,var(--seller-about-story-color,#222))] prose-a:underline prose-strong:text-[var(--marketplace-seller-accent-text,var(--seller-about-story-color,#222))] prose-li:text-[var(--marketplace-seller-accent-text,var(--seller-about-story-color,#222))] [&_*]:!text-[var(--marketplace-seller-accent-text,var(--seller-about-story-color,#222))] ${
           collapsible && !expanded ? "max-h-[14rem] overflow-hidden" : ""
         }`}
         dangerouslySetInnerHTML={{ __html: html }}
@@ -32,7 +40,7 @@ export function SellerAboutContent({
       {collapsible ? (
         <button
           type="button"
-          className="mt-3 text-sm font-medium text-[#222] underline decoration-[#222]/40 underline-offset-2 hover:decoration-[#222]"
+          className="mt-3 text-sm font-medium text-[var(--marketplace-seller-accent-text,var(--seller-about-story-color,#222))] underline underline-offset-2 decoration-current/40 hover:decoration-current"
           onClick={() => setExpanded((open) => !open)}
           aria-expanded={expanded}
         >

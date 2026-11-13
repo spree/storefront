@@ -12,6 +12,11 @@ export type CmsNavigationItem = {
   seller_id?: string;
   cms_page_id?: string;
   enabled?: boolean;
+  icon?: string;
+  highlight_style?: "pill" | "badge" | "underline" | "";
+  highlight_tone?: "subtle" | "bold" | "";
+  text_color?: string;
+  background_color?: string;
   children?: CmsNavigationItem[];
   featured_panels?: CmsNavigationFeaturedPanel[];
 };

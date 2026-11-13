@@ -17,7 +17,6 @@ import {
   CardDescription,
   CardFooter,
   CardHeader,
-  CardTitle,
 } from "@/components/ui/card";
 import { Field, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
@@ -125,16 +124,16 @@ export default function RegisterPage() {
     <div className="max-w-md mx-auto px-4 sm:px-6 lg:px-8 py-16">
       <Card>
         <CardHeader className="text-center">
-          <CardTitle>{t("createAccount")}</CardTitle>
+          <h1
+            className="font-sans text-2xl font-bold leading-none"
+            style={{ fontSize: "1.5rem", lineHeight: 1 }}
+          >
+            {t("createAccount")}
+          </h1>
           <CardDescription>{t("signUpDescription")}</CardDescription>
         </CardHeader>
 
         <CardContent>
-          <SocialLoginButtons
-            providers={authProviders}
-            returnTo={`${basePath}/account`}
-            disabled={submitting}
-          />
           <form onSubmit={handleSubmit} className="space-y-4">
             {error && (
               <Alert variant="destructive">
@@ -278,6 +277,11 @@ export default function RegisterPage() {
               </Button>
             </div>
           </form>
+          <SocialLoginButtons
+            providers={authProviders}
+            returnTo={`${basePath}/account`}
+            disabled={submitting}
+          />
         </CardContent>
 
         <CardFooter className="justify-center">

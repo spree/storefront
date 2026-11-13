@@ -10,11 +10,12 @@ import type { ProductReviewSort } from "./ProductReviewsSort";
 const RATING_FILTERS = [5, 4, 3, 2, 1] as const;
 
 type ProductReviewsFiltersProps = {
-  currentSort: ProductReviewSort;
+  currentSort?: ProductReviewSort;
+  compact?: boolean;
 };
 
 export function ProductReviewsFilters({
-  currentSort,
+  compact = false,
 }: ProductReviewsFiltersProps) {
   const t = useTranslations("reviews");
   const pathname = usePathname();
@@ -33,10 +34,23 @@ export function ProductReviewsFilters({
     return query ? `${pathname}?${query}` : pathname;
   }
 
+  const chipClass = (active: boolean) =>
+    cn(
+      "shrink-0 rounded-full border px-3 py-1.5 text-xs font-medium transition-colors",
+      active
+        ? "border-marketplace-brand bg-marketplace-brand text-marketplace-brand-foreground"
+        : "border-marketplace-border-subtle bg-marketplace-muted text-marketplace-muted-foreground hover:border-marketplace-border hover:text-marketplace-foreground",
+    );
+
   return (
-    <div className="flex flex-col gap-4">
+    <div className={cn("flex flex-col gap-3", compact && "gap-3")}>
       <form
-        className="flex flex-col gap-2 sm:flex-row sm:items-center"
+        className={cn(
+          "flex gap-2",
+          compact
+            ? "flex-col sm:flex-row sm:items-center"
+            : "flex-col sm:flex-row sm:items-center",
+        )}
         onSubmit={(event) => {
           event.preventDefault();
           const form = event.currentTarget;
@@ -50,26 +64,31 @@ export function ProductReviewsFilters({
           name="review_q"
           defaultValue={keyword}
           placeholder={t("searchPlaceholder")}
-          className="h-9 max-w-md"
+          className={cn(
+            "h-9 border-marketplace-border bg-marketplace-surface",
+            compact ? "w-full sm:max-w-xs" : "max-w-md",
+          )}
           aria-label={t("searchPlaceholder")}
         />
         <button
           type="submit"
-          className="inline-flex h-9 items-center justify-center rounded-md border border-[#222] px-4 text-sm font-medium text-[#222] hover:bg-[#f5f5f5]"
+          className="inline-flex h-9 shrink-0 items-center justify-center rounded-full border border-marketplace-brand bg-marketplace-brand px-4 text-sm font-medium text-marketplace-brand-foreground transition-transform active:scale-[0.98]"
         >
           {t("searchAction")}
         </button>
       </form>
 
-      <div className="flex flex-wrap gap-2">
+      <div
+        className={cn(
+          "flex gap-2",
+          compact
+            ? "scrollbar-thin -mx-1 overflow-x-auto px-1 pb-0.5"
+            : "flex-wrap",
+        )}
+      >
         <Link
           href={hrefWith({ review_rating: null })}
-          className={cn(
-            "rounded-full border px-3 py-1 text-xs font-medium",
-            !activeRating
-              ? "border-[#222] bg-[#222] text-white"
-              : "border-[#e1e3df] text-[#595959]",
-          )}
+          className={chipClass(!activeRating)}
         >
           {t("filterAllRatings")}
         </Link>
@@ -77,24 +96,14 @@ export function ProductReviewsFilters({
           <Link
             key={rating}
             href={hrefWith({ review_rating: String(rating) })}
-            className={cn(
-              "rounded-full border px-3 py-1 text-xs font-medium",
-              activeRating === String(rating)
-                ? "border-[#222] bg-[#222] text-white"
-                : "border-[#e1e3df] text-[#595959]",
-            )}
+            className={chipClass(activeRating === String(rating))}
           >
             {t("filterStars", { count: rating })}
           </Link>
         ))}
         <Link
           href={hrefWith({ review_media: withMedia ? null : "1" })}
-          className={cn(
-            "rounded-full border px-3 py-1 text-xs font-medium",
-            withMedia
-              ? "border-[#222] bg-[#222] text-white"
-              : "border-[#e1e3df] text-[#595959]",
-          )}
+          className={chipClass(withMedia)}
         >
           {t("filterWithMedia")}
         </Link>

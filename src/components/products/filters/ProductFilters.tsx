@@ -6,7 +6,6 @@ import type {
   PriceRangeFilter,
   ProductFiltersResponse,
   RatingFilter,
-  SellerFilter,
 } from "@spree/sdk";
 import { SlidersHorizontal } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
@@ -20,7 +19,6 @@ import { MobileFilterDrawer } from "@/components/products/filters/MobileFilterDr
 import { OptionDropdownContent } from "@/components/products/filters/OptionDropdownContent";
 import { PriceDropdownContent } from "@/components/products/filters/PriceDropdownContent";
 import { RatingDropdownContent } from "@/components/products/filters/RatingDropdownContent";
-import { SellerDropdownContent } from "@/components/products/filters/SellerDropdownContent";
 import { SortDropdownContent } from "@/components/products/filters/SortDropdownContent";
 import { getActiveFilterCount } from "@/lib/utils/filters";
 import { generatePriceBuckets } from "@/lib/utils/price-buckets";
@@ -101,14 +99,6 @@ export const FilterBar = memo(function FilterBar({
     [activeFilters, onFilterChange, closeDropdown],
   );
 
-  const handleSellerChange = useCallback(
-    (sellerId?: string) => {
-      onFilterChange({ ...activeFilters, sellerId });
-      closeDropdown();
-    },
-    [activeFilters, onFilterChange, closeDropdown],
-  );
-
   const clearFilters = useCallback(() => {
     onFilterChange({
       optionValues: [],
@@ -117,7 +107,6 @@ export const FilterBar = memo(function FilterBar({
       availability: undefined,
       personalizable: undefined,
       ratingMin: undefined,
-      sellerId: undefined,
       sortBy: activeFilters.sortBy,
     });
   }, [onFilterChange, activeFilters.sortBy]);
@@ -168,7 +157,6 @@ export const FilterBar = memo(function FilterBar({
   const availabilityBadge = activeFilters.availability ? 1 : 0;
   const personalizableBadge = activeFilters.personalizable ? 1 : 0;
   const ratingBadge = activeFilters.ratingMin !== undefined ? 1 : 0;
-  const sellerBadge = activeFilters.sellerId ? 1 : 0;
 
   const totalActiveFilters = getActiveFilterCount(activeFilters);
 
@@ -199,10 +187,6 @@ export const FilterBar = memo(function FilterBar({
     | RatingFilter
     | undefined;
 
-  const sellerFilter = filtersData.filters.find((f) => f.type === "seller") as
-    | SellerFilter
-    | undefined;
-
   return (
     <div className={`mb-7 min-w-0 ${sidebarLayout ? "md:mb-0" : ""}`}>
       <div
@@ -212,6 +196,17 @@ export const FilterBar = memo(function FilterBar({
           data-theme-filter-controls
           className={`flex min-w-0 ${sidebarLayout ? "flex-col items-stretch gap-2" : "flex-wrap items-center gap-2"}`}
         >
+          <button
+            data-theme-filter-drawer-trigger
+            type="button"
+            onClick={() => setShowMobileDrawer(true)}
+            aria-haspopup="dialog"
+            aria-expanded={showMobileDrawer}
+            className="inline-flex min-h-10 items-center gap-2 rounded-full border border-marketplace-border bg-marketplace-curator px-4 text-sm font-medium text-marketplace-foreground shadow-sm transition-colors hover:bg-marketplace-surface-subtle focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-marketplace-brand"
+          >
+            <SlidersHorizontal className="size-4" aria-hidden="true" />
+            <span>{t("allFilters")}</span>
+          </button>
           {optionFilters.map((filter) => (
             <FilterDropdown
               key={filter.id}
@@ -277,22 +272,6 @@ export const FilterBar = memo(function FilterBar({
             </FilterDropdown>
           )}
 
-          {sellerFilter && sellerFilter.options.length > 0 && (
-            <FilterDropdown
-              label={t("sellerFilter")}
-              badgeCount={sellerBadge}
-              isOpen={openDropdownId === "seller"}
-              onToggle={() => toggleDropdown("seller")}
-              onClose={closeDropdown}
-            >
-              <SellerDropdownContent
-                filter={sellerFilter}
-                selectedSellerId={activeFilters.sellerId}
-                onChange={handleSellerChange}
-              />
-            </FilterDropdown>
-          )}
-
           <button
             type="button"
             onClick={handlePersonalizableToggle}
@@ -340,6 +319,8 @@ export const FilterBar = memo(function FilterBar({
           data-theme-filter-drawer-trigger
           type="button"
           onClick={() => setShowMobileDrawer(true)}
+          aria-haspopup="dialog"
+          aria-expanded={showMobileDrawer}
           className={`flex items-center gap-2 rounded-[var(--marketplace-radius-sm)] border px-4 py-2 text-sm font-medium transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-marketplace-brand ${
             hasActiveFilters
               ? "border-marketplace-brand bg-marketplace-surface-subtle text-marketplace-brand"
@@ -347,7 +328,7 @@ export const FilterBar = memo(function FilterBar({
           }`}
         >
           <SlidersHorizontal className="w-4 h-4" />
-          <span>{t("filters")}</span>
+          <span>{t("allFilters")}</span>
           {hasActiveFilters && (
             <span className="flex h-5 w-5 items-center justify-center rounded-full bg-marketplace-brand text-xs text-marketplace-brand-foreground">
               {totalActiveFilters}
@@ -385,9 +366,6 @@ export const FilterBar = memo(function FilterBar({
           }
           onRemoveRating={() =>
             onFilterChange({ ...activeFilters, ratingMin: undefined })
-          }
-          onRemoveSeller={() =>
-            onFilterChange({ ...activeFilters, sellerId: undefined })
           }
           onClearAll={clearFilters}
         />

@@ -1,6 +1,14 @@
 /** Embedded PDP preview row count (server-safe; do not import from client modules). */
 export const PDP_PREVIEW_REVIEW_LIMIT = 5;
 
+export function resolveProductReviewCount(
+  reportedCount: number | null | undefined,
+  aggregateCount: number,
+  loadedCount: number,
+): number {
+  return Math.max(reportedCount ?? aggregateCount, loadedCount);
+}
+
 export type ProductReviewListFilters = {
   rating?: number;
   withMedia?: boolean;

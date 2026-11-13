@@ -53,7 +53,36 @@
     ".next-buyer-preview/types/**/*.ts",
     ".next-buyer-preview/dev/types/**/*.ts",
     ".next-buyer-preview-v2/types/**/*.ts",
-    ".next-buyer-preview-v2/dev/types/**/*.ts"
+    ".next-buyer-preview-v2/dev/types/**/*.ts",
+    ".next-reviews-3303/types/**/*.ts",
+    ".next-reviews-3303/dev/types/**/*.ts",
+    ".next-beta-isolated-prod/types/**/*.ts",
+    ".next-beta-isolated-prod/dev/types/**/*.ts",
+    ".next-main-3302/types/**/*.ts",
+    ".next-main-3302/dev/types/**/*.ts",
+    ".next-cms-cert-20261105/types/**/*.ts",
+    ".next-cms-cert-20261105/dev/types/**/*.ts",
+    ".next-pdp-compact-20261105/types/**/*.ts",
+    ".next-pdp-compact-20261105/dev/types/**/*.ts",
+    ".next-storefront-cert/types/**/*.ts",
+    ".next-storefront-cert/dev/types/**/*.ts",
+    ".next-font-offline-proof/types/**/*.ts",
+    ".next-font-offline-proof/dev/types/**/*.ts",
+    ".next-font-offline-proof-2/types/**/*.ts",
+    ".next-font-offline-proof-2/dev/types/**/*.ts",
+    ".next-shop-home-preview/types/**/*.ts",
+    ".next-shop-home-preview/dev/types/**/*.ts",
+    ".next-sales-discounts-rc/types/**/*.ts",
+    ".next-sales-discounts-rc/dev/types/**/*.ts",
+    ".next-railway-qa/types/**/*.ts",
+    ".next-railway-qa/dev/types/**/*.ts"
   ],
-  "exclude": ["node_modules", "_header_rebuilt.tsx"]
+  "exclude": [
+    "node_modules",
+    "node_modules.broken-082630",
+    "e2e",
+    "_header_rebuilt.tsx",
+    "playwright.config.ts",
+    "playwright.*.config.ts"
+  ]
 }

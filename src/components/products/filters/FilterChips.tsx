@@ -20,7 +20,6 @@ interface FilterChipsProps {
   onRemoveAvailability: () => void;
   onRemovePersonalizable?: () => void;
   onRemoveRating?: () => void;
-  onRemoveSeller?: () => void;
   onClearAll: () => void;
 }
 
@@ -33,7 +32,6 @@ export function FilterChips({
   onRemoveAvailability,
   onRemovePersonalizable,
   onRemoveRating,
-  onRemoveSeller,
   onClearAll,
 }: FilterChipsProps) {
   const t = useTranslations("products");
@@ -102,20 +100,6 @@ export function FilterChips({
       key: "rating",
       label: t("ratingStarsUp", { count: activeFilters.ratingMin }),
       onRemove: onRemoveRating,
-    });
-  }
-
-  if (activeFilters.sellerId && onRemoveSeller && filtersData) {
-    const sellerFilter = filtersData.filters.find((f) => f.type === "seller");
-    const sellerName =
-      sellerFilter?.type === "seller"
-        ? sellerFilter.options.find((o) => o.id === activeFilters.sellerId)
-            ?.name
-        : undefined;
-    chips.push({
-      key: "seller",
-      label: sellerName ?? t("sellerFilter"),
-      onRemove: onRemoveSeller,
     });
   }
 

@@ -17,7 +17,13 @@ type SponsoredProductCardProps = {
   index?: number;
   currency?: string;
   categoryId?: string;
-  density?: "default" | "standard" | "compact" | "editorial" | "rail";
+  density?:
+    | "default"
+    | "standard"
+    | "compact"
+    | "editorial"
+    | "rail"
+    | "discovery";
 };
 
 export function SponsoredProductCard({
@@ -77,6 +83,7 @@ export function SponsoredProductCard({
         href={placeholderHref}
         currency={currency}
         density={density}
+        showFavorite={density !== "discovery"}
         recommendationClick={undefined}
         listId={`sponsored-${ad.placement}`}
         listName={ad.disclosure_label || "Sponsored"}

@@ -12,6 +12,10 @@ vi.mock("next-intl", () => ({
       menu: "Menu",
       home: "Home",
       allProducts: "All Products",
+      quickLinks: "Quick links",
+      shopByCategory: "Shop by category",
+      navExplore: "Explore",
+      featured: "Featured",
       contact: "Contact",
       myAccount: "My Account",
       wholesale: "Wholesale",
@@ -54,6 +58,9 @@ describe("MobileMenu", () => {
         Node.DOCUMENT_POSITION_FOLLOWING,
     ).toBeTruthy();
     expect(footer).toHaveClass("items-center");
+    expect(footer).toHaveClass(
+      "pb-[calc(env(safe-area-inset-bottom)_+_0.75rem)]",
+    );
   });
 
   it("keeps the wholesale entry hidden when the addon is disabled", async () => {
@@ -75,6 +82,50 @@ describe("MobileMenu", () => {
     expect(
       within(menu).getByRole("link", { name: "My Account" }),
     ).toHaveAttribute("href", "/us/en/account");
+  });
+
+  it("keeps category rows photo-led and opens nested CMS links in the Explore drawer", async () => {
+    const user = userEvent.setup();
+    render(
+      <MobileMenu
+        rootCategories={[]}
+        basePath="/us/en"
+        wholesaleEnabled={false}
+        cmsItems={[
+          {
+            id: "gifts",
+            type: "internal_link",
+            label: "Gifts",
+            target: "/products?q=gifts",
+            icon: "gift",
+            children: [
+              {
+                id: "for-her",
+                type: "internal_link",
+                label: "For her",
+                target: "/products?q=for-her",
+                icon: "heart",
+              },
+            ],
+          },
+        ]}
+      />,
+    );
+    await user.click(screen.getByRole("button", { name: "Open menu" }));
+
+    const menu = screen.getByRole("dialog", { name: "Menu" });
+    expect(
+      within(menu).getByRole("button", { name: "Gifts" }),
+    ).toBeInTheDocument();
+    expect(menu.querySelector('[data-cms-navigation-icon="gift"]')).toBeNull();
+    await user.click(within(menu).getByRole("button", { name: "Gifts" }));
+    expect(within(menu).getByRole("link", { name: "For her" })).toHaveAttribute(
+      "href",
+      "/us/en/products?q=for-her",
+    );
+    expect(
+      menu.querySelector('[data-cms-navigation-icon="heart"]'),
+    ).not.toBeNull();
   });
 
   it("applies the menu block mobile layout settings", async () => {
@@ -193,7 +244,7 @@ describe("MobileMenu", () => {
     );
   });
 
-  it("shows mobile-enabled editorial panels and locale-aware shortcuts", async () => {
+  it("shows compact image-led menu rows and locale-aware shortcuts", async () => {
     const user = userEvent.setup();
     render(
       <MobileMenu
@@ -211,8 +262,8 @@ describe("MobileMenu", () => {
             parent_id: null,
             description: "",
             description_html: "",
-            image_url: null,
-            square_image_url: null,
+            image_url: "https://cdn.example.test/prints.jpg",
+            square_image_url: "https://cdn.example.test/prints-square.jpg",
             is_root: true,
             is_child: false,
             is_leaf: true,
@@ -221,6 +272,12 @@ describe("MobileMenu", () => {
         basePath="/us/fr"
         wholesaleEnabled={false}
         cmsItems={[
+          {
+            id: "prints-menu",
+            type: "internal_link",
+            label: "Prints",
+            target: "/products?q=prints",
+          },
           {
             id: "root",
             type: "internal_link",
@@ -252,8 +309,38 @@ describe("MobileMenu", () => {
 
     const menu = screen.getByRole("dialog", { name: "Menu" });
     expect(
-      within(menu).getByRole("link", { name: /Meet the makers/ }),
-    ).toHaveAttribute("href", "/us/fr/pages/makers");
+      within(menu).queryByRole("navigation", { name: "Quick links" }),
+    ).not.toBeInTheDocument();
+    expect(
+      within(menu).queryByRole("link", { name: "Home" }),
+    ).not.toBeInTheDocument();
+    expect(
+      within(menu).queryByRole("link", { name: "All Products" }),
+    ).not.toBeInTheDocument();
+    expect(
+      within(menu).getByRole("heading", { name: "Shop by category" }),
+    ).toBeInTheDocument();
+    expect(within(menu).getByRole("link", { name: "Explore" })).toHaveAttribute(
+      "href",
+      "/us/fr/products",
+    );
+    expect(within(menu).getByRole("link", { name: "Stories" })).toHaveAttribute(
+      "href",
+      "/us/fr/pages/stories",
+    );
+    expect(
+      within(menu).getByRole("link", { name: "Stories" }).querySelector("img"),
+    ).toHaveAttribute("src", "/marketplace/category-home.png");
+    const printsMenuLink = within(menu)
+      .getAllByRole("link", { name: "Prints" })
+      .find((link) => link.getAttribute("href") === "/us/fr/products?q=prints");
+    expect(printsMenuLink?.querySelector("img")).toHaveAttribute(
+      "src",
+      "https://cdn.example.test/prints-square.jpg",
+    );
+    expect(
+      within(menu).queryByRole("heading", { name: "Featured" }),
+    ).not.toBeInTheDocument();
     const forYouSection = within(menu).getByText("For you")
       .parentElement as HTMLElement;
     expect(

@@ -62,4 +62,26 @@ describe("merchandising presentation visuals", () => {
       screen.getByText("From a shop you follow").closest("p"),
     ).toHaveAttribute("data-merchandising-presentation", "relevance_reason");
   });
+
+  it("uses a search icon for recent search reasons", () => {
+    const { container } = render(
+      <MerchandisingReason
+        signals={[
+          {
+            key: "recent_search_match",
+            label: "Based on your recent searches",
+            priority: 70,
+            source: "buyer_interest",
+            presentation: "relevance_reason",
+          },
+        ]}
+      />,
+    );
+
+    const reason = container.querySelector(
+      '[data-merchandising-reason="recent_search_match"]',
+    );
+    expect(reason).toBeTruthy();
+    expect(reason?.querySelector('svg[data-icon="search"]')).toBeTruthy();
+  });
 });

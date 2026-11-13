@@ -13,6 +13,7 @@ type ProductImageProps = Omit<ImageProps, "src"> & {
 
 export function ProductImage({
   src,
+  alt,
   iconClassName = "w-8 h-8",
   icon: Icon = ImageIcon,
   onError,
@@ -22,9 +23,14 @@ export function ProductImage({
   const [hasError, setHasError] = useState(false);
 
   if (!src || hasError) {
+    const label = typeof alt === "string" ? alt.trim() : "";
     return (
-      <div className="absolute inset-0 flex items-center justify-center bg-gray-100 text-gray-300">
-        <Icon className={iconClassName} />
+      <div
+        aria-hidden={label ? undefined : true}
+        className="absolute inset-0 flex size-full items-center justify-center bg-marketplace-surface-subtle text-marketplace-brand"
+      >
+        {label ? <span className="sr-only">{label}</span> : null}
+        <Icon className={iconClassName} aria-hidden />
       </div>
     );
   }
@@ -32,6 +38,7 @@ export function ProductImage({
   return (
     <Image
       src={src}
+      alt={alt}
       onError={(e) => {
         setHasError(true);
         onError?.(e);

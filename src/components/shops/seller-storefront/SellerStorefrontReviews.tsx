@@ -44,6 +44,20 @@ export async function SellerStorefrontReviews({
       ? sort
       : undefined;
   const reviews = await getSellerReviews(slug, page, 10, reviewSort);
+  const visiblePageNumbers = Array.from(
+    new Set(
+      [1, page - 1, page, page + 1, reviews.meta.pages].filter(
+        (pageNumber) => pageNumber >= 1 && pageNumber <= reviews.meta.pages,
+      ),
+    ),
+  ).sort((a, b) => a - b);
+  const paginationItems: Array<number | string> = [];
+  visiblePageNumbers.forEach((pageNumber, index) => {
+    if (index > 0 && pageNumber - visiblePageNumbers[index - 1] > 1) {
+      paginationItems.push(`ellipsis-${pageNumber}`);
+    }
+    paginationItems.push(pageNumber);
+  });
 
   return (
     <div className={`${sellerShopShellClass} bg-[#faf9f7] py-8 md:py-12`}>
@@ -64,7 +78,7 @@ export async function SellerStorefrontReviews({
       </div>
 
       <div className="mt-6 lg:grid lg:grid-cols-[minmax(15rem,18rem)_minmax(0,1fr)] lg:gap-8">
-        <aside className="mb-6 h-fit rounded-lg border border-[#e8e3df] bg-white p-5 shadow-sm lg:sticky lg:top-6 lg:mb-0">
+        <aside className="mb-6 h-fit lg:sticky lg:top-6 lg:mb-0">
           <SellerShopRatingSummary
             locale={locale}
             averageRating={averageRating}
@@ -85,7 +99,7 @@ export async function SellerStorefrontReviews({
 
         <div className="min-w-0">
           {reviews.data.length ? (
-            <div className="divide-y divide-[#e5dfd8]">
+            <div className="flex flex-col">
               {reviews.data.map((review) => (
                 <SellerShopReviewCard
                   key={review.id}
@@ -119,27 +133,72 @@ export async function SellerStorefrontReviews({
                 page: String(page - 1),
                 sort: reviewSort,
               })}
-              className="inline-flex min-h-10 items-center gap-1.5 rounded-md border border-[#ded8d2] bg-white px-3 text-sm font-medium text-[#39332e] transition-colors hover:bg-[#f5f1ec]"
+              aria-label={t("previous")}
+              className="inline-flex size-9 items-center justify-center rounded-full bg-[#f1eeeb] text-[#39332e] transition-colors hover:bg-[#e8e2dc]"
             >
               <ChevronLeft className="size-4" aria-hidden />
-              {t("previous")}
             </a>
-          ) : null}
-          <span className="px-3 text-sm font-medium tabular-nums text-[#6c655e]">
-            {t("pageOf", { page, pages: reviews.meta.pages })}
-          </span>
+          ) : (
+            <span
+              aria-hidden="true"
+              className="inline-flex size-9 items-center justify-center rounded-full bg-[#f1eeeb] text-[#c0b9b3]"
+            >
+              <ChevronLeft className="size-4" />
+            </span>
+          )}
+          {paginationItems.map((pageItem) =>
+            typeof pageItem === "string" ? (
+              <span
+                key={pageItem}
+                aria-hidden="true"
+                className="px-1 text-sm text-[#8a817a]"
+              >
+                …
+              </span>
+            ) : pageItem === page ? (
+              <span
+                key={pageItem}
+                aria-current="page"
+                className="inline-flex size-9 items-center justify-center rounded-full border border-[#39332e] bg-white text-sm font-semibold tabular-nums text-[#39332e]"
+              >
+                {pageItem}
+              </span>
+            ) : (
+              <a
+                key={pageItem}
+                href={sellerShopPath(basePath, slug, "reviews", {
+                  page: String(pageItem),
+                  sort: reviewSort,
+                })}
+                aria-label={t("pageOf", {
+                  page: pageItem,
+                  pages: reviews.meta.pages,
+                })}
+                className="inline-flex size-9 items-center justify-center rounded-full bg-[#f1eeeb] text-sm font-medium tabular-nums text-[#39332e] transition-colors hover:bg-[#e8e2dc]"
+              >
+                {pageItem}
+              </a>
+            ),
+          )}
           {page < reviews.meta.pages ? (
             <a
               href={sellerShopPath(basePath, slug, "reviews", {
                 page: String(page + 1),
                 sort: reviewSort,
               })}
-              className="inline-flex min-h-10 items-center gap-1.5 rounded-md border border-[#ded8d2] bg-white px-3 text-sm font-medium text-[#39332e] transition-colors hover:bg-[#f5f1ec]"
+              aria-label={t("next")}
+              className="inline-flex size-9 items-center justify-center rounded-full bg-[#f1eeeb] text-[#39332e] transition-colors hover:bg-[#e8e2dc]"
             >
-              {t("next")}
               <ChevronRight className="size-4" aria-hidden />
             </a>
-          ) : null}
+          ) : (
+            <span
+              aria-hidden="true"
+              className="inline-flex size-9 items-center justify-center rounded-full bg-[#f1eeeb] text-[#c0b9b3]"
+            >
+              <ChevronRight className="size-4" />
+            </span>
+          )}
         </nav>
       ) : null}
     </div>

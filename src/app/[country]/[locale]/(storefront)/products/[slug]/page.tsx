@@ -3,7 +3,6 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
 import { Breadcrumbs } from "@/components/navigation/Breadcrumbs";
-import { MadeTogether } from "@/components/products/MadeTogether";
 import { ProductPageDiscoveryExtra } from "@/components/products/ProductPageDiscoveryExtra";
 import { ProductReviewsSection } from "@/components/reviews/ProductReviewsSection";
 import { ProductReviewsSectionSkeleton } from "@/components/reviews/ProductReviewsSectionSkeleton";
@@ -11,6 +10,7 @@ import type { ProductReviewSort } from "@/components/reviews/ProductReviewsSort"
 import { JsonLd } from "@/components/seo/JsonLd";
 import { ThemePageRenderer } from "@/components/theme/ThemePageRenderer";
 import { getCachedProduct, PRODUCT_PAGE_EXPAND } from "@/lib/data/cached";
+import { loadMadeTogetherPresentation } from "@/lib/data/made-together";
 import { parseCartDiscoveryFromSearchParams } from "@/lib/discovery-context";
 import { generateProductMetadata } from "@/lib/metadata/product";
 import {
@@ -86,11 +86,12 @@ export default async function ProductPage({
   } = queryParams;
   const cartDiscovery = parseCartDiscoveryFromSearchParams(queryParams);
   const reviewSort: ProductReviewSort =
+    review_sort === "newest" ||
     review_sort === "highest" ||
     review_sort === "lowest" ||
     review_sort === "most_helpful"
       ? review_sort
-      : "newest";
+      : "most_helpful";
   const reviewFilters = {
     rating: review_rating ? Number(review_rating) : undefined,
     withMedia: review_media === "1",
@@ -128,6 +129,8 @@ export default async function ProductPage({
     category_id,
   );
 
+  const madeTogether = await loadMadeTogetherPresentation(product.id, basePath);
+
   if (themeTemplatesOn) {
     const [theme, template] = await Promise.all([
       prefetchedTheme ?? getActiveTheme(),
@@ -149,6 +152,7 @@ export default async function ProductPage({
         reviewFilters,
         categoryId: category_id,
         cartDiscovery,
+        madeTogether,
       };
       return (
         <>
@@ -204,7 +208,7 @@ export default async function ProductPage({
         />
       )}
       <div className="bg-marketplace-background" data-storefront-product-page>
-        <div className="mx-auto w-full max-w-[1400px] px-4 pt-6 sm:px-6 lg:px-10">
+        <div className="mx-auto hidden w-full max-w-[1400px] px-4 pt-6 sm:px-6 md:block lg:px-10">
           {breadcrumbCategory && (
             <Breadcrumbs
               category={breadcrumbCategory}
@@ -218,9 +222,10 @@ export default async function ProductPage({
           product={product}
           basePath={basePath}
           cartDiscovery={cartDiscovery}
+          madeTogether={madeTogether}
+          hasFollowingDiscovery
         >
           <Suspense fallback={<ProductReviewsSectionSkeleton embedded />}>
-            <MadeTogether productId={product.id} basePath={basePath} />
             <ProductReviewsSection
               product={product}
               locale={locale}
@@ -235,6 +240,7 @@ export default async function ProductPage({
           basePath={basePath}
           locale={locale}
           currency={product.price?.currency ?? undefined}
+          reserveMobileStickyPurchaseSpace
         />
       </div>
     </>

@@ -1,23 +1,169 @@
 import { expect, type Page, test } from "@playwright/test";
 
+/** Lab Store API bases used by Playwright certification (not production). */
+export const LAB_STORE_API_URLS = [
+  "http://127.0.0.1:3011",
+  "http://127.0.0.1:3020",
+  "http://127.0.0.1:3021",
+  "http://127.0.0.1:3031",
+  "http://127.0.0.1:3036",
+] as const;
+
+export function requireLabStoreApiUrl(): (typeof LAB_STORE_API_URLS)[number] {
+  const url = process.env.SPREE_API_URL;
+  if (
+    !url ||
+    !LAB_STORE_API_URLS.includes(url as (typeof LAB_STORE_API_URLS)[number])
+  ) {
+    throw new Error(
+      `Playwright requires a lab SPREE_API_URL (${LAB_STORE_API_URLS.join(", ")}); got ${url ?? "missing"}`,
+    );
+  }
+  return url as (typeof LAB_STORE_API_URLS)[number];
+}
+
 /** Next.js dev mode often never reaches `load`; `domcontentloaded` is enough locally. */
 export async function storefrontGoto(
   page: Page,
   path: string,
   options?: Parameters<Page["goto"]>[1],
 ) {
-  return page.goto(path, {
-    waitUntil: process.env.CI ? "load" : "domcontentloaded",
-    ...options,
-  });
+  // Lab buyer matrices must not inherit CI=`load` — a stuck compile then burns
+  // the whole 5-minute test budget across goto retries.
+  const { waitUntil: _ignoredWaitUntil, ...rest } = options ?? {};
+  const gotoOptions = {
+    ...rest,
+    waitUntil: "domcontentloaded" as const,
+    timeout: rest.timeout ?? 90_000,
+  };
+  let lastError: unknown;
+  for (let attempt = 0; attempt < 2; attempt += 1) {
+    try {
+      return await page.goto(path, gotoOptions);
+    } catch (error) {
+      lastError = error;
+      const message = error instanceof Error ? error.message : String(error);
+      const retryable =
+        /ERR_ABORTED|frame was detached|Navigation interrupted|net::ERR_/i.test(
+          message,
+        );
+      if (!retryable || attempt === 1) throw error;
+      await page.waitForTimeout(1_500);
+    }
+  }
+  throw lastError;
 }
 
-/** Saves privacy personalization toggles and waits for the success toast. */
-export async function savePrivacySettings(page: Page) {
-  await page.getByRole("button", { name: /^save settings$/i }).click();
-  await expect(page.getByText(/privacy settings saved/i)).toBeVisible({
-    timeout: 60_000,
-  });
+/** Opens account privacy settings after the authenticated form is ready (slow under beta load). */
+export async function openPrivacySettings(page: Page) {
+  const { syncBuyerSessionFromCookies } = await import("./buyer-auth");
+  const { storeApiFetch } = await import("./store-api");
+  await syncBuyerSessionFromCookies(page);
+  await storefrontGoto(page, "/us/en/account/settings/privacy");
+  await expect
+    .poll(
+      async () => {
+        const response = await storeApiFetch(page, "GET", "customers/me");
+        return response.ok;
+      },
+      { timeout: 90_000 },
+    )
+    .toBe(true);
+  const recommendations = page.locator("#personalized-recommendations");
+  const advertising = page.locator("#behavioral-advertising");
+  await expect(recommendations).toBeVisible({ timeout: 60_000 });
+  await expect(advertising).toBeVisible({ timeout: 60_000 });
+  return { recommendations, advertising };
+}
+
+/** Reloads privacy settings and re-bootstrap session cookies for Server Actions. */
+export async function reloadPrivacySettings(
+  page: Page,
+  expected?: {
+    personalization_enabled?: boolean;
+    behavioral_advertising_enabled?: boolean;
+  },
+) {
+  const { syncBuyerSessionFromCookies } = await import("./buyer-auth");
+  const { storeApiFetch } = await import("./store-api");
+  await page.reload({ waitUntil: "load" });
+  await syncBuyerSessionFromCookies(page);
+  if (
+    expected?.personalization_enabled !== undefined ||
+    expected?.behavioral_advertising_enabled !== undefined
+  ) {
+    await expect
+      .poll(
+        async () => {
+          const response = await storeApiFetch(page, "GET", "customers/me");
+          if (!response.ok) return null;
+          const customer = await response.json();
+          if (
+            expected.personalization_enabled !== undefined &&
+            customer.personalization_enabled !==
+              expected.personalization_enabled
+          ) {
+            return null;
+          }
+          if (
+            expected.behavioral_advertising_enabled !== undefined &&
+            customer.behavioral_advertising_enabled !==
+              expected.behavioral_advertising_enabled
+          ) {
+            return null;
+          }
+          return customer;
+        },
+        { timeout: 90_000 },
+      )
+      .toBeTruthy();
+  }
+  const recommendations = page.locator("#personalized-recommendations");
+  const advertising = page.locator("#behavioral-advertising");
+  await expect(recommendations).toBeVisible({ timeout: 60_000 });
+  await expect(advertising).toBeVisible({ timeout: 60_000 });
+  return { recommendations, advertising };
+}
+
+/** Saves privacy personalization toggles and waits until the Store API reflects the change. */
+export async function savePrivacySettings(
+  page: Page,
+  expected?: {
+    personalization_enabled?: boolean;
+    behavioral_advertising_enabled?: boolean;
+  },
+) {
+  const { syncBuyerSessionFromCookies } = await import("./buyer-auth");
+  const { storeApiFetch } = await import("./store-api");
+  await syncBuyerSessionFromCookies(page);
+  const saveButton = page.getByRole("button", { name: /^save settings$/i });
+  await saveButton.scrollIntoViewIfNeeded();
+  await saveButton.click();
+  await expect(saveButton).not.toHaveText(/saving/i, { timeout: 120_000 });
+  await expect
+    .poll(
+      async () => {
+        const response = await storeApiFetch(page, "GET", "customers/me");
+        if (!response.ok) return null;
+        const customer = await response.json();
+        if (
+          expected?.personalization_enabled !== undefined &&
+          customer.personalization_enabled !== expected.personalization_enabled
+        ) {
+          return null;
+        }
+        if (
+          expected?.behavioral_advertising_enabled !== undefined &&
+          customer.behavioral_advertising_enabled !==
+            expected.behavioral_advertising_enabled
+        ) {
+          return null;
+        }
+        return customer;
+      },
+      { timeout: 90_000 },
+    )
+    .toBeTruthy();
 }
 
 /** Dev overlay portals intercept clicks against `next dev`; preview/CI builds omit them. */
@@ -25,6 +171,9 @@ export async function prepareStorefrontPage(page: Page) {
   if (process.env.CI) {
     return;
   }
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "http://127.0.0.1:3305";
+  const { hostname } = new URL(siteUrl);
+  await page.context().clearCookies({ domain: hostname, path: "/" });
   await page.addInitScript(() => {
     const removeDevOverlay = () => {
       document.querySelectorAll("nextjs-portal").forEach((node) => {
@@ -61,10 +210,10 @@ export const TRUST_SAFETY_BUYER_EMAIL = "dev-buyer-002@example.com";
 export const TRUST_SAFETY_BUYER_PASSWORD = "spree123";
 
 export const SELLER_A_PRODUCT_SLUG = "dev-dataset-dev-seller-01-storefront-sku";
+export const SELLER_B_PRODUCT_SLUG = "dev-dataset-dev-seller-02-storefront-sku";
 
 export const MARKETPLACE_PRODUCT_A = `/us/en/products/${SELLER_A_PRODUCT_SLUG}`;
-export const MARKETPLACE_PRODUCT_B =
-  "/us/en/products/dev-dataset-dev-seller-02-storefront-sku";
+export const MARKETPLACE_PRODUCT_B = `/us/en/products/${SELLER_B_PRODUCT_SLUG}`;
 
 export const SELLER_A_SLUG = "dev-seller-01";
 export const SELLER_A_SHOP_PATH = `/us/en/sellers/${SELLER_A_SLUG}`;
@@ -215,12 +364,12 @@ export async function ensureMerchandisingDataset(page: Page) {
     const card = page.locator(
       `[data-merchandising-product="${MERCH_SKUS.lowStock}"]`,
     );
-    if (
-      await card
-        .first()
-        .isVisible()
-        .catch(() => false)
-    ) {
+    const present = await card
+      .first()
+      .waitFor({ state: "attached", timeout: 45_000 })
+      .then(() => true)
+      .catch(() => false);
+    if (present) {
       merchandisingDatasetVerified = true;
       return;
     }
@@ -231,6 +380,33 @@ export async function ensureMerchandisingDataset(page: Page) {
   }
 
   test.skip(true, MERCH_SETUP);
+}
+
+/** Keeps dev-merch-new eligible for the PDP "new" badge (views can accumulate during long suites). */
+export async function refreshMerchandisingNewListingPdpSignal() {
+  if (process.env.MARKETPLACE_E2E_REQUIRED !== "1") return;
+  if (requireLabStoreApiUrl() !== "http://127.0.0.1:3021") return;
+
+  const { spawnSync } = await import("node:child_process");
+  const ruby = [
+    "store = Spree::Store.order(:created_at).first",
+    "product = store.products.find_by!(slug: 'dev-merch-new')",
+    "Spree::ShopListingView.where(store: store, product: product).delete_all",
+    "published_at = 2.days.ago",
+    "product.update!(available_on: published_at)",
+    "product.product_publications.each do |row| row.update!(published_at: published_at) end",
+    "Spree::MerchandisingSignals::Cache.clear! if defined?(Spree::MerchandisingSignals::Cache)",
+  ].join("; ");
+  const result = spawnSync(
+    "docker",
+    ["exec", "spree-unified-marketplace-web", "bin/rails", "runner", ruby],
+    { encoding: "utf8", shell: false },
+  );
+  if (result.status !== 0) {
+    throw new Error(
+      `refreshMerchandisingNewListingPdpSignal failed: ${result.stderr || result.stdout}`,
+    );
+  }
 }
 
 export function merchandisingCard(page: Page, sku: string) {
@@ -287,11 +463,17 @@ export async function ensureSellerStorefrontDataset(page: Page) {
   const missing = !response || response.status() === 404;
 
   if (!missing) {
-    const title = await page
-      .getByRole("heading", { level: 1 })
-      .textContent()
+    const heading = page.getByRole("heading", { level: 1 });
+    const headingText = await heading
+      .first()
+      .waitFor({ state: "visible", timeout: 45_000 })
+      .then(async () => heading.first().textContent())
       .catch(() => "");
-    if (title && /dev seller/i.test(title)) {
+    const documentTitle = await page.title().catch(() => "");
+    if (
+      (headingText && /dev seller/i.test(headingText)) ||
+      /dev seller/i.test(documentTitle)
+    ) {
       sellerStorefrontDatasetVerified = true;
       return;
     }

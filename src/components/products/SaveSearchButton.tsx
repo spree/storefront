@@ -23,7 +23,6 @@ export function SaveSearchButton({ query, filters }: SaveSearchButtonProps) {
     query ||
       filters.personalizable ||
       filters.ratingMin !== undefined ||
-      filters.sellerId ||
       filters.availability ||
       filters.priceMin !== undefined ||
       filters.priceMax !== undefined ||

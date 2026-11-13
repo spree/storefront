@@ -16,22 +16,37 @@ import { useLocale, useTranslations } from "next-intl";
 import type { CSSProperties, ReactNode } from "react";
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
+import { QuantityPickerField } from "@/components/cart/QuantityPickerField";
 import { Check, ChevronDown } from "@/components/icons";
 import { RegionPreferences } from "@/components/layout/RegionPreferences";
 import { FavoriteButton } from "@/components/products/FavoriteButton";
 import { HiddenPricePrompt } from "@/components/products/HiddenPricePrompt";
+import { MadeTogetherBuyBox } from "@/components/products/MadeTogetherBuyBox";
+import { MadeTogetherCollective } from "@/components/products/MadeTogetherCollective";
+import { MakeOfferButton } from "@/components/products/MakeOfferButton";
 import { MediaGallery } from "@/components/products/MediaGallery";
 import {
   MerchandisingBadges,
   type MerchandisingSignal,
 } from "@/components/products/MerchandisingBadges";
 import { MerchandisingReason } from "@/components/products/MerchandisingReason";
-import { MerchandisingSellerTrust } from "@/components/products/MerchandisingSellerTrust";
 import { PersonalizationProofNotice } from "@/components/products/PersonalizationProofNotice";
+import {
+  type BundleOffer,
+  ProductBundleOffer,
+} from "@/components/products/ProductBundleOffer";
 import { ProductCustomFields } from "@/components/products/ProductCustomFields";
+import { ProductMobileStickyPurchaseBar } from "@/components/products/ProductMobileStickyPurchaseBar";
+import {
+  type OrderMinimumDeal,
+  ProductOrderMinimumDeal,
+} from "@/components/products/ProductOrderMinimumDeal";
 import { ProductPersonalizationForm } from "@/components/products/ProductPersonalizationForm";
 import { ProductShippingCost } from "@/components/products/ProductShippingCost";
+import { ReportListingButton } from "@/components/products/ReportListingButton";
+import { useProductStickyPurchaseBar } from "@/components/products/useProductStickyPurchaseBar";
 import { VariantPicker } from "@/components/products/VariantPicker";
+import { StarRatingDisplay } from "@/components/reviews/StarRating";
 import { StarSellerAvatar } from "@/components/shops/StarSellerAvatar";
 import { ProductPageBlocksProvider } from "@/components/theme/resource/ProductPageBlocks";
 import { Button } from "@/components/ui/button";
@@ -42,6 +57,7 @@ import { useStore } from "@/contexts/StoreContext";
 import { useStoreThemeSettings } from "@/contexts/ThemeSettingsContext";
 import { trackAddToCart, trackViewItem } from "@/lib/analytics/gtm";
 import type { CartDiscoveryInput } from "@/lib/discovery-context";
+import type { MadeTogetherPresentation } from "@/lib/made-together/types";
 import { selectPdpSignals } from "@/lib/merchandising/presentation";
 import {
   buildPersonalizationPayload,
@@ -51,6 +67,7 @@ import {
   validatePersonalizationAnswers,
 } from "@/lib/personalization";
 import { themeSettingEnabled } from "@/lib/theme/setting-value";
+import { sellerDisplayName } from "@/lib/utils/seller-display";
 
 function formatCompactCount(count: number, locale: string): string {
   if (count < 1000) return count.toLocaleString(locale);
@@ -76,6 +93,8 @@ interface ProductDetailsProps {
   templatePersonalizationBlockPresent?: boolean;
   templateMediaSettings?: Record<string, unknown>;
   templateMediaBlockId?: string;
+  madeTogether?: MadeTogetherPresentation | null;
+  hasFollowingDiscovery?: boolean;
   /**
    * Classic PDP: server-rendered content under the gallery (reviews).
    * Must be `children` so Next can pass Server Components into this client tree.
@@ -96,6 +115,8 @@ export function ProductDetails({
   templatePersonalizationBlockPresent = false,
   templateMediaSettings,
   templateMediaBlockId,
+  madeTogether = null,
+  hasFollowingDiscovery = false,
   children,
 }: ProductDetailsProps) {
   const { addItem, updating } = useCart();
@@ -113,7 +134,6 @@ export function ProductDetails({
     appearance.gallery_style === "bottom"
       ? "bottom"
       : "left";
-  // Marketplace classic PDP uses the hero + two-up collage (Etsy-style).
   const classicGalleryStyle = "bottom" as const;
   const imageRatio =
     appearance.image_ratio === "portrait" ? "portrait" : "square";
@@ -126,6 +146,7 @@ export function ProductDetails({
   const tp = useTranslations("personalization");
   const tc = useTranslations("customOrders");
   const tw = useTranslations("wholesale");
+  const tCommon = useTranslations("common");
   const hiddenPricing = useHiddenPricing();
   const pricesHidden = hiddenPricing !== null;
 
@@ -141,6 +162,18 @@ export function ProductDetails({
         merchandising_signals?: MerchandisingSignal[];
       }
     ).merchandising_signals ?? [];
+  const bundleOffer =
+    (
+      product as Product & {
+        bundle_offer?: BundleOffer | null;
+      }
+    ).bundle_offer ?? null;
+  const orderMinimumDeal =
+    (
+      product as Product & {
+        order_minimum_deal?: OrderMinimumDeal | null;
+      }
+    ).order_minimum_deal ?? null;
   const hasSaleMerchandisingSignal = merchandisingSignals.some(
     (signal) => signal.key === "sale",
   );
@@ -233,6 +266,12 @@ export function ProductDetails({
   const [quantity, setQuantity] = useState(1);
   const [loading, setLoading] = useState(false);
   const [uploading, setUploading] = useState(false);
+  // The server-rendered button is clickable before React attaches this handler.
+  // Keep it inactive until mount so an early click cannot look successful while doing nothing.
+  const [purchaseReady, setPurchaseReady] = useState(false);
+  useEffect(() => {
+    setPurchaseReady(true);
+  }, []);
   const [personalizationOpen, setPersonalizationOpen] = useState(
     () => !personalizationOptional,
   );
@@ -398,13 +437,38 @@ export function ProductDetails({
     if (cartId) router.push(`${basePath}/checkout/${cartId}`);
   };
 
+  const shareProduct = () => {
+    const url = window.location.href;
+    if (navigator.share) {
+      void navigator.share({ title: product.name, url }).catch(() => undefined);
+    } else if (navigator.clipboard) {
+      void navigator.clipboard
+        .writeText(url)
+        .then(() => toast.success(t("shareProductCopied")));
+    }
+  };
+
+  const showShareControl =
+    themeSettingEnabled(appearance.show_share, true) &&
+    themeSettingEnabled(social?.share_products);
+  const productReviewCount = product.reviews_count ?? 0;
+  const productAverageRating =
+    product.average_rating != null ? Number(product.average_rating) : null;
+  const showProductReviewLink =
+    productReviewCount > 0 &&
+    productAverageRating != null &&
+    Number.isFinite(productAverageRating);
+  const mobileClassicPdp = templateBlocks === undefined;
+  const { purchaseRef, showSticky: showMobileStickyPurchase } =
+    useProductStickyPurchaseBar(mobileClassicPdp);
+
   const baseUnitAmount =
     currentAmountCents != null ? currentAmountCents / 100 : null;
 
   return (
     <div
       data-theme-product-sticky-cart={stickyCart ? "true" : "false"}
-      className={`mx-auto w-full px-4 pb-12 pt-5 sm:px-6 sm:pt-8 lg:px-10 lg:pb-16 ${appearance.layout === "wide" ? "max-w-none" : "max-w-[1400px]"}`}
+      className={`mx-auto w-full px-4 ${hasFollowingDiscovery ? "pb-0" : "pb-28"} pt-0 sm:px-6 sm:pt-8 md:pb-12 lg:px-10 lg:pb-16 ${appearance.layout === "wide" ? "max-w-none" : "max-w-[1400px]"}`}
     >
       {themeSettingEnabled(appearance.product_navigation) &&
       (productNavigation?.previous || productNavigation?.next) ? (
@@ -449,16 +513,17 @@ export function ProductDetails({
       >
         {(templateBlocks === undefined ||
           templateMediaSettings !== undefined) && (
-          <div className="min-w-0 space-y-10">
+          <div className="min-w-0 space-y-4 md:space-y-10">
             <div
               className={
                 isClassicLayout
-                  ? "min-w-0"
+                  ? "min-w-0 -mx-4 w-[calc(100%+2rem)] sm:-mx-6 sm:w-[calc(100%+3rem)] md:mx-0 md:w-full"
                   : "min-w-0 lg:sticky lg:top-24 lg:self-start"
               }
               data-theme-product-media-block={
                 templateBlocks !== undefined ? "true" : undefined
               }
+              data-pdp-mobile-media-frame={isClassicLayout ? "true" : undefined}
               data-theme-block-id={templateMediaBlockId}
               data-theme-block-type={templateMediaBlockId ? "media" : undefined}
               style={{
@@ -517,16 +582,30 @@ export function ProductDetails({
                       ? "square"
                       : imageRatio
                 }
+                edgeToEdgeMobile={isClassicLayout}
+                showShare={showShareControl}
+                onShare={shareProduct}
+                overlayTopLeft={
+                  isClassicLayout ? (
+                    <MerchandisingBadges
+                      signals={pdpMerchandising.title}
+                      maxBadges={1}
+                      layout="pdp-title"
+                      signalDataAttribute="data-merchandising-pdp-signal"
+                    />
+                  ) : null
+                }
+                collageLayout={isClassicLayout}
               />
             </div>
-            {children ? (
-              <div data-classic-below-media="true">{children}</div>
-            ) : null}
+            <div className="hidden justify-end px-0 md:flex md:px-0">
+              <ReportListingButton productId={product.id} />
+            </div>
           </div>
         )}
 
         <div
-          className="mx-auto w-full min-w-0 max-w-xl lg:ml-0 lg:max-w-none lg:pt-0"
+          className={`mx-auto w-full min-w-0 max-w-xl lg:ml-0 lg:max-w-none lg:pt-0 ${isClassicLayout ? "lg:col-start-2 lg:row-start-1 lg:row-span-2" : ""}`}
           data-theme-product-sticky-info={
             isClassicLayout || themeSettingEnabled(appearance.sticky_info)
               ? "true"
@@ -553,6 +632,7 @@ export function ProductDetails({
                 onAddToCart: handleAddToCart,
                 basePath,
                 fixedQuantity,
+                madeTogether,
               }}
             >
               <div data-theme-product-block-layout className="space-y-5">
@@ -664,37 +744,26 @@ export function ProductDetails({
               ) : null}
             </ProductPageBlocksProvider>
           ) : (
-            <div className="space-y-6">
+            <div className="space-y-5 md:space-y-6">
               <div
-                className="space-y-4"
+                className="flex flex-col gap-2.5 md:gap-4"
                 data-merchandising-product={merchandisingProductId}
               >
-                <div className="space-y-1.5">
-                  <div className="flex flex-col items-start gap-1.5">
-                    <MerchandisingBadges
-                      signals={pdpMerchandising.title}
-                      maxBadges={1}
-                      layout="pdp-title"
-                      signalDataAttribute="data-merchandising-pdp-signal"
-                    />
-                    <h1 className="min-w-0 font-display text-[1.65rem] leading-[1.2] font-normal tracking-tight text-[#222] sm:text-[1.85rem]">
-                      {product.name}
-                    </h1>
-                  </div>
-                  {pdpMerchandising.relevance[0] ? (
-                    <MerchandisingReason
-                      signals={pdpMerchandising.relevance}
-                      followedShopLabel={
-                        isAuthenticated ? t("youFollowThisShop") : undefined
-                      }
-                    />
-                  ) : null}
-                </div>
+                {pdpMerchandising.availability[0] ? (
+                  <p
+                    className="text-sm font-normal text-[#a12828] md:hidden"
+                    data-merchandising-pdp-signal={
+                      pdpMerchandising.availability[0].key
+                    }
+                  >
+                    {pdpMerchandising.availability[0].label}
+                  </p>
+                ) : null}
 
-                <div className="space-y-1">
-                  <div className="flex flex-wrap items-baseline gap-x-2.5 gap-y-1">
+                <div className="order-1 space-y-0.5 md:order-2">
+                  <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
                     {displayPrice ? (
-                      <span className="text-[28px] font-bold leading-none text-[#222]">
+                      <span className="text-[1.625rem] font-bold leading-none tracking-tight text-[#222] md:text-[28px]">
                         {displayPrice}
                         {hasPersonalization ? "+" : ""}
                       </span>
@@ -702,7 +771,7 @@ export function ProductDetails({
                       <HiddenPricePrompt className="inline-flex items-center gap-1.5 text-base font-medium text-slate-600 underline underline-offset-4 hover:text-slate-900" />
                     )}
                     {onSale && strikethroughPrice ? (
-                      <span className="text-lg text-[#595959] line-through">
+                      <span className="text-[15px] text-[#757575] line-through md:text-lg">
                         {strikethroughPrice}
                         {hasPersonalization ? "+" : ""}
                       </span>
@@ -710,7 +779,7 @@ export function ProductDetails({
                   </div>
                   {salePercent != null ? (
                     <p
-                      className="text-sm font-medium text-[#258635]"
+                      className="text-sm font-normal text-[#258635]"
                       {...(hasSaleMerchandisingSignal
                         ? { "data-merchandising-pdp-signal": "sale" }
                         : {})}
@@ -718,117 +787,132 @@ export function ProductDetails({
                       {t("limitedTimeSale", { percent: salePercent })}
                     </p>
                   ) : null}
-                  <MerchandisingBadges
-                    signals={pdpMerchandising.price}
-                    maxBadges={1}
-                    layout="pdp-detail"
-                    signalDataAttribute="data-merchandising-pdp-signal"
-                  />
+                  <div className="hidden md:block">
+                    <MerchandisingBadges
+                      signals={pdpMerchandising.price}
+                      maxBadges={1}
+                      layout="pdp-detail"
+                      signalDataAttribute="data-merchandising-pdp-signal"
+                    />
+                  </div>
+                </div>
+
+                <div className="order-2 md:order-1">
+                  <h1 className="min-w-0 text-base font-medium leading-snug text-[#222] md:font-display md:text-[1.65rem] md:font-normal md:leading-[1.2] md:tracking-tight lg:text-[1.85rem]">
+                    {product.name}
+                  </h1>
+                  <div className="mt-1.5 hidden md:block">
+                    <MerchandisingBadges
+                      signals={pdpMerchandising.title}
+                      maxBadges={1}
+                      layout="pdp-title"
+                      signalDataAttribute="data-merchandising-pdp-signal"
+                    />
+                  </div>
+                  {pdpMerchandising.relevance[0] ? (
+                    <div className="mt-1">
+                      <MerchandisingReason
+                        signals={pdpMerchandising.relevance}
+                        followedShopLabel={
+                          isAuthenticated ? t("youFollowThisShop") : undefined
+                        }
+                      />
+                    </div>
+                  ) : null}
                 </div>
 
                 {showVendor && seller && sellerShopHref ? (
-                  <div className="flex items-start gap-3 pt-1">
-                    <StarSellerAvatar
-                      seller={seller}
-                      href={sellerShopHref}
-                      sizeClassName="size-14"
-                      imageSizes="48px"
-                    />
-                    <div className="min-w-0 flex-1 space-y-0.5">
-                      <div className="flex min-w-0 items-center gap-1.5">
-                        <p className="min-w-0 truncate text-[15px] font-semibold leading-snug text-[#222]">
-                          {t.rich("designedBy", {
-                            name: seller.name,
-                            shop: (chunks) => (
-                              <Link
-                                href={sellerShopHref}
-                                className="hover:underline"
-                              >
-                                {chunks}
-                              </Link>
-                            ),
-                          })}
-                        </p>
-                      </div>
-                      <p className="truncate text-sm leading-snug text-[#595959]">
-                        {seller.ships_from || product.ships_from
-                          ? t("sellerShopLocation", {
-                              shop: seller.name,
-                              location:
-                                seller.ships_from || product.ships_from || "",
-                            })
-                          : seller.name}
-                      </p>
-                      {sellerRating != null && sellerReviewsHref ? (
-                        <Link
-                          href={sellerReviewsHref}
-                          className="inline-flex text-sm font-medium leading-snug text-[#222] hover:underline"
+                  <>
+                    <div className="order-3 flex flex-wrap items-center gap-x-2 gap-y-1 md:hidden">
+                      <Link
+                        href={sellerShopHref}
+                        className="text-sm font-normal text-[#222] hover:underline"
+                      >
+                        {sellerDisplayName(seller.name)}
+                      </Link>
+                      {sellerRating != null ? (
+                        <StarRatingDisplay
+                          rating={sellerRating}
+                          size="sm"
+                          tone="dark"
+                        />
+                      ) : showProductReviewLink ? (
+                        <a
+                          href="#reviews"
+                          className="inline-flex items-center gap-1.5 hover:underline"
                         >
-                          {t("ratingCompact", {
-                            rating: Number.isFinite(sellerRating)
-                              ? sellerRating.toFixed(1)
-                              : String(sellerRating),
-                            count: formatCompactCount(
-                              sellerReviewCount,
-                              locale,
-                            ),
-                          })}
-                        </Link>
+                          <StarRatingDisplay
+                            rating={productAverageRating}
+                            size="sm"
+                            tone="dark"
+                          />
+                        </a>
                       ) : null}
-                      <MerchandisingSellerTrust
-                        signals={pdpMerchandising.seller}
-                        sellerBadges={seller.badges}
-                        className="mt-1"
+                    </div>
+                    {returnsSummaryCompact ? (
+                      <p className="order-4 flex items-center gap-1.5 text-sm text-[#222] md:hidden">
+                        <Check
+                          className="size-4 shrink-0 text-[#258635]"
+                          aria-hidden
+                        />
+                        {returnsSummaryCompact}
+                      </p>
+                    ) : null}
+                    <div className="order-3 hidden md:block">
+                      <MadeTogetherBuyBox
+                        productId={product.id}
+                        basePath={basePath}
+                        initial={madeTogether}
+                        fallback={
+                          <div className="flex items-center gap-3">
+                            <StarSellerAvatar
+                              seller={{
+                                ...seller,
+                                name: sellerDisplayName(seller.name),
+                              }}
+                              href={sellerShopHref}
+                              sizeClassName="size-10"
+                              imageSizes="40px"
+                            />
+                            <div className="min-w-0 space-y-1.5">
+                              <p className="text-sm leading-snug text-marketplace-muted-foreground">
+                                <Link
+                                  href={sellerShopHref}
+                                  className="font-medium text-marketplace-foreground hover:underline"
+                                >
+                                  {sellerDisplayName(seller.name)}
+                                </Link>
+                              </p>
+                              {sellerRating != null && sellerReviewsHref ? (
+                                <Link
+                                  href={sellerReviewsHref}
+                                  className="inline-flex text-sm text-marketplace-foreground hover:underline"
+                                >
+                                  {t("ratingCompact", {
+                                    rating: Number.isFinite(sellerRating)
+                                      ? sellerRating.toFixed(1)
+                                      : String(sellerRating),
+                                    count: formatCompactCount(
+                                      sellerReviewCount,
+                                      locale,
+                                    ),
+                                  })}
+                                </Link>
+                              ) : null}
+                            </div>
+                          </div>
+                        }
                       />
                     </div>
-                  </div>
+                  </>
                 ) : null}
 
-                <ul className="space-y-2.5 text-[15px] leading-snug text-[#222]">
-                  <li className="flex items-start gap-2.5">
-                    <Check
-                      className="mt-0.5 size-4 shrink-0 text-[#3B67D4]"
-                      aria-hidden
-                    />
-                    <span>
-                      {estimatedDeliveryRange
-                        ? t.rich("arrivesSoon", {
-                            range: estimatedDeliveryRange,
-                            date: (chunks) => (
-                              <span className="font-semibold underline decoration-dashed decoration-[#222]/40 underline-offset-[3px]">
-                                {chunks}
-                              </span>
-                            ),
-                          })
-                        : t("deliveryBody")}
-                    </span>
-                  </li>
-                  {returnsSummaryCompact ? (
-                    <li className="flex items-start gap-2.5">
-                      <Check
-                        className="mt-0.5 size-4 shrink-0 text-[#3B67D4]"
-                        aria-hidden
-                      />
-                      <span>{returnsSummaryCompact}</span>
-                    </li>
-                  ) : null}
-                  {product.ships_from ? (
-                    <li className="flex items-start gap-2.5">
-                      <Check
-                        className="mt-0.5 size-4 shrink-0 text-[#3B67D4]"
-                        aria-hidden
-                      />
-                      <span>
-                        {t.rich("shipsFromLabel", {
-                          location: product.ships_from,
-                          place: (chunks) => (
-                            <span className="font-semibold">{chunks}</span>
-                          ),
-                        })}
-                      </span>
-                    </li>
-                  ) : null}
-                </ul>
+                {orderMinimumDeal ? (
+                  <ProductOrderMinimumDeal
+                    deal={orderMinimumDeal}
+                    shopHref={sellerShopHref}
+                  />
+                ) : null}
               </div>
 
               {hasVariants && optionTypes.length > 0 ? (
@@ -876,7 +960,7 @@ export function ProductDetails({
 
               {hasPersonalization ? (
                 <div className="space-y-3">
-                  {product.proof_required ? (
+                  {product.proof_required && !personalizationOptional ? (
                     <PersonalizationProofNotice />
                   ) : null}
                   {personalizationOptional ? (
@@ -884,7 +968,7 @@ export function ProductDetails({
                       <button
                         type="button"
                         onClick={() => setPersonalizationOpen((open) => !open)}
-                        className="inline-flex items-center gap-2 text-[15px] font-semibold text-[#222] hover:underline"
+                        className="inline-flex min-h-11 items-center gap-1.5 text-sm font-normal text-[#222] hover:underline md:text-[15px] md:font-semibold"
                         aria-expanded={personalizationOpen}
                       >
                         <Plus className="size-4" aria-hidden />
@@ -893,18 +977,23 @@ export function ProductDetails({
                           : t("addPersonalizationOptionalLabel")}
                       </button>
                       {personalizationOpen ? (
-                        <ProductPersonalizationForm
-                          fields={personalizationFields}
-                          answers={personalizationAnswers}
-                          onChange={setPersonalizationAnswers}
-                          errors={personalizationErrors}
-                          disabled={busy}
-                          baseDisplayPrice={displayPrice}
-                          currency={currency}
-                          baseUnitAmount={baseUnitAmount}
-                          uploadingChange={setUploading}
-                          compact
-                        />
+                        <>
+                          {product.proof_required ? (
+                            <PersonalizationProofNotice />
+                          ) : null}
+                          <ProductPersonalizationForm
+                            fields={personalizationFields}
+                            answers={personalizationAnswers}
+                            onChange={setPersonalizationAnswers}
+                            errors={personalizationErrors}
+                            disabled={busy}
+                            baseDisplayPrice={displayPrice}
+                            currency={currency}
+                            baseUnitAmount={baseUnitAmount}
+                            uploadingChange={setUploading}
+                            compact
+                          />
+                        </>
                       ) : null}
                     </>
                   ) : (
@@ -924,13 +1013,65 @@ export function ProductDetails({
                 </div>
               ) : null}
 
-              <div data-theme-product-purchase className="space-y-3">
-                <MerchandisingBadges
-                  signals={pdpMerchandising.availability}
-                  maxBadges={1}
-                  layout="pdp-detail"
-                  signalDataAttribute="data-merchandising-pdp-signal"
-                />
+              <ul className="hidden space-y-2.5 border-t border-marketplace-border-subtle pt-5 text-sm leading-relaxed text-marketplace-foreground md:block">
+                <li className="flex items-start gap-2.5">
+                  <Check
+                    className="mt-0.5 size-4 shrink-0 text-marketplace-brand-accent"
+                    aria-hidden
+                  />
+                  <span>
+                    {estimatedDeliveryRange
+                      ? t.rich("arrivesSoon", {
+                          range: estimatedDeliveryRange,
+                          date: (chunks) => (
+                            <span className="font-semibold underline decoration-dashed decoration-[#222]/40 underline-offset-[3px]">
+                              {chunks}
+                            </span>
+                          ),
+                        })
+                      : t("deliveryBody")}
+                  </span>
+                </li>
+                {returnsSummaryCompact ? (
+                  <li className="flex items-start gap-2.5">
+                    <Check
+                      className="mt-0.5 size-4 shrink-0 text-marketplace-brand-accent"
+                      aria-hidden
+                    />
+                    <span>{returnsSummaryCompact}</span>
+                  </li>
+                ) : null}
+                {product.ships_from ? (
+                  <li className="flex items-start gap-2.5">
+                    <Check
+                      className="mt-0.5 size-4 shrink-0 text-marketplace-brand-accent"
+                      aria-hidden
+                    />
+                    <span>
+                      {t.rich("shipsFromLabel", {
+                        location: product.ships_from,
+                        place: (chunks) => (
+                          <span className="font-semibold">{chunks}</span>
+                        ),
+                      })}
+                    </span>
+                  </li>
+                ) : null}
+              </ul>
+
+              <div
+                ref={purchaseRef}
+                data-theme-product-purchase
+                className="flex flex-col gap-3 pt-1"
+              >
+                <div className="hidden md:block">
+                  <MerchandisingBadges
+                    signals={pdpMerchandising.availability}
+                    maxBadges={1}
+                    layout="pdp-detail"
+                    signalDataAttribute="data-merchandising-pdp-signal"
+                  />
+                </div>
                 {pricesHidden ? (
                   <Button asChild size="lg">
                     <Link href={hiddenPricing.signInHref}>
@@ -939,20 +1080,35 @@ export function ProductDetails({
                   </Button>
                 ) : (
                   <>
+                    {!fixedQuantity ? (
+                      <div className="hidden space-y-1.5 md:block">
+                        <span className="text-sm font-medium text-marketplace-foreground">
+                          {tCommon("quantity")}
+                        </span>
+                        <QuantityPickerField
+                          quantity={quantity}
+                          onQuantityChange={setQuantity}
+                          variant="dropdown"
+                          disabled={!purchaseReady || busy || !isPurchasable}
+                          className="pdp-reference-select"
+                        />
+                      </div>
+                    ) : null}
                     <Button
                       type="button"
                       variant="outline"
                       size="lg"
                       onClick={() => void handleBuyNow()}
-                      disabled={busy || !isPurchasable}
-                      className="h-12 w-full rounded-full border-[2px] border-[#222] bg-white text-[16px] font-semibold text-[#222] hover:bg-[#f5f5f5]"
+                      disabled={!purchaseReady || busy || !isPurchasable}
+                      className="hidden h-12 w-full rounded-full border-[2px] border-[#222] bg-white text-[16px] font-semibold text-[#222] hover:bg-[#f5f5f5] md:inline-flex"
                     >
                       {t("buyItNow")}
                     </Button>
                     <Button
+                      type="button"
                       size="lg"
                       onClick={() => void handleAddToCart()}
-                      disabled={busy || !isPurchasable}
+                      disabled={!purchaseReady || busy || !isPurchasable}
                       className="h-12 w-full rounded-full border-transparent bg-[#222] text-[16px] font-semibold text-white hover:bg-black"
                     >
                       {busy ? (
@@ -966,7 +1122,17 @@ export function ProductDetails({
                         t("outOfStock")
                       )}
                     </Button>
-                    <div className="pt-1">
+                    <div className="hidden flex-col gap-2 md:flex">
+                      <MakeOfferButton
+                        variantId={
+                          selectedVariant?.id || product.default_variant_id
+                        }
+                        available={
+                          product.buyer_offers_available && isPurchasable
+                        }
+                        basePath={basePath}
+                        currency={currency}
+                      />
                       <FavoriteButton
                         productId={product.id}
                         variantId={selectedVariant?.id}
@@ -975,6 +1141,13 @@ export function ProductDetails({
                     </div>
                   </>
                 )}
+                {bundleOffer ? (
+                  <ProductBundleOffer
+                    offer={bundleOffer}
+                    currentProductId={product.id}
+                    basePath={basePath}
+                  />
+                ) : null}
               </div>
 
               <div className="space-y-0 border-t border-[#e1e3df]">
@@ -1027,12 +1200,7 @@ export function ProductDetails({
                   </div>
                 </details>
 
-                <details
-                  className="group border-b border-[#e1e3df] py-4"
-                  open={Boolean(
-                    estimatedDeliveryRange || hasReturnPolicyDisclosure,
-                  )}
-                >
+                <details className="group border-b border-[#e1e3df] py-4">
                   <summary className="cursor-pointer list-none text-[16px] font-semibold text-[#222] marker:hidden [&::-webkit-details-marker]:hidden">
                     <span className="flex items-center justify-between gap-3">
                       {t("shippingAndReturnPolicies")}
@@ -1114,6 +1282,10 @@ export function ProductDetails({
                     </div>
                   </div>
                 </details>
+
+                {madeTogether ? (
+                  <MadeTogetherCollective presentation={madeTogether} />
+                ) : null}
               </div>
 
               {product.seller?.accepts_custom_orders &&
@@ -1142,6 +1314,14 @@ export function ProductDetails({
             </div>
           )}
         </div>
+        {isClassicLayout && children ? (
+          <div
+            data-classic-below-media="true"
+            className="min-w-0 -mx-4 w-[calc(100%+2rem)] sm:-mx-6 sm:w-[calc(100%+3rem)] md:mx-0 md:w-full lg:col-start-1 lg:row-start-2"
+          >
+            {children}
+          </div>
+        ) : null}
       </div>
       {templateBlocks === undefined && product.categories?.length ? (
         <nav
@@ -1161,6 +1341,16 @@ export function ProductDetails({
             ))}
           </ul>
         </nav>
+      ) : null}
+      {mobileClassicPdp ? (
+        <ProductMobileStickyPurchaseBar
+          visible={showMobileStickyPurchase && !pricesHidden}
+          displayPrice={displayPrice}
+          busy={busy}
+          isPurchasable={isPurchasable}
+          purchaseReady={purchaseReady}
+          onAddToCart={() => void handleAddToCart()}
+        />
       ) : null}
     </div>
   );

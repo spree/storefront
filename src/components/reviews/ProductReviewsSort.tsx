@@ -10,16 +10,20 @@ export type ProductReviewSort = (typeof SORTS)[number];
 
 interface ProductReviewsSortProps {
   current: ProductReviewSort;
+  compact?: boolean;
 }
 
-export function ProductReviewsSort({ current }: ProductReviewsSortProps) {
+export function ProductReviewsSort({
+  current,
+  compact = false,
+}: ProductReviewsSortProps) {
   const t = useTranslations("reviews");
   const pathname = usePathname();
   const searchParams = useSearchParams();
 
   function hrefFor(sort: ProductReviewSort) {
     const params = new URLSearchParams(searchParams.toString());
-    if (sort === "newest") {
+    if (sort === "most_helpful") {
       params.delete("review_sort");
     } else {
       params.set("review_sort", sort);
@@ -31,12 +35,21 @@ export function ProductReviewsSort({ current }: ProductReviewsSortProps) {
   return (
     <nav
       aria-label={t("sortBy")}
-      className="flex flex-col gap-2.5 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between sm:gap-3"
+      className={cn(
+        "flex flex-col gap-2.5 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between sm:gap-3",
+        compact &&
+          "border-t border-marketplace-border-subtle pt-4 sm:border-t-0 sm:pt-0",
+      )}
     >
-      <span className="text-xs font-medium uppercase tracking-wide text-[#595959]">
+      <span className="text-xs font-medium uppercase tracking-wide text-marketplace-muted-foreground">
         {t("sortBy")}
       </span>
-      <div className="inline-flex flex-wrap gap-1">
+      <div
+        className={cn(
+          "inline-flex gap-0.5 rounded-full border border-marketplace-border-subtle bg-marketplace-muted p-0.5",
+          compact ? "w-full overflow-x-auto sm:w-auto" : "flex-wrap",
+        )}
+      >
         {SORTS.map((sort) => (
           <Link
             key={sort}
@@ -44,10 +57,10 @@ export function ProductReviewsSort({ current }: ProductReviewsSortProps) {
             scroll={false}
             aria-current={current === sort ? "page" : undefined}
             className={cn(
-              "rounded-md px-3 py-1.5 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-marketplace-brand focus-visible:ring-offset-1",
+              "shrink-0 rounded-full px-3 py-1.5 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-marketplace-brand focus-visible:ring-offset-1",
               current === sort
-                ? "bg-[#f5f5f5] text-[#222] underline decoration-[#222] decoration-2 underline-offset-4"
-                : "text-[#595959] hover:bg-[#f5f5f5] hover:text-[#222]",
+                ? "bg-marketplace-surface-elevated text-marketplace-foreground shadow-sm"
+                : "text-marketplace-muted-foreground hover:text-marketplace-foreground",
             )}
           >
             {t(`sort_${sort}`)}

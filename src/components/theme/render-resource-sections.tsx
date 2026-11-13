@@ -4,7 +4,6 @@ import { CmsPageRenderer } from "@/components/cms/CmsPageRenderer";
 import { ProductCustomFields } from "@/components/products/ProductCustomFields";
 import { ProductListing } from "@/components/products/ProductListing";
 import { ProductPageRecommendations } from "@/components/products/ProductPageRecommendations";
-import { ProductSellerIdentity } from "@/components/products/ProductSellerIdentity";
 import { RecentlyViewedProducts } from "@/components/products/RecentlyViewedProducts";
 import { ProductReviewsSection } from "@/components/reviews/ProductReviewsSection";
 import { SellerStorefrontHome } from "@/components/shops/seller-storefront/SellerStorefrontHome";
@@ -35,6 +34,10 @@ export async function renderResourceSection(
     hasRecommended: boolean;
     hasRecentlyViewed: boolean;
     hasProductReviews?: boolean;
+    embeddedProductReview?: {
+      settings: Record<string, unknown>;
+      visibility?: { mobile?: boolean; tablet?: boolean; desktop?: boolean };
+    };
     hasCollectionBanner?: boolean;
     hasCollectionBreadcrumbs?: boolean;
   },
@@ -72,6 +75,75 @@ export async function renderResourceSection(
           productReviewsSectionPresent={Boolean(
             productSectionState?.hasProductReviews,
           )}
+          embeddedReviews={
+            productSectionState?.embeddedProductReview &&
+            themeSettingEnabled(
+              _theme?.settings?.product_page?.show_reviews,
+              true,
+            ) ? (
+              <div
+                data-theme-section-visibility-mobile={
+                  themeSettingEnabled(
+                    productSectionState.embeddedProductReview.visibility
+                      ?.mobile ??
+                      productSectionState.embeddedProductReview.settings
+                        .mobileVisible,
+                    true,
+                  )
+                    ? "true"
+                    : "false"
+                }
+                data-theme-section-visibility-tablet={
+                  themeSettingEnabled(
+                    productSectionState.embeddedProductReview.visibility
+                      ?.tablet ??
+                      productSectionState.embeddedProductReview.settings
+                        .tabletVisible,
+                    true,
+                  )
+                    ? "true"
+                    : "false"
+                }
+                data-theme-section-visibility-desktop={
+                  themeSettingEnabled(
+                    productSectionState.embeddedProductReview.visibility
+                      ?.desktop ??
+                      productSectionState.embeddedProductReview.settings
+                        .desktopVisible,
+                    true,
+                  )
+                    ? "true"
+                    : "false"
+                }
+              >
+                <ProductReviewsSection
+                  product={context.product}
+                  locale={context.locale}
+                  sort={
+                    String(
+                      productSectionState.embeddedProductReview.settings.sort ||
+                        context.reviewSort ||
+                        "newest",
+                    ) as "newest" | "highest" | "lowest" | "most_helpful"
+                  }
+                  filters={context.reviewFilters}
+                  layout={
+                    String(
+                      productSectionState.embeddedProductReview.settings
+                        .layout || "full",
+                    ) as
+                      | "summary"
+                      | "full"
+                      | "carousel"
+                      | "gallery"
+                      | "highlights"
+                      | "attributes"
+                  }
+                  embedded
+                />
+              </div>
+            ) : undefined
+          }
           showTemplateRelated={
             !productSectionState?.hasRelated &&
             !productSectionState?.deferToFooterDiscovery
@@ -167,31 +239,17 @@ export async function renderResourceSection(
         </section>
       ) : null;
     case "seller_profile":
-      return context.kind === "product" && context.product.seller ? (
-        <section
-          className="container mx-auto space-y-4 px-4 py-8 sm:px-6 lg:px-8"
-          data-theme-seller-profile
-        >
-          <h2 className="text-xl font-semibold">
-            {String(section.settings.heading || "About the seller")}
-          </h2>
-          <ProductSellerIdentity
-            seller={context.product.seller}
-            basePath={context.basePath}
-          />
-        </section>
-      ) : null;
+      return null;
     case "more_from_shop":
-      return context.kind === "product" ? (
+      return context.kind === "product" && !context.product.seller ? (
         <ProductPageRecommendations
           productId={context.product.id}
-          sellerName={
-            context.product.seller?.name ?? context.product.seller_name
-          }
+          sellerName={context.product.seller_name}
           basePath={context.basePath}
           currency={context.product.price?.currency ?? context.currency}
           locale={context.locale}
           showRelated
+          showRecommended={false}
           relatedHeading={
             typeof section.settings.heading === "string" &&
             section.settings.heading.trim()
@@ -212,6 +270,7 @@ export async function renderResourceSection(
           currency={context.product.price?.currency ?? context.currency}
           locale={context.locale}
           showRecommended
+          showRelated={false}
           recommendedHeading={
             typeof section.settings.heading === "string" &&
             section.settings.heading.trim()
@@ -222,16 +281,15 @@ export async function renderResourceSection(
         />
       ) : null;
     case "related_products":
-      return context.kind === "product" ? (
+      return context.kind === "product" && !context.product.seller ? (
         <ProductPageRecommendations
           productId={context.product.id}
-          sellerName={
-            context.product.seller?.name ?? context.product.seller_name
-          }
+          sellerName={context.product.seller_name}
           basePath={context.basePath}
           currency={context.product.price?.currency ?? context.currency}
           locale={context.locale}
           showRelated
+          showRecommended={false}
           productCount={Number(section.settings.product_count) || 8}
           relatedHeading={
             typeof section.settings.heading === "string" &&
@@ -252,6 +310,7 @@ export async function renderResourceSection(
           currency={context.product.price?.currency ?? context.currency}
           locale={context.locale}
           showRecommended
+          showRelated={false}
           productCount={Number(section.settings.product_count) || 8}
           recommendedHeading={
             typeof section.settings.heading === "string" &&
@@ -399,14 +458,18 @@ function ProductDetailsSection({
   if (!sku && !options && !product.custom_fields?.length) return null;
   return (
     <section
-      className="container mx-auto px-4 py-8 sm:px-6 lg:px-8"
+      className="container mx-auto px-4 py-6 sm:px-6 lg:px-8"
       data-theme-product-details
     >
       <h2 className="mb-4 text-xl font-semibold">
         {String(section.settings.heading || "Details")}
       </h2>
       {sku || options ? (
-        <dl className="mb-6 space-y-3">
+        <dl
+          className={
+            product.custom_fields?.length ? "mb-6 space-y-3" : "space-y-3"
+          }
+        >
           {sku ? (
             <div className="flex gap-4">
               <dt className="w-32 text-sm text-muted-foreground">SKU</dt>
@@ -477,31 +540,33 @@ async function ResourceListing({
       {showBanner ? (
         <header
           data-theme-collection-banner
-          className="mx-auto w-full max-w-[var(--marketplace-page-width,1440px)] px-4 py-8 sm:px-6 lg:px-8"
+          className="mx-auto w-full max-w-[var(--marketplace-page-width,1440px)] px-4 pb-2 pt-6 sm:px-6 lg:px-8"
         >
-          <h1 className="text-3xl font-semibold tracking-tight text-marketplace-foreground">
+          <h1 className="marketplace-listing-title text-balance text-marketplace-foreground">
             {title}
           </h1>
         </header>
       ) : null}
-      <ProductListing
-        state={parseListingSearchParams({})}
-        basePath={context.basePath}
-        currency={context.currency}
-        locale={context.locale as SupportedLocale}
-        listId={listId}
-        listName={listName}
-        categoryId={categoryId}
-        baseParams={categoryId ? { in_category: categoryId } : undefined}
-        fetchProducts={fetchProducts}
-        fetchFilters={getProductFilters}
-        pageSize={productCount}
-        columns={columns}
-        mobileColumns={mobileColumns}
-        filterStyle={filterStyle}
-        paginationStyle={paginationStyle}
-        sidebarBlocks={sidebarBlocks}
-      />
+      <div className="mx-auto w-full max-w-[var(--marketplace-page-width,1440px)] px-4 pb-12 pt-4 sm:px-6 lg:px-8">
+        <ProductListing
+          state={parseListingSearchParams(context.listingSearchParams ?? {})}
+          basePath={context.basePath}
+          currency={context.currency}
+          locale={context.locale as SupportedLocale}
+          listId={listId}
+          listName={listName}
+          categoryId={categoryId}
+          baseParams={categoryId ? { in_category: categoryId } : undefined}
+          fetchProducts={fetchProducts}
+          fetchFilters={getProductFilters}
+          pageSize={productCount}
+          columns={columns}
+          mobileColumns={mobileColumns}
+          filterStyle={filterStyle}
+          paginationStyle={paginationStyle}
+          sidebarBlocks={sidebarBlocks}
+        />
+      </div>
     </>
   );
 }

@@ -1,6 +1,11 @@
 const CONSENT_STORAGE_KEY = "spree_analytics_consent";
 export type AnalyticsConsentChoice = "granted" | "denied";
 
+/** Opt-in banner and event gating; default off so tags load without a bottom bar. */
+export function analyticsConsentRequired(): boolean {
+  return process.env.NEXT_PUBLIC_ANALYTICS_REQUIRE_CONSENT === "true";
+}
+
 export function analyticsConsentChoice(): AnalyticsConsentChoice | null {
   if (typeof window === "undefined") return null;
   try {
@@ -16,6 +21,7 @@ export function analyticsConsentChoice(): AnalyticsConsentChoice | null {
  * until the buyer grants analytics in local storage (`granted`).
  */
 export function analyticsConsentGranted(): boolean {
+  if (!analyticsConsentRequired()) return true;
   return analyticsConsentChoice() === "granted";
 }
 

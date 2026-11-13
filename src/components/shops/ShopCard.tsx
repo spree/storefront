@@ -87,11 +87,17 @@ export async function ShopCard({
               {tagline}
             </p>
           ) : null}
-          {showFollow ? (
-            <div className="relative z-10 mt-2">
+          <div className="relative z-10 mt-2 flex items-center gap-2">
+            <Link
+              href={shopHref}
+              className="text-sm font-medium text-marketplace-foreground underline-offset-4 hover:underline"
+            >
+              {tHome("visitShop")}
+            </Link>
+            {showFollow ? (
               <FollowShopButton sellerId={seller.id} returnTo={shopHref} />
-            </div>
-          ) : null}
+            ) : null}
+          </div>
         </div>
       </article>
     );
@@ -104,31 +110,25 @@ export async function ShopCard({
         className,
       )}
     >
-      <div className="relative aspect-[5/2] w-full overflow-hidden bg-marketplace-surface-warm">
-        {cover ? (
-          // eslint-disable-next-line @next/next/no-img-element
+      {cover ? (
+        <div className="relative aspect-[5/2] w-full overflow-hidden bg-marketplace-surface-warm">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src={cover}
             alt=""
             className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.02]"
           />
-        ) : (
-          <div className="flex h-full items-end p-3">
-            <span className="font-display text-sm font-medium text-marketplace-muted-foreground">
-              {seller.name}
-            </span>
-          </div>
-        )}
-        {showFollow ? (
-          <div className="absolute right-2 top-2 z-20">
-            <FollowShopButton
-              sellerId={seller.id}
-              returnTo={shopHref}
-              iconOnly
-            />
-          </div>
-        ) : null}
-      </div>
+          {showFollow ? (
+            <div className="absolute right-2 top-2 z-20">
+              <FollowShopButton
+                sellerId={seller.id}
+                returnTo={shopHref}
+                iconOnly
+              />
+            </div>
+          ) : null}
+        </div>
+      ) : null}
 
       <div className="flex flex-1 flex-col gap-3 p-4">
         <div className="flex items-start gap-3">
@@ -148,7 +148,7 @@ export async function ShopCard({
             </div>
           )}
           <div className="min-w-0 flex-1">
-            <h3 className="font-semibold text-marketplace-foreground">
+            <h3 className="min-h-10 text-sm font-semibold leading-5 text-marketplace-foreground">
               <Link
                 href={shopHref}
                 className="line-clamp-2 hover:text-marketplace-brand focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-marketplace-brand"
@@ -157,13 +157,15 @@ export async function ShopCard({
               </Link>
             </h3>
             {hasReviews ? (
-              <div className="mt-1 flex items-center gap-1.5 text-xs text-marketplace-muted-foreground">
+              <div className="mt-1 flex min-w-0 items-center gap-1.5 text-xs text-marketplace-muted-foreground">
                 <StarRatingDisplay
                   rating={seller.average_rating!}
-                  size="sm"
+                  size="xs"
                   showValue
+                  plainValue
+                  fractional
                 />
-                <span>({seller.reviews_count})</span>
+                <span className="shrink-0">({seller.reviews_count})</span>
               </div>
             ) : null}
           </div>

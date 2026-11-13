@@ -4,8 +4,10 @@ import {
   MERCH_BUYER_A_EMAIL,
   MERCH_BUYER_B_EMAIL,
   MERCH_BUYER_PASSWORD,
+  openPrivacySettings,
+  reloadPrivacySettings,
+  requireLabStoreApiUrl,
   savePrivacySettings,
-  storefrontGoto,
 } from "./marketplace-fixtures";
 import { storeApiFetch } from "./store-api";
 
@@ -13,7 +15,7 @@ test("advertising consent persists independently and stays isolated between buye
   page,
   browser,
 }, testInfo) => {
-  expect(process.env.SPREE_API_URL).toBe("http://127.0.0.1:3011");
+  requireLabStoreApiUrl();
   await loginBuyerThroughAccountForm(
     page,
     MERCH_BUYER_A_EMAIL,
@@ -37,25 +39,30 @@ test("advertising consent persists independently and stays isolated between buye
       await storeApiFetch(otherPage, "GET", "customers/me")
     ).json();
     expect(originalB.email).toBe(MERCH_BUYER_B_EMAIL);
-    await storefrontGoto(page, "/us/en/account/settings/privacy");
-    const advertising = page.getByRole("checkbox", {
-      name: /^personalized advertising/i,
-    });
-    const recommendations = page.getByRole("checkbox", {
-      name: /^personalized recommendations/i,
-    });
+    let { advertising, recommendations } = await openPrivacySettings(page);
     await recommendations.setChecked(true);
-    await advertising.setChecked(!originalA.behavioral_advertising_enabled);
-    await savePrivacySettings(page);
-    await page.reload({ waitUntil: "domcontentloaded" });
+    await expect(recommendations).toBeChecked();
+    const toggledAdvertisingTarget = !originalA.behavioral_advertising_enabled;
+    await advertising.setChecked(toggledAdvertisingTarget);
     await expect(advertising).toBeChecked({
-      checked: !originalA.behavioral_advertising_enabled,
+      checked: toggledAdvertisingTarget,
+    });
+    await savePrivacySettings(page, {
+      personalization_enabled: true,
+      behavioral_advertising_enabled: toggledAdvertisingTarget,
+    });
+    ({ advertising, recommendations } = await reloadPrivacySettings(page, {
+      personalization_enabled: true,
+      behavioral_advertising_enabled: toggledAdvertisingTarget,
+    }));
+    await expect(advertising).toBeChecked({
+      checked: toggledAdvertisingTarget,
     });
     await expect(recommendations).toBeChecked();
-    await storefrontGoto(otherPage, "/us/en/account/settings/privacy");
-    await expect(
-      otherPage.getByRole("checkbox", { name: /^personalized advertising/i }),
-    ).toBeChecked({ checked: originalB.behavioral_advertising_enabled });
+    const otherPrivacy = await openPrivacySettings(otherPage);
+    await expect(otherPrivacy.advertising).toBeChecked({
+      checked: originalB.behavioral_advertising_enabled,
+    });
     const afterB = await (
       await storeApiFetch(otherPage, "GET", "customers/me")
     ).json();

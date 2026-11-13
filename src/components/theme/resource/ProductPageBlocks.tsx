@@ -3,12 +3,19 @@
 import type { Product, ProductPersonalizationField, Variant } from "@spree/sdk";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
-import { createContext, useContext, useState } from "react";
+import { createContext, useContext, useEffect, useState } from "react";
 import { toast } from "sonner";
 import { QuantityPickerField } from "@/components/cart/QuantityPickerField";
 import { FavoriteButton } from "@/components/products/FavoriteButton";
 import { HiddenPricePrompt } from "@/components/products/HiddenPricePrompt";
+import { MadeTogetherBuyBox } from "@/components/products/MadeTogetherBuyBox";
+import { MakeOfferButton } from "@/components/products/MakeOfferButton";
 import { MediaGallery } from "@/components/products/MediaGallery";
+import { PersonalizationProofNotice } from "@/components/products/PersonalizationProofNotice";
+import {
+  type BundleOffer,
+  ProductBundleOffer,
+} from "@/components/products/ProductBundleOffer";
 import { ProductPersonalizationForm } from "@/components/products/ProductPersonalizationForm";
 import { ProductPurchaseDeliveryPanel } from "@/components/products/ProductPurchaseDeliveryPanel";
 import { ProductSellerIdentity } from "@/components/products/ProductSellerIdentity";
@@ -21,9 +28,11 @@ import { useStore } from "@/contexts/StoreContext";
 import { useStoreThemeSettings } from "@/contexts/ThemeSettingsContext";
 import { trackAddToCart } from "@/lib/analytics/gtm";
 import type { CartDiscoveryInput } from "@/lib/discovery-context";
-import type {
-  PersonalizationAnswers,
-  PersonalizationFieldError,
+import type { MadeTogetherPresentation } from "@/lib/made-together/types";
+import {
+  buildPersonalizationPayload,
+  type PersonalizationAnswers,
+  type PersonalizationFieldError,
 } from "@/lib/personalization";
 import { themeSettingEnabled } from "@/lib/theme/setting-value";
 
@@ -44,6 +53,7 @@ type ProductBlockContextValue = {
   onAddToCart?: () => Promise<void>;
   basePath?: string;
   fixedQuantity?: boolean;
+  madeTogether?: MadeTogetherPresentation | null;
 };
 
 const ProductBlockVariantContext = createContext<ProductBlockContextValue>({
@@ -92,7 +102,6 @@ export function ProductPageBlock({
   const { selectedVariant } = blockContext;
   const t = useTranslations("products");
   const tw = useTranslations("wholesale");
-  const tp = useTranslations("personalization");
   const tc = useTranslations("customOrders");
   const hiddenPricing = useHiddenPricing();
   const componentType: Record<string, string> = {
@@ -105,12 +114,22 @@ export function ProductPageBlock({
   type = componentType[type] || type;
   if (type === "product_seller")
     return product.seller ? (
-      <ProductSellerIdentity
-        seller={product.seller}
+      <MadeTogetherBuyBox
+        productId={product.id}
         basePath={basePath}
-        showLogo={themeSettingEnabled(settings.show_logo, true)}
-        showRating={themeSettingEnabled(settings.show_rating, true)}
-        showVisitShop={themeSettingEnabled(settings.show_visit_shop, true)}
+        initial={blockContext.madeTogether ?? null}
+        fallback={
+          <ProductSellerIdentity
+            seller={product.seller}
+            basePath={basePath}
+            showLogo={false}
+            showRating={themeSettingEnabled(settings.show_rating, true)}
+            showVisitShop={false}
+            productId={product.id}
+            productName={product.name}
+            messagingAvailable={product.messaging_available}
+          />
+        }
       />
     ) : null;
   if (type === "product_inventory")
@@ -157,12 +176,7 @@ export function ProductPageBlock({
       />
     ) : null;
   if (type === "product_proof")
-    return product.proof_required ? (
-      <div className="rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900">
-        <p className="font-medium">{tp("proofRequiredTitle")}</p>
-        <p className="mt-1">{tp("proofRequiredBody")}</p>
-      </div>
-    ) : null;
+    return product.proof_required ? <PersonalizationProofNotice /> : null;
   if (type === "product_custom_order")
     return product.seller?.accepts_custom_orders &&
       product.seller_id &&
@@ -284,7 +298,13 @@ export function ProductPageBlock({
       />
     );
   if (type === "buy_buttons")
-    return <ProductBuyButton product={product} cartDiscovery={cartDiscovery} />;
+    return (
+      <ProductBuyButton
+        product={product}
+        cartDiscovery={cartDiscovery}
+        basePath={basePath}
+      />
+    );
   if (
     type === "product_delivery" ||
     type === "product_shipping" ||
@@ -412,9 +432,11 @@ function ProductSwatches({
 function ProductBuyButton({
   product,
   cartDiscovery,
+  basePath,
 }: {
   product: Product;
   cartDiscovery?: CartDiscoveryInput;
+  basePath: string;
 }) {
   const t = useTranslations("wholesale");
   const { addItem } = useCart();
@@ -423,6 +445,10 @@ function ProductBuyButton({
   const { selectedVariant } = blockContext;
   const hiddenPricing = useHiddenPricing();
   const [busy, setBusy] = useState(false);
+  const [purchaseReady, setPurchaseReady] = useState(false);
+  useEffect(() => {
+    setPurchaseReady(true);
+  }, []);
   const variant =
     selectedVariant ||
     product.default_variant ||
@@ -438,34 +464,71 @@ function ProductBuyButton({
       </Button>
     );
   return (
-    <Button
-      className="w-full"
-      disabled={
-        busy || blockContext.personalizationBusy || !purchasable || !variant
-      }
-      onClick={async () => {
-        if (blockContext.onAddToCart) {
-          await blockContext.onAddToCart();
-          return;
+    <div className="flex flex-col gap-2">
+      <Button
+        type="button"
+        className="w-full"
+        disabled={
+          !purchaseReady ||
+          busy ||
+          blockContext.personalizationBusy ||
+          !purchasable ||
+          !variant
         }
-        if (!variant) return;
-        setBusy(true);
-        try {
-          const result = await addItem(variant.id, 1, undefined, cartDiscovery);
-          if (result.success) trackAddToCart(product, variant, 1, currency);
-          else
-            toast.error(
-              result.error || "Could not add this product to your cart.",
+        onClick={async () => {
+          if (blockContext.onAddToCart) {
+            await blockContext.onAddToCart();
+            return;
+          }
+          if (!variant) return;
+          setBusy(true);
+          try {
+            // Theme buy buttons without a host onAddToCart must still send
+            // personalization answers from the product block context.
+            const fields = blockContext.personalizationFields ?? [];
+            const answers = blockContext.personalizationAnswers ?? {};
+            const personalization =
+              fields.length > 0
+                ? buildPersonalizationPayload(fields, answers)
+                : undefined;
+            const result = await addItem(
+              variant.id,
+              1,
+              personalization,
+              cartDiscovery,
             );
-        } catch {
-          toast.error("Could not add this product to your cart.");
-        } finally {
-          setBusy(false);
-        }
-      }}
-    >
-      {busy ? "Adding…" : purchasable ? "Add to cart" : "Out of stock"}
-    </Button>
+            if (result.success) trackAddToCart(product, variant, 1, currency);
+            else
+              toast.error(
+                result.error || "Could not add this product to your cart.",
+              );
+          } catch {
+            toast.error("Could not add this product to your cart.");
+          } finally {
+            setBusy(false);
+          }
+        }}
+      >
+        {busy ? "Adding…" : purchasable ? "Add to cart" : "Out of stock"}
+      </Button>
+      <MakeOfferButton
+        variantId={variant?.id}
+        available={product.buyer_offers_available && purchasable}
+        basePath={basePath}
+        currency={currency}
+      />
+      {(product as Product & { bundle_offer?: BundleOffer | null })
+        .bundle_offer ? (
+        <ProductBundleOffer
+          offer={
+            (product as Product & { bundle_offer?: BundleOffer | null })
+              .bundle_offer!
+          }
+          currentProductId={product.id}
+          basePath={basePath || ""}
+        />
+      ) : null}
+    </div>
   );
 }
 

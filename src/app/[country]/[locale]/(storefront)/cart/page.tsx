@@ -23,7 +23,9 @@ import { EmptyStateIllustration } from "@/components/empty-states/EmptyStateIllu
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
 import { useCart } from "@/contexts/CartContext";
+import { useStore } from "@/contexts/StoreContext";
 import { useStoreThemeSettings } from "@/contexts/ThemeSettingsContext";
+import { useCartShippingPresentation } from "@/hooks/useCartShippingPresentation";
 import { trackRemoveFromCart, trackViewCart } from "@/lib/analytics/gtm";
 import { updateCartCustomerNote } from "@/lib/data/cart";
 import {
@@ -67,6 +69,7 @@ export default function CartPage() {
   const [savedRefreshKey, setSavedRefreshKey] = useState(0);
   const pathname = usePathname();
   const basePath = extractBasePath(pathname);
+  const { country } = useStore();
   const viewCartFiredRef = useRef(false);
   const t = useTranslations("cart");
   const tc = useTranslations("common");
@@ -109,6 +112,13 @@ export default function CartPage() {
       viewCartFiredRef.current = true;
     }
   }, [cart, loading]);
+
+  const {
+    shippingFree,
+    shippingAmount,
+    pending: shippingPending,
+    addOnsShowFreeShipping,
+  } = useCartShippingPresentation(cart ?? null, country);
 
   const handleRemove = async (item: LineItem) => {
     await removeItem(item.id);
@@ -212,7 +222,7 @@ export default function CartPage() {
               size={96}
               className="mx-auto text-marketplace-muted-foreground"
             />
-            <h1 className="mt-6 text-3xl font-bold tracking-tight text-marketplace-foreground">
+            <h1 className="mt-6 font-display text-3xl font-semibold tracking-tight text-marketplace-foreground">
               {t("emptyCart")}
             </h1>
             <p className="mt-2 text-sm text-marketplace-muted-foreground">
@@ -237,14 +247,6 @@ export default function CartPage() {
     );
   }
 
-  const deliveryTotal = cart.delivery_total
-    ? Number.parseFloat(cart.delivery_total)
-    : Number.NaN;
-  const shippingFree = Number.isFinite(deliveryTotal) && deliveryTotal === 0;
-  const shippingAmount =
-    Number.isFinite(deliveryTotal) && deliveryTotal > 0
-      ? cart.display_delivery_total
-      : null;
   const shippingAddress = cart.shipping_address;
   const shippingDestination = shippingAddress
     ? [shippingAddress.country_name, shippingAddress.postal_code]
@@ -268,7 +270,7 @@ export default function CartPage() {
       <div className="mx-auto max-w-[1400px] px-4 py-8 sm:px-6 sm:py-10 lg:px-10">
         <div className="flex flex-col gap-5 lg:grid lg:grid-cols-[minmax(0,1fr)_340px] lg:grid-rows-[auto_auto] lg:items-start lg:gap-x-10 lg:gap-y-5 xl:gap-x-14">
           <header className="lg:col-start-1 lg:row-start-1">
-            <h1 className="text-3xl font-bold tracking-tight text-marketplace-foreground sm:text-[2.125rem]">
+            <h1 className="font-display text-3xl font-semibold tracking-tight text-marketplace-foreground sm:text-[2.125rem]">
               {t("shoppingCart")}
             </h1>
             {sellerCount > 1 ? (
@@ -289,6 +291,7 @@ export default function CartPage() {
               customerNote={cart.customer_note}
               shippingFree={shippingFree}
               shippingAmount={shippingAmount}
+              shippingPending={shippingPending}
               onRemove={handleRemove}
               onSaveForLater={isAuthenticated ? handleSaveForLater : undefined}
               onUpdateQuantity={(itemId, quantity) =>
@@ -299,7 +302,7 @@ export default function CartPage() {
             <CartAddOns
               basePath={basePath}
               cartSlugs={cart.items.map((item) => item.slug)}
-              showFreeShipping={shippingFree}
+              showFreeShipping={addOnsShowFreeShipping}
             />
           </section>
 
@@ -360,8 +363,12 @@ export default function CartPage() {
                         </span>
                       ) : null}
                     </dt>
-                    <dd className="shrink-0 tabular-nums">
-                      {shippingFree ? (
+                    <dd className="shrink-0 tabular-nums text-right">
+                      {shippingPending ? (
+                        <span className="text-marketplace-muted-foreground">
+                          {t("shippingEstimateLoading")}
+                        </span>
+                      ) : shippingFree ? (
                         <span className="font-bold text-emerald-600">
                           {t("shippingFree")}
                         </span>
@@ -433,7 +440,7 @@ export default function CartPage() {
                   className="mt-0.5 size-4 shrink-0 text-marketplace-foreground"
                   aria-hidden
                 />
-                <span>
+                <span className="min-w-0">
                   {t.rich("purchaseProtection", {
                     protection: (chunks) => (
                       <Link
@@ -456,7 +463,7 @@ export default function CartPage() {
                     <Button
                       size="lg"
                       asChild
-                      className="h-12 w-full rounded-full border-transparent bg-[#222222] text-base font-semibold text-white hover:bg-black"
+                      className="h-12 w-full rounded-md border-transparent bg-marketplace-brand text-base font-semibold text-marketplace-brand-foreground hover:opacity-90"
                     >
                       <Link href={`${basePath}/checkout/${cart.id}`}>
                         {t("proceedToCheckout")}
@@ -485,7 +492,7 @@ export default function CartPage() {
                   terms: (chunks) => (
                     <Link
                       href={`${basePath}/policies/terms-of-service`}
-                      className="text-sky-700 underline underline-offset-2 hover:text-sky-800"
+                      className="text-marketplace-brand underline underline-offset-2 hover:opacity-80"
                     >
                       {chunks}
                     </Link>
@@ -493,7 +500,7 @@ export default function CartPage() {
                   privacy: (chunks) => (
                     <Link
                       href={`${basePath}/policies/privacy-policy`}
-                      className="text-sky-700 underline underline-offset-2 hover:text-sky-800"
+                      className="text-marketplace-brand underline underline-offset-2 hover:opacity-80"
                     >
                       {chunks}
                     </Link>
@@ -561,7 +568,7 @@ export default function CartPage() {
         <CartRecommendations
           basePath={basePath}
           cartSlugs={cart.items.map((item) => item.slug)}
-          showFreeShipping={shippingFree}
+          showFreeShipping={addOnsShowFreeShipping}
         />
         <CartSavedForLater basePath={basePath} refreshKey={savedRefreshKey} />
       </div>

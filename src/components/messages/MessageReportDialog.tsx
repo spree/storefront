@@ -1,7 +1,7 @@
 "use client";
 
 import { useTranslations } from "next-intl";
-import { useEffect, useState, useTransition } from "react";
+import { useEffect, useRef, useState, useTransition } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import {
@@ -29,6 +29,7 @@ export function MessageReportDialog({
   const [reasons, setReasons] = useState<{ id: string; name: string }[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
+  const bodyRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
     void getAbuseReportReasons().then((page) => {
@@ -43,22 +44,26 @@ export function MessageReportDialog({
 
   const title =
     subject.kind === "message" ? t("report.messageTitle") : t("report.title");
+  const reportBody = () =>
+    (bodyRef.current?.value ?? body).trim() || body.trim();
 
   function handleSubmit() {
-    if (!body.trim() || pending) return;
+    const trimmed = reportBody();
+    if (!trimmed || pending) return;
+    setBody(trimmed);
     setError(null);
     startTransition(async () => {
       try {
         if (subject.kind === "message") {
           await reportMessage({
             messageId: subject.messageId,
-            body: body.trim(),
+            body: trimmed,
             reasonId: reasonId || undefined,
           });
         } else {
           await reportMessageThread({
             threadId: subject.threadId,
-            body: body.trim(),
+            body: trimmed,
             reasonId: reasonId || undefined,
           });
         }
@@ -90,21 +95,19 @@ export function MessageReportDialog({
           </select>
         ) : null}
         <Textarea
+          ref={bodyRef}
           value={body}
           onChange={(event) => setBody(event.target.value)}
           rows={4}
           placeholder={t("report.placeholder")}
+          aria-label={t("report.placeholder")}
         />
         {error ? <p className="text-sm text-red-600">{error}</p> : null}
         <div className="flex justify-end gap-2">
           <Button type="button" variant="outline" onClick={onClose}>
             {t("report.cancel")}
           </Button>
-          <Button
-            type="button"
-            disabled={!body.trim() || pending}
-            onClick={handleSubmit}
-          >
+          <Button type="button" disabled={pending} onClick={handleSubmit}>
             {t("report.submit")}
           </Button>
         </div>

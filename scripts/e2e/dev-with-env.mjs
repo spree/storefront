@@ -35,6 +35,17 @@ for (const line of readFileSync(envFile, "utf8").split(/\r?\n/)) {
   env[key] = value;
 }
 
+if (process.env.SALES_DISCOUNTS_CERT === "1") {
+  const certApi = process.env.SPREE_API_URL || "http://127.0.0.1:3036";
+  env.SPREE_API_URL = certApi;
+  env.NEXT_PUBLIC_SPREE_API_URL = certApi;
+  if (process.env.SPREE_PUBLISHABLE_KEY) {
+    env.SPREE_PUBLISHABLE_KEY = process.env.SPREE_PUBLISHABLE_KEY;
+    env.NEXT_PUBLIC_SPREE_PUBLISHABLE_KEY = process.env.SPREE_PUBLISHABLE_KEY;
+  }
+  env.SALES_DISCOUNTS_CERT = "1";
+}
+
 const child = spawn("pnpm", ["exec", "next", "dev", "-p", env.STOREFRONT_E2E_PORT || "3001", "--webpack"], {
   cwd: repoRoot,
   env,

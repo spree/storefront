@@ -6,7 +6,7 @@
  *   pnpm run test:e2e:merch e2e/privacy-personalization.spec.ts
  */
 
-import { loginBuyerViaApi } from "./buyer-auth";
+import { loginBuyerViaApi, syncBuyerSessionFromCookies } from "./buyer-auth";
 import { expect, test } from "./buyer-desktop-evidence";
 import {
   ensureMerchandisingDataset,
@@ -18,12 +18,14 @@ import {
   MERCH_HOME_PATH,
   MERCH_SKUS,
   merchandisingCard,
+  openPrivacySettings,
+  requireLabStoreApiUrl,
   savePrivacySettings,
   storefrontGoto,
 } from "./marketplace-fixtures";
 import { storeApiFetch } from "./store-api";
 
-function cardReason(card: ReturnType<typeof merchandisingCard>, key: string) {
+function _cardReason(card: ReturnType<typeof merchandisingCard>, key: string) {
   return card.locator(`[data-merchandising-reason="${key}"]`);
 }
 
@@ -40,7 +42,7 @@ test.describe("account privacy personalization", () => {
   });
   test.afterEach(async ({ page }) => {
     if (!original) return;
-    expect(process.env.SPREE_API_URL).toBe("http://127.0.0.1:3011");
+    requireLabStoreApiUrl();
     const current = await (
       await storeApiFetch(page, "GET", "customers/me")
     ).json();
@@ -54,14 +56,19 @@ test.describe("account privacy personalization", () => {
   test("privacy toggle disables homepage personalized rails", async ({
     page,
   }, testInfo) => {
-    await loginBuyerViaApi(page, MERCH_BUYER_A_EMAIL, MERCH_BUYER_PASSWORD);
+    await loginBuyerViaApi(page, MERCH_BUYER_A_EMAIL, MERCH_BUYER_PASSWORD, {
+      requireAccountShell: true,
+    });
     original = await (await storeApiFetch(page, "GET", "customers/me")).json();
     expect(original?.email).toBe(MERCH_BUYER_A_EMAIL);
     await ensureMerchandisingDataset(page);
     await storefrontGoto(page, MERCH_HOME_PATH);
-    const configuredRecommendedRails = await page
-      .locator('[data-home-rail="recommended-for-you"]')
-      .count();
+    const recommendedRail = page.locator(
+      '[data-home-rail="recommended-for-you"]',
+    );
+    await expect(recommendedRail.first()).toBeVisible({ timeout: 60_000 });
+    const configuredRecommendedRails = await recommendedRail.count();
+    expect(configuredRecommendedRails).toBeGreaterThan(0);
     await testInfo.attach("published-home-rail-configuration", {
       body: JSON.stringify({ configuredRecommendedRails }),
       contentType: "application/json",
@@ -89,20 +96,18 @@ test.describe("account privacy personalization", () => {
     expect(boostIndexBefore).toBeLessThan(controlIndexBefore);
 
     await storefrontGoto(page, "/us/en/account/settings/privacy");
-    const toggle = page.getByRole("checkbox", {
-      name: /personalized recommendations/i,
-    });
+    const toggle = page.locator("#personalized-recommendations");
     await expect(toggle).toBeVisible({ timeout: 30_000 });
     await toggle.setChecked(false);
-    await savePrivacySettings(page);
+    await savePrivacySettings(page, { personalization_enabled: false });
 
     await storefrontGoto(page, MERCH_HOME_PATH);
     await expect(
       page.locator('[data-home-rail="recommended-for-you"]'),
-    ).toHaveCount(0);
+    ).toHaveCount(0, { timeout: 30_000 });
     await expect(
       page.locator('[data-home-rail="similar-to-saved"]'),
-    ).toHaveCount(0);
+    ).toHaveCount(0, { timeout: 30_000 });
 
     await storefrontGoto(
       page,
@@ -141,22 +146,17 @@ test.describe("account privacy personalization", () => {
       ),
     ).toBeVisible();
 
+    await syncBuyerSessionFromCookies(page);
     await storefrontGoto(page, "/us/en/account/settings/privacy");
-    await expect(
-      page.getByRole("checkbox", { name: /personalized recommendations/i }),
-    ).not.toBeChecked();
+    const personalizationToggle = page.locator("#personalized-recommendations");
+    await expect(personalizationToggle).toBeVisible({ timeout: 30_000 });
+    await expect(personalizationToggle).not.toBeChecked();
 
-    await page
-      .getByRole("checkbox", {
-        name: /personalized recommendations/i,
-      })
-      .setChecked(true);
-    await savePrivacySettings(page);
+    await personalizationToggle.setChecked(true);
+    await savePrivacySettings(page, { personalization_enabled: true });
 
     await page.reload();
-    await expect(
-      page.getByRole("checkbox", { name: /personalized recommendations/i }),
-    ).toBeChecked();
+    await expect(personalizationToggle).toBeChecked();
 
     await storefrontGoto(page, MERCH_HOME_PATH);
     await expect(
@@ -195,17 +195,14 @@ test.describe("account privacy personalization", () => {
   test("privacy toggle does not affect a clean-slate buyer", async ({
     page,
   }) => {
-    await loginBuyerViaApi(page, MERCH_BUYER_B_EMAIL, MERCH_BUYER_PASSWORD);
+    await loginBuyerViaApi(page, MERCH_BUYER_B_EMAIL, MERCH_BUYER_PASSWORD, {
+      requireAccountShell: true,
+    });
     original = await (await storeApiFetch(page, "GET", "customers/me")).json();
     expect(original?.email).toBe(MERCH_BUYER_B_EMAIL);
     await ensureMerchandisingDataset(page);
-    await storefrontGoto(page, "/us/en/account/settings/privacy");
-    await expect(
-      page.getByRole("checkbox", { name: /personalized recommendations/i }),
-    ).toBeVisible();
-    await page
-      .getByRole("checkbox", { name: /personalized recommendations/i })
-      .setChecked(false);
+    const { recommendations } = await openPrivacySettings(page);
+    await recommendations.setChecked(false);
     await savePrivacySettings(page);
     await storefrontGoto(page, MERCH_HOME_PATH);
     await expect(

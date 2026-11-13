@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" role="img" aria-labelledby="title">
+  <title id="title">Marketplace pick</title>
+  <path d="m12 3.55 1.95 5.25 5.5.25-4.3 3.4 1.5 5.25L12 14.95l-4.65 2.75 1.5-5.25-4.3-3.4 5.5-.25L12 3.55Z" stroke="#514C49" stroke-width="1.5" stroke-linejoin="round"/>
+  <path d="M12 1.75v1.2M21 12h1.25M1.75 12H3" stroke="#514C49" stroke-width="1.45" stroke-linecap="round"/>
+</svg>

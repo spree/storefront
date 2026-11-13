@@ -40,11 +40,10 @@ vi.mock("@/components/theme/ThemePageRenderer", () => ({
     return <div data-testid="theme-homepage" />;
   },
 }));
-vi.mock("@/components/theme/ThemeTemplateRenderer", () => ({
-  ThemeTemplateRenderer: (props: unknown) => {
-    mocks.templateRender(props);
-    return <div data-testid="default-home-hero" />;
-  },
+vi.mock("@/components/home/MarketplaceHomeEditorialHero", () => ({
+  MarketplaceHomeEditorialHero: () => (
+    <div data-testid="marketplace-home-hero" />
+  ),
 }));
 vi.mock("@/components/home/MarketplaceHomeSections", () => ({
   MarketplaceHomeSections: (props: unknown) => {
@@ -104,9 +103,8 @@ describe("storefront homepage theme template", () => {
       }),
     );
 
-    expect(screen.getByTestId("default-home-hero")).toBeInTheDocument();
+    expect(screen.getByTestId("marketplace-home-hero")).toBeInTheDocument();
     expect(screen.getByTestId("marketplace-homepage")).toBeInTheDocument();
-    expect(mocks.templateRender).toHaveBeenCalledOnce();
     expect(mocks.themePageRender).not.toHaveBeenCalled();
   });
 
@@ -122,7 +120,7 @@ describe("storefront homepage theme template", () => {
       }),
     );
 
-    expect(screen.getByTestId("default-home-hero")).toBeInTheDocument();
+    expect(screen.getByTestId("marketplace-home-hero")).toBeInTheDocument();
     expect(screen.getByTestId("marketplace-homepage")).toBeInTheDocument();
     expect(mocks.themePageRender).not.toHaveBeenCalled();
   });
@@ -139,8 +137,9 @@ describe("storefront homepage theme template", () => {
     );
 
     expect(screen.getByTestId("marketplace-homepage")).toBeInTheDocument();
+    expect(screen.getByTestId("marketplace-home-hero")).toBeInTheDocument();
     expect(mocks.marketplaceHomeRender).toHaveBeenCalledOnce();
-    expect(mocks.templateRender).toHaveBeenCalledOnce();
+    expect(mocks.themePageRender).not.toHaveBeenCalled();
   });
 
   it("shows a neutral loading shell before homepage data resolves", async () => {
@@ -152,7 +151,7 @@ describe("storefront homepage theme template", () => {
     );
 
     expect(screen.getByLabelText("Loading homepage")).toBeInTheDocument();
-    expect(mocks.templateRender).not.toHaveBeenCalled();
+    expect(mocks.themePageRender).not.toHaveBeenCalled();
     expect(
       screen.queryByTestId("marketplace-homepage"),
     ).not.toBeInTheDocument();

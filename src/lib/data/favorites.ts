@@ -44,6 +44,35 @@ export async function listFavorites() {
   }, "Failed to load favorites");
 }
 
+export async function isFavorited(input: {
+  productId: string;
+  variantId?: string;
+}) {
+  return actionResult(async () => {
+    const token = await getAccessToken();
+    if (!token) return { favorited: false };
+
+    const options = { token };
+    const list = await getClient().wishlists.list({ limit: 50 }, options);
+    const wishlist =
+      list.data.find((entry) => entry.is_default) ||
+      list.data.find((entry) => entry.name === FAVORITES_NAME);
+    if (!wishlist) return { favorited: false };
+
+    const detailed = await getClient().wishlists.get(
+      wishlist.id,
+      { expand: ["items"] },
+      options,
+    );
+    const items = detailed.items ?? [];
+    const favorited = items.some((item) => {
+      if (input.variantId && item.variant_id === input.variantId) return true;
+      return item.product_id === input.productId;
+    });
+    return { favorited };
+  }, "Failed to check favorite");
+}
+
 export async function addFavorite(input: {
   productId: string;
   variantId?: string;

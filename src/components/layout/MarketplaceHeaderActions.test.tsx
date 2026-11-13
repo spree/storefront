@@ -12,7 +12,9 @@ const mocks = vi.hoisted(() => ({
     },
     logout: vi.fn(),
   },
-  getBuyerOffers: vi.fn().mockResolvedValue({ data: [] }),
+  getShopOffers: vi.fn().mockResolvedValue({ data: [] }),
+  markShopOffersSeen: vi.fn().mockResolvedValue({ updated: 0 }),
+  getUnreadShopOfferCount: vi.fn().mockResolvedValue(0),
   getProductsByIds: vi.fn().mockResolvedValue([]),
   getCustomer: vi.fn().mockResolvedValue({
     display_available_store_credit_total: "$12.00",
@@ -21,7 +23,10 @@ const mocks = vi.hoisted(() => ({
 
 vi.mock("next-intl", () => ({
   useLocale: () => "en-US",
-  useTranslations: () => (key: string) => key,
+  useTranslations: () => (key: string, values?: Record<string, unknown>) => {
+    if (!values) return key;
+    return `${key}:${JSON.stringify(values)}`;
+  },
 }));
 
 vi.mock("@/contexts/AuthContext", () => ({
@@ -36,8 +41,10 @@ vi.mock("@/components/account/MessagesNavBadge", () => ({
   MessagesNavBadge: () => <span data-testid="unread-badge">1</span>,
 }));
 
-vi.mock("@/lib/data/offers", () => ({
-  getBuyerOffers: mocks.getBuyerOffers,
+vi.mock("@/lib/data/shop-offers", () => ({
+  getShopOffers: mocks.getShopOffers,
+  markShopOffersSeen: mocks.markShopOffersSeen,
+  getUnreadShopOfferCount: mocks.getUnreadShopOfferCount,
 }));
 
 vi.mock("@/lib/data/products", () => ({
@@ -71,7 +78,9 @@ function renderActions() {
 describe("MarketplaceHeaderActions", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    mocks.getBuyerOffers.mockResolvedValue({ data: [] });
+    mocks.getShopOffers.mockResolvedValue({ data: [] });
+    mocks.markShopOffersSeen.mockResolvedValue({ updated: 0 });
+    mocks.getUnreadShopOfferCount.mockResolvedValue(0);
     mocks.getProductsByIds.mockResolvedValue([]);
     mocks.getCustomer.mockResolvedValue({
       display_available_store_credit_total: "$12.00",
@@ -120,11 +129,7 @@ describe("MarketplaceHeaderActions", () => {
     expect(screen.getByText("D")).toBeInTheDocument();
 
     await user.click(screen.getByRole("button", { name: "deals" }));
-    expect(await screen.findByText("emptyTitle")).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "viewAllDeals" })).toHaveAttribute(
-      "href",
-      "/us/en/account/offers",
-    );
+    expect(await screen.findByText("shopOffersEmptyTitle")).toBeInTheDocument();
 
     await user.keyboard("{Escape}");
     await user.click(screen.getByRole("button", { name: "myAccount" }));
@@ -151,26 +156,27 @@ describe("MarketplaceHeaderActions", () => {
     ).toBeInTheDocument();
   });
 
-  it("shows the seller and product details for recent buyer offers", async () => {
+  it("shows seller campaign offers in the deals menu", async () => {
     const user = userEvent.setup();
-    mocks.getBuyerOffers.mockResolvedValue({
+    mocks.getShopOffers.mockResolvedValue({
       data: [
         {
-          id: "offer-1",
-          status: "awaiting_buyer",
-          offer_amount: 12,
-          list_amount: 20,
-          final_amount: null,
-          currency: "USD",
-          buyer_message: null,
+          id: "shopoff-1",
+          source: "thank_you",
           created_at: "2026-09-28T10:00:00Z",
-          updated_at: "2026-09-29T10:00:00Z",
-          expires_at: null,
-          buyer_accept_by: null,
-          discount_percent: 40,
+          seller_id: "seller-1",
+          seller_name: "Studio North",
           product_id: "product-1",
-          variant_id: "variant-1",
-          promotion_code: null,
+          promotion_code: "SAVE10",
+          discount_percent: 10,
+          discount_amount: null,
+          discount_kind: "percent",
+          expires_at: "2026-12-28T10:00:00Z",
+          redeemed_at: null,
+          seen_at: null,
+          expired: false,
+          available: true,
+          seen: false,
         },
       ],
     });
@@ -186,9 +192,16 @@ describe("MarketplaceHeaderActions", () => {
     renderActions();
     await user.click(screen.getByRole("button", { name: "deals" }));
 
-    expect(await screen.findByText("Ceramic Planter")).toBeInTheDocument();
-    expect(screen.getByText("$12.00")).toBeInTheDocument();
+    expect(
+      await screen.findByText('thankYouOffer:{"seller":"Studio North"}'),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        'shopOfferPercentOffWithCode:{"percent":10,"code":"SAVE10"}',
+      ),
+    ).toBeInTheDocument();
     expect(screen.getByAltText("Ceramic Planter")).toBeInTheDocument();
     expect(mocks.getProductsByIds).toHaveBeenCalledWith(["product-1"]);
+    expect(mocks.markShopOffersSeen).toHaveBeenCalledWith(["shopoff-1"]);
   });
 });

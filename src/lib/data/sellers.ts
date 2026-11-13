@@ -3,8 +3,10 @@
 import { createHash } from "node:crypto";
 import type { PaginatedResponse, Product } from "@spree/sdk";
 import { SpreeError } from "@spree/sdk";
+import { cacheLife, cacheTag } from "next/cache";
 import { PRODUCT_CARD_FIELDS } from "@/lib/data/cached";
 import { getSellerReviews as loadSellerReviews } from "@/lib/data/reviews";
+import { sellerStorefrontCacheTag } from "@/lib/data/seller-storefront-cache";
 import type { SellerStorefrontPayload } from "@/lib/data/seller-storefront-types";
 import {
   getAccessToken,
@@ -31,11 +33,11 @@ export async function getSeller(idOrSlug: string) {
   );
 }
 
-export async function getSellerStorefront(idOrSlug: string) {
-  const [localeOptions, authOptions] = await Promise.all([
-    getLocaleOptions(),
-    getAuthOptions(),
-  ]);
+async function fetchSellerStorefrontUncached(
+  idOrSlug: string,
+  localeOptions: { locale?: string; country?: string },
+  authOptions?: Awaited<ReturnType<typeof getAuthOptions>>,
+) {
   return getClient().request<SellerStorefrontPayload>(
     "GET",
     `/sellers/${idOrSlug}/storefront`,
@@ -45,6 +47,59 @@ export async function getSellerStorefront(idOrSlug: string) {
       params: { expand: "seller.policies,seller.rating_distribution" },
     },
   );
+}
+
+/**
+ * Public shop payload only — no cookies — so it can live in `use cache`.
+ * Personalized fields (following, messaging) are merged in getSellerStorefront.
+ */
+async function cachedPublicSellerStorefront(
+  idOrSlug: string,
+  locale: string,
+  country: string,
+  editorPreview = false,
+) {
+  "use cache: remote";
+  cacheLife("tenMinutes");
+  const cacheTagBase = sellerStorefrontCacheTag(idOrSlug);
+  cacheTag(cacheTagBase);
+  if (editorPreview) cacheTag(`${cacheTagBase}:shop-home-editor-preview`);
+  return fetchSellerStorefrontUncached(idOrSlug, { locale, country });
+}
+
+export async function getSellerStorefront(
+  idOrSlug: string,
+  options: { editorPreview?: boolean } = {},
+) {
+  const [localeOptions, authOptions] = await Promise.all([
+    getLocaleOptions(),
+    getAuthOptions(),
+  ]);
+  const payload = await cachedPublicSellerStorefront(
+    idOrSlug,
+    localeOptions.locale ?? "",
+    localeOptions.country ?? "",
+    options.editorPreview === true,
+  );
+  // The editor has its own cache key so public page visits never feed it stale
+  // seller content. Save actions expire the shared seller tag before reloading.
+  if (options.editorPreview) return payload;
+  // When the visitor is signed in, refresh only the personalization bits.
+  if (!authOptions.token) return payload;
+  try {
+    const personalized = await fetchSellerStorefrontUncached(
+      idOrSlug,
+      localeOptions,
+      authOptions,
+    );
+    return {
+      ...payload,
+      following: personalized.following,
+      messaging_available: personalized.messaging_available,
+    };
+  } catch {
+    return payload;
+  }
 }
 
 export async function getSellerProducts(

@@ -437,7 +437,9 @@ export async function CmsPageRenderer({
     Object.entries(theme?.settings.colors || {})
       .filter(
         ([key, value]) =>
-          colorVariables[key] && /^#[0-9a-fA-F]{6}$/.test(value),
+          key !== "background" &&
+          colorVariables[key] &&
+          /^#[0-9a-fA-F]{6}$/.test(value),
       )
       .map(([key, value]) => [colorVariables[key], value]),
   );

@@ -364,6 +364,7 @@ function PersonalizationFieldControl({
         {label}
         {instructions}
         <NativeSelect
+          className="w-full [&_[data-slot=native-select]]:h-12 [&_[data-slot=native-select]]:rounded-lg [&_[data-slot=native-select]]:border-[#b6a99e] [&_[data-slot=native-select]]:bg-[#fbf9f7] [&_[data-slot=native-select]]:px-3.5 [&_[data-slot=native-select]]:text-sm"
           id={id}
           value={selected}
           disabled={disabled}

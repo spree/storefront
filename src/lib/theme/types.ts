@@ -10,6 +10,7 @@ import type { CmsPage } from "@/components/cms/types";
 import type { SellerStorefrontPayload } from "@/lib/data/seller-storefront-types";
 import type { HomePersonalizationComposition } from "@/lib/data/storefront-personalization-types";
 import type { CartDiscoveryInput } from "@/lib/discovery-context";
+import type { MadeTogetherPresentation } from "@/lib/made-together/types";
 
 export type ThemeRenderContext =
   | HomeThemeContext
@@ -45,6 +46,7 @@ export type ProductThemeContext = BaseThemeContext & {
   };
   categoryId?: string;
   cartDiscovery?: CartDiscoveryInput;
+  madeTogether?: MadeTogetherPresentation | null;
 };
 
 export type CategoryThemeContext = BaseThemeContext & {
@@ -52,7 +54,10 @@ export type CategoryThemeContext = BaseThemeContext & {
   categoryId: string;
   categoryName?: string;
   categorySlug?: string;
+  listingSearchParams?: ListingSearchParams;
 };
+
+export type ListingSearchParams = Record<string, string | string[] | undefined>;
 
 export type CollectionThemeContext = BaseThemeContext & {
   kind: "collection";
@@ -60,6 +65,7 @@ export type CollectionThemeContext = BaseThemeContext & {
   collectionName?: string;
   collectionSlug?: string;
   collection?: Collection;
+  listingSearchParams?: ListingSearchParams;
 };
 
 export type SellerThemeContext = BaseThemeContext & {
@@ -67,6 +73,7 @@ export type SellerThemeContext = BaseThemeContext & {
   sellerSlug: string;
   seller: SellerStorefrontPayload;
   editorPreview?: boolean;
+  aboutEditMode?: boolean;
   marketplaceName?: string;
   featuredLayout?: SellerStorefrontPayload["featured_layout"];
   catalogPage?: number;

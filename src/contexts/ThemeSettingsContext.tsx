@@ -1,11 +1,20 @@
 "use client";
 
+import "@fontsource/roboto/latin-400.css";
+import "@fontsource/roboto/latin-500.css";
+import "@fontsource/roboto/latin-600.css";
+import "@fontsource/roboto/latin-700.css";
 import type { CSSProperties } from "react";
 import { createContext, useContext, useEffect, useState } from "react";
 import {
   applyNamedThemeFonts,
   themeGoogleFontStylesheets,
+  themeTypographyScaleCustomized,
 } from "@/components/theme/theme-fonts";
+import {
+  pinStorefrontShellBackground,
+  shouldSkipShellThemeColorKey,
+} from "@/components/theme/theme-style";
 import { themeSettingEnabled } from "@/lib/theme/setting-value";
 
 export type StoreThemeSettings = {
@@ -101,9 +110,11 @@ export function ThemeSettingsProvider({
     checkout_text: "--checkout-text",
   };
   Object.entries(settings?.colors || {}).forEach(([key, value]) => {
+    if (shouldSkipShellThemeColorKey(key)) return;
     if (colorVariables[key] && /^#[0-9a-fA-F]{6}$/.test(value))
       style[colorVariables[key]] = value;
   });
+  pinStorefrontShellBackground(style);
   const radii: Record<string, string> = {
     none: "0px",
     small: "6px",
@@ -345,14 +356,11 @@ export function ThemeSettingsProvider({
       {namedFontStylesheets.map((href) => (
         <link key={href} rel="stylesheet" href={href} />
       ))}
-      {namedFontStylesheets.length === 0 && fontLibrary === "google" ? (
-        <link
-          rel="stylesheet"
-          href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=Roboto:wght@400;500;600;700&display=swap"
-        />
-      ) : null}
       <div
         data-theme-global-settings
+        data-theme-typography-scale={
+          themeTypographyScaleCustomized(typography) ? "custom" : undefined
+        }
         data-theme-global-social-links={
           themeSettingEnabled(settings?.social?.show_social_links, true)
             ? "true"

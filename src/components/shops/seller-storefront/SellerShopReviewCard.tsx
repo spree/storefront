@@ -1,9 +1,10 @@
 import type { ProductReview } from "@spree/sdk";
-import { BadgeCheck, UserRound } from "lucide-react";
+import { Store } from "lucide-react";
 import Link from "next/link";
 import { getTranslations } from "next-intl/server";
+import { ReviewMedia } from "@/components/reviews/ReviewMedia";
 import { StarRatingDisplay } from "@/components/reviews/StarRating";
-import { formatShopReviewDate } from "@/lib/utils/format";
+import { formatDateTime, formatShopReviewDate } from "@/lib/utils/format";
 import { SellerShopReviewReportButton } from "./SellerShopReviewReportButton";
 
 interface SellerShopReviewCardProps {
@@ -37,97 +38,106 @@ export async function SellerShopReviewCard({
   const productHref = review.product_slug
     ? `${basePath}/products/${review.product_slug}`
     : null;
+  const initials = reviewer
+    .split(/\s+/)
+    .slice(0, 2)
+    .map((part) => part.charAt(0))
+    .join("")
+    .toLocaleUpperCase(locale);
 
   return (
-    <article className="py-7 first:pt-0">
-      <header className="flex items-start gap-3">
-        <div
-          className="flex size-10 shrink-0 items-center justify-center rounded-full bg-[#f5f1ec] text-[#6a625b]"
-          aria-hidden
-        >
-          <UserRound className="size-5" />
-        </div>
-        <div className="min-w-0 flex-1">
-          <p className="text-sm leading-5 text-[#4b4641]">
-            {reviewerProfileHref ? (
-              <Link
-                href={reviewerProfileHref}
-                aria-label={tReviews("viewReviewerProfile", { name: reviewer })}
-                className="font-semibold text-[#26221f] underline-offset-2 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-marketplace-brand"
-              >
-                {reviewer}
-              </Link>
-            ) : (
-              <span className="font-semibold text-[#26221f]">{reviewer}</span>
-            )}
-            <span className="text-[#77716b]">
-              {" "}
-              {t("reviewOnDate", {
-                date: formatShopReviewDate(displayDate, locale),
-              })}
-            </span>
-          </p>
-          <div className="mt-2 flex items-center gap-2">
-            <StarRatingDisplay rating={review.rating} size="sm" />
-            <span className="text-xs font-medium text-[#5a5149]">
-              {review.rating.toFixed(1)} / 5
-            </span>
-          </div>
-        </div>
-        <span className="hidden items-center gap-1 rounded-full bg-[#f5f1ec] px-2.5 py-1 text-xs font-medium text-[#5a5149] sm:inline-flex">
-          <BadgeCheck className="size-3.5" aria-hidden />
-          {tReviews("verifiedPurchase")}
-        </span>
-      </header>
-
-      <div className="mt-4 pl-[3.25rem]">
-        {review.title ? (
-          <h2 className="text-base font-semibold text-[#26221f]">
-            {review.title}
-          </h2>
-        ) : null}
-        {review.body ? (
-          <p className="mt-1 whitespace-pre-wrap text-sm leading-6 text-[#403a35]">
-            {review.body}
-          </p>
-        ) : null}
-
-        {review.product_name && productHref ? (
-          <a
-            href={productHref}
-            className="mt-4 inline-flex max-w-full items-center gap-3 text-sm font-medium text-[#51483d] underline decoration-[#a79a89]/60 underline-offset-2 transition-colors hover:text-[#26221f] hover:decoration-[#51483d]"
+    <article className="border-b border-[#e2ddd8] py-4 last:border-b-0 sm:py-5">
+      <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
+        <StarRatingDisplay rating={review.rating} size="xs" tone="amber" />
+        <div className="ml-auto flex min-w-0 max-w-full items-center gap-1.5 text-[13px]">
+          <span
+            aria-hidden="true"
+            className="grid size-4 shrink-0 place-items-center rounded-full bg-[#d8eadc] text-[8px] font-semibold text-[#315d3d]"
           >
-            {review.product_thumbnail_url ? (
-              // biome-ignore lint/performance/noImgElement: review product thumbnails come from the Store API
-              <img
-                src={review.product_thumbnail_url}
-                alt=""
-                className="size-12 shrink-0 rounded-sm object-cover"
-              />
-            ) : (
-              <span className="size-12 shrink-0 rounded-sm bg-[#eee9e4]" />
-            )}
-            <span className="line-clamp-2">{review.product_name}</span>
-          </a>
-        ) : null}
-
-        {review.seller_reply ? (
-          <div className="mt-4 border-l-2 border-[#d8c9ad] pl-3">
-            <p className="text-xs font-semibold text-[#51483d]">
-              {tReviews("sellerResponse")}
-            </p>
-            <p className="mt-1 whitespace-pre-wrap text-sm leading-5 text-[#403a35]">
-              {review.seller_reply}
-            </p>
-          </div>
-        ) : null}
-
-        <div className="mt-4">
-          <SellerShopReviewReportButton
-            reviewId={review.id}
-            loginHref={reportLoginHref}
-          />
+            {initials || "?"}
+          </span>
+          {reviewerProfileHref ? (
+            <Link
+              href={reviewerProfileHref}
+              aria-label={tReviews("viewReviewerProfile", { name: reviewer })}
+              className="truncate text-[13px] text-[#222] underline-offset-2 hover:underline"
+            >
+              {reviewer}
+            </Link>
+          ) : (
+            <span className="truncate text-[13px] text-[#222]">{reviewer}</span>
+          )}
+          <span aria-hidden="true" className="text-[#b5adb2]">
+            |
+          </span>
+          <time
+            dateTime={displayDate}
+            className="shrink-0 text-xs text-[#716a70]"
+          >
+            {formatShopReviewDate(displayDate, locale)}
+          </time>
         </div>
+      </div>
+
+      {review.body || review.title ? (
+        <p className="mt-1.5 whitespace-pre-wrap text-[15px] leading-[1.4] text-[#403a42]">
+          {review.body || review.title}
+        </p>
+      ) : null}
+
+      {review.product_name && productHref ? (
+        <p className="mt-2 text-xs text-[#716a70]">
+          {t("makerPurchasedLabel")}:{" "}
+          <Link
+            href={productHref}
+            className="text-[#514751] underline decoration-[#aaa2a0] underline-offset-2 hover:text-[#242025]"
+          >
+            {review.product_name}
+          </Link>
+        </p>
+      ) : null}
+
+      {review.images?.length || review.videos?.length ? (
+        <ReviewMedia images={review.images} videos={review.videos} />
+      ) : null}
+
+      {review.seller_reply ? (
+        <aside className="mt-3 border-l-2 border-[#b76548] pl-3.5">
+          <header className="flex flex-wrap items-center gap-x-2 gap-y-1">
+            <Store className="size-3.5 shrink-0 text-[#9a553b]" aria-hidden />
+            <span className="text-[13px] font-semibold text-[#302a31]">
+              {tReviews("sellerResponse")}
+            </span>
+            {review.seller_replied_at ? (
+              <time
+                dateTime={review.seller_replied_at}
+                className="text-xs text-[#756e74]"
+              >
+                <span aria-hidden="true" className="mr-2 text-[#c5bbb6]">
+                  ·
+                </span>
+                {formatDateTime(review.seller_replied_at, locale)}
+              </time>
+            ) : null}
+          </header>
+          <p className="mt-1 whitespace-pre-wrap text-sm leading-relaxed text-[#514a4f]">
+            {review.seller_reply}
+          </p>
+          {review.seller_reply_images?.length ||
+          review.seller_reply_videos?.length ? (
+            <ReviewMedia
+              images={review.seller_reply_images}
+              videos={review.seller_reply_videos}
+            />
+          ) : null}
+        </aside>
+      ) : null}
+
+      <div className="mt-3 flex flex-wrap items-center gap-1">
+        <SellerShopReviewReportButton
+          reviewId={review.id}
+          loginHref={reportLoginHref}
+        />
       </div>
     </article>
   );

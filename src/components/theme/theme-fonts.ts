@@ -26,6 +26,22 @@ export function themeFontWeight(weight: unknown): string | undefined {
     : undefined;
 }
 
+const TYPOGRAPHY_SCALE_KEY =
+  /^(?:heading_[1-6]_|paragraph_|(?:body|heading|subheading|accent)_(?:family|weight|size)$)/;
+
+/**
+ * Whether the merchant configured the typography scale. Without it, headings
+ * and paragraphs keep their component sizes instead of one global scale.
+ */
+export function themeTypographyScaleCustomized(
+  typography: Record<string, unknown> | undefined,
+): boolean {
+  return Object.entries(typography ?? {}).some(
+    ([key, value]) =>
+      TYPOGRAPHY_SCALE_KEY.test(key) && value != null && value !== "",
+  );
+}
+
 export function applyNamedThemeFonts(
   style: Record<string, string>,
   typography: Record<string, unknown> | undefined,

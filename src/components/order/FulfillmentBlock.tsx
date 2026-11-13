@@ -32,7 +32,7 @@ export function FulfillmentBlock({
   const t = useTranslations("orders");
   return (
     <div className="overflow-hidden rounded-lg border border-marketplace-border-subtle bg-marketplace-surface">
-      <div className="border-b border-marketplace-border-subtle p-4 sm:p-5">
+      <div className="border-b border-marketplace-border-subtle bg-marketplace-surface-warm/35 p-4 sm:p-5">
         <div className="flex flex-col lg:flex-row lg:gap-6 gap-4">
           {shipAddress && (
             <div className="lg:w-1/2">
@@ -45,11 +45,13 @@ export function FulfillmentBlock({
           <div className="lg:w-1/2 lg:flex justify-between">
             <div>
               <h3 className="mb-2 text-sm font-semibold text-marketplace-foreground">
-                {t("shippingMethod")}
+                {t("shipment")}
               </h3>
-              <p className="text-sm text-marketplace-foreground">
-                {fulfillment.delivery_method?.name || t("canceled")}
-              </p>
+              {fulfillment.delivery_method?.name ? (
+                <p className="text-sm font-medium text-marketplace-foreground">
+                  {fulfillment.delivery_method.name}
+                </p>
+              ) : null}
               {fulfillment.stock_location && (
                 <p className="mt-1 text-xs text-marketplace-muted-foreground">
                   {t("shippedFrom", {
@@ -64,7 +66,7 @@ export function FulfillmentBlock({
               </span>
             </div>
             <div className="mt-4 lg:mt-0">
-              {fulfillment.status === "shipped" && fulfillment.tracking_url ? (
+              {fulfillment.status !== "canceled" && fulfillment.tracking_url ? (
                 <Button size="sm" asChild>
                   <a
                     href={fulfillment.tracking_url}
@@ -74,11 +76,7 @@ export function FulfillmentBlock({
                     {t("trackItems")}
                   </a>
                 </Button>
-              ) : (
-                <Button variant="outline" size="sm" disabled>
-                  {t("trackItems")}
-                </Button>
-              )}
+              ) : null}
             </div>
           </div>
         </div>
@@ -89,13 +87,11 @@ export function FulfillmentBlock({
             <AlertDescription>{t("shipmentCanceledRefund")}</AlertDescription>
           </Alert>
         )}
-        {fulfillment.status !== "canceled" &&
-          fulfillment.status !== "shipped" &&
-          !fulfillment.tracking && (
-            <div className="mt-3 rounded-md bg-marketplace-surface-subtle p-3 text-center text-sm text-marketplace-muted-foreground">
-              {t("noTrackingInfo")}
-            </div>
-          )}
+        {fulfillment.status !== "canceled" && !fulfillment.tracking && (
+          <div className="mt-3 rounded-md bg-marketplace-surface-subtle p-3 text-center text-sm text-marketplace-muted-foreground">
+            {t("noTrackingInfo")}
+          </div>
+        )}
       </div>
 
       <div className="divide-y divide-marketplace-border-subtle">

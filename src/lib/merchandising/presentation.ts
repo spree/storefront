@@ -315,11 +315,12 @@ export function sellerTrustMerchandisingSignals(
   signals: MerchandisingSignal[],
   sellerBadges?: ReadonlyArray<{ key: string }> | null,
 ): MerchandisingSignal[] {
-  const hasStarSeller = sellerBadges?.some(
-    (badge) => badge.key === "star_seller",
+  // Star Seller / legacy Top Shop never appear as a text trust chip —
+  // `StarSellerAvatar` is the only buyer-facing Star Seller treatment.
+  void sellerBadges;
+  return signals.filter(
+    (signal) => signal.key !== "top_shop" && signal.key !== "star_seller",
   );
-  if (!hasStarSeller) return signals;
-  return signals.filter((signal) => signal.key !== "top_shop");
 }
 
 export function selectSellerTrustBadge({
@@ -455,6 +456,13 @@ export function badgeClassName(
     layout === "pdp-title" &&
     presentation === PRESENTATION.MARKETPLACE_BADGE
   ) {
+    if (
+      signal.scope === "editorial" ||
+      signal.key === "editors_pick" ||
+      signal.key === "marketplace_pick"
+    ) {
+      return "rounded-sm bg-[#fdebc2] px-2 py-1 text-xs font-medium leading-tight text-[#222] shadow-sm";
+    }
     return "rounded border border-[#e1e3df] bg-white px-1.5 py-0.5 text-[11px] font-medium leading-tight text-[#595959]";
   }
   if (
@@ -474,7 +482,7 @@ export function badgeClassName(
     return "rounded-full bg-marketplace-surface/95 px-2 py-0.5 text-[11px] font-medium leading-4 text-marketplace-muted-foreground shadow-sm ring-1 ring-marketplace-border";
   }
   if (presentation === PRESENTATION.SELLER_TRUST) {
-    return "inline-flex items-center gap-1 rounded-full bg-marketplace-surface-subtle px-2 py-0.5 text-[11px] font-medium leading-4 text-marketplace-foreground ring-1 ring-marketplace-border";
+    return "inline-flex items-center gap-1 text-[11px] font-medium leading-4 tracking-tight text-[#8b7355]";
   }
   return "rounded-full bg-marketplace-surface/95 px-2 py-0.5 text-[11px] font-medium leading-4 text-marketplace-foreground shadow-sm ring-1 ring-marketplace-border";
 }

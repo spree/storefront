@@ -89,6 +89,11 @@ function cartTag(surface: Surface): string {
 export async function getCheckoutOrder(cartId: string): Promise<Cart | null> {
   const surface = await resolveSurfaceForCart(cartId);
 
+  // Quote checkout and deep links pass an explicit order id — resolve it
+  // before the cookie cart, which may be a different open cart.
+  const linkedCart = await getCart(cartId, surface);
+  if (linkedCart && linkedCart.id === cartId) return linkedCart;
+
   // Try active cart first (order may still be in checkout)
   const cart = await getCart(undefined, surface);
   if (cart && cart.id === cartId) return cart;

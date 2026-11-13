@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" role="img" aria-labelledby="title">
+  <title id="title">On-time shipping</title>
+  <path d="M3.25 7.25h10.5v9.5H3.25z" stroke="#514C49" stroke-width="1.5" stroke-linejoin="round"/>
+  <path d="M13.75 10.25h3.2L20.75 13.5v3.25h-7V10.25Z" stroke="#514C49" stroke-width="1.5" stroke-linejoin="round"/>
+  <circle cx="7.25" cy="17.75" r="1.6" fill="#fff" stroke="#514C49" stroke-width="1.4"/>
+  <circle cx="17.25" cy="17.75" r="1.6" fill="#fff" stroke="#514C49" stroke-width="1.4"/>
+  <path d="m6.85 11.15 1.7 1.7 3.15-3.25" stroke="#514C49" stroke-width="1.55" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>

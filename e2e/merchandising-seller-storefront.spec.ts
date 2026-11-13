@@ -17,11 +17,11 @@ import {
 import { completeRequiredPersonalization } from "./pdp-helpers";
 import {
   assertSellerShopAttribution,
+  ensureEmptyStorefrontDtcCart,
   fetchStoreCart,
   findLineByProductSku,
   listIdFromPdpUrl,
   positionFromPdpUrl,
-  removeSellerShopDiscoveryLines,
   sellerIdFromPdpUrl,
 } from "./store-cart";
 
@@ -33,12 +33,19 @@ async function firstProductSku(page: import("@playwright/test").Page) {
 
 async function addToCartFromPdp(page: import("@playwright/test").Page) {
   await completeRequiredPersonalization(page);
+  // Classic PDP can render a sticky duplicate; prefer the first visible CTA.
   const addToCart = page
-    .locator("button")
-    .filter({ hasText: /add to cart|adding/i });
+    .getByRole("button", { name: /add to cart|adding/i })
+    .filter({ visible: true })
+    .first();
   await expect(addToCart).toBeVisible({ timeout: 15_000 });
+  await expect(addToCart).toBeEnabled({ timeout: 15_000 });
   await addToCart.click();
-  await expect(addToCart).toBeEnabled({ timeout: 60_000 });
+  // Assert cart feedback rather than the CTA re-enabling — a sticky twin can
+  // stay disabled while the drawer already shows the added line.
+  await expect(page.getByRole("dialog", { name: /cart/i })).toBeVisible({
+    timeout: 60_000,
+  });
 }
 
 test.describe("seller storefront merchandising", () => {
@@ -67,17 +74,29 @@ test.describe("seller storefront merchandising", () => {
   }) => {
     await loginBuyerViaApi(page, MERCH_BUYER_A_EMAIL, MERCH_BUYER_PASSWORD);
     await storefrontGoto(page, productsPath);
-    await expect(
-      merchandisingCard(page, MERCH_SKUS.sellerShopAffinity),
-    ).toBeVisible();
-    const buyerAFirst = await firstProductSku(page);
-    expect(buyerAFirst).toBe(MERCH_SKUS.sellerShopAffinity);
+    await expect
+      .poll(
+        async () => {
+          await page.locator("#shop-items").scrollIntoViewIfNeeded();
+          const sku = await firstProductSku(page).catch(() => null);
+          return sku;
+        },
+        { timeout: 60_000 },
+      )
+      .toBe(MERCH_SKUS.sellerShopAffinity);
 
     await logoutBuyer(page);
     await loginBuyerViaApi(page, MERCH_BUYER_B_EMAIL, MERCH_BUYER_PASSWORD);
     await storefrontGoto(page, productsPath);
-    const buyerBFirst = await firstProductSku(page);
-    expect(buyerBFirst).toBe(MERCH_SKUS.sellerShopBaseline);
+    await expect
+      .poll(
+        async () => {
+          await page.locator("#shop-items").scrollIntoViewIfNeeded();
+          return await firstProductSku(page).catch(() => null);
+        },
+        { timeout: 60_000 },
+      )
+      .toBe(MERCH_SKUS.sellerShopBaseline);
   });
 
   test("explicit sorts override personalized default ordering", async ({
@@ -102,17 +121,22 @@ test.describe("seller storefront merchandising", () => {
     page,
   }) => {
     await loginBuyerViaApi(page, MERCH_BUYER_A_EMAIL, MERCH_BUYER_PASSWORD);
-    await removeSellerShopDiscoveryLines(page);
+    await ensureEmptyStorefrontDtcCart(page, MERCH_BUYER_A_EMAIL);
     await storefrontGoto(page, productsPath);
 
     const card = merchandisingCard(page, MERCH_SKUS.sellerShopAffinity);
-    const link = card.getByRole("link").first();
+    const link = card.locator('a[href*="src=seller_shop"]').first();
+    await expect(link).toBeVisible({ timeout: 30_000 });
     const href = await link.getAttribute("href");
+    expect(href).toMatch(/\/products\//);
     const listId = listIdFromPdpUrl(href ?? "");
     const position = positionFromPdpUrl(href ?? "");
     const sellerId = sellerIdFromPdpUrl(href ?? "");
 
-    await link.click();
+    const productPath = href!.startsWith("http")
+      ? new URL(href!).pathname + new URL(href!).search
+      : href!;
+    await storefrontGoto(page, productPath, { waitUntil: "load" });
     await expect(page).toHaveURL(/\/products\//, { timeout: 30_000 });
     await addToCartFromPdp(page);
 

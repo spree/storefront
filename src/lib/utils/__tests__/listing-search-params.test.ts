@@ -6,7 +6,7 @@ import {
 import { buildProductQueryParams } from "../product-query";
 
 describe("listing search params", () => {
-  it("round-trips rating, seller, and personalizable filters", () => {
+  it("ignores legacy seller filters while preserving other listing filters", () => {
     const parsed = parseListingSearchParams({
       q: "mug",
       sort: "top_rated",
@@ -18,7 +18,7 @@ describe("listing search params", () => {
     expect(parsed.query).toBe("mug");
     expect(parsed.filters.sortBy).toBe("top_rated");
     expect(parsed.filters.ratingMin).toBe(4);
-    expect(parsed.filters.sellerId).toBe("sel_abc");
+    expect(parsed.filters).not.toHaveProperty("sellerId");
     expect(parsed.filters.personalizable).toBe(true);
 
     const built = buildListingSearchParams(new URLSearchParams(), {
@@ -26,8 +26,17 @@ describe("listing search params", () => {
       filters: parsed.filters,
     });
     expect(built.get("rating_min")).toBe("4");
-    expect(built.get("seller")).toBe("sel_abc");
+    expect(built.has("seller")).toBe(false);
     expect(built.get("personalizable")).toBe("1");
+  });
+
+  it("removes a stale seller query when rewriting a listing URL", () => {
+    const rewritten = buildListingSearchParams(
+      new URLSearchParams("seller=sel_abc&color=blue"),
+      { filters: { optionValues: [] } },
+    );
+    expect(rewritten.has("seller")).toBe(false);
+    expect(rewritten.get("color")).toBe("blue");
   });
 
   it("defaults search sort to relevance in API params", () => {

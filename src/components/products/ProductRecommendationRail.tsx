@@ -29,8 +29,10 @@ interface ProductRecommendationRailProps {
   moreHref?: string;
   moreLabel?: string;
   variant?: "default" | "etsy";
+  mobileSlidesPerView?: number;
   homeRailKey?: "recommended-for-you" | "similar-to-saved";
   dismissSurface?: string;
+  dismissible?: boolean;
   analyticsSurface?: RecommendationSurface;
   personalized?: boolean;
   experiment?: string | null;
@@ -47,8 +49,10 @@ export async function ProductRecommendationRail({
   moreHref,
   moreLabel,
   variant = "default",
+  mobileSlidesPerView,
   homeRailKey,
   dismissSurface,
+  dismissible = true,
   analyticsSurface,
   personalized = false,
   experiment,
@@ -96,7 +100,7 @@ export async function ProductRecommendationRail({
             ) : null
           }
         />
-        {homeRailKey || dismissSurface || personalized ? (
+        {dismissible && (homeRailKey || dismissSurface || personalized) ? (
           <RecommendationDismissibleCarousel
             products={products}
             basePath={basePath}
@@ -104,6 +108,7 @@ export async function ProductRecommendationRail({
             listId={listId}
             listName={listName}
             variant={variant}
+            mobileSlidesPerView={mobileSlidesPerView}
             homeRailSection={homeRailKey}
             dismissSurface={
               dismissSurface ??
@@ -120,6 +125,7 @@ export async function ProductRecommendationRail({
             listId={listId}
             listName={listName}
             variant={variant}
+            mobileSlidesPerView={mobileSlidesPerView}
             homeRailSection={homeRailKey}
             recommendationClick={recommendationClick}
             suppressRelevanceReason={suppressRelevanceReason}

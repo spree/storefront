@@ -7,6 +7,7 @@ interface MarketplaceSectionHeaderProps {
   action?: ReactNode;
   className?: string;
   density?: "default" | "compact" | "etsy" | "home";
+  headingLevel?: "h1" | "h2";
 }
 
 export function MarketplaceSectionHeader({
@@ -15,7 +16,9 @@ export function MarketplaceSectionHeader({
   action,
   className,
   density = "default",
+  headingLevel = "h2",
 }: MarketplaceSectionHeaderProps) {
+  const Heading = headingLevel;
   return (
     <div
       data-theme-section-header
@@ -29,7 +32,7 @@ export function MarketplaceSectionHeader({
       )}
     >
       <div className="min-w-0">
-        <h2
+        <Heading
           data-theme-section-heading
           className={cn(
             "tracking-tight",
@@ -43,7 +46,7 @@ export function MarketplaceSectionHeader({
           )}
         >
           {title}
-        </h2>
+        </Heading>
         {description ? (
           <p
             data-theme-section-description

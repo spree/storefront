@@ -25,9 +25,11 @@ export type SellerShopBannerSlide = {
 export type SellerShopBannerPayload = {
   id: string | null;
   layout:
+    | "none"
     | "single_mini"
     | "single_standard"
     | "carousel"
+    | "collage"
     | "collage_2"
     | "collage_3"
     | "collage_4";
@@ -39,10 +41,16 @@ export type SellerShopBannerPayload = {
 export type SellerShopPagePayload = {
   story_headline: string | null;
   links: Array<{ label: string; url: string }>;
-  member_bios: Array<{ name: string; bio: string }>;
+  member_bios: Array<{
+    name: string;
+    role?: string;
+    bio: string;
+    photo_url?: string | null;
+  }>;
   faqs: Array<{ question: string; answer: string }>;
   photos: Array<{ id: number; url: string; caption: string }>;
   video_url: string | null;
+  video_caption?: string | null;
   video_captions_url: string | null;
   seller_details_public: boolean;
   seller_details: Record<string, string>;
@@ -59,7 +67,7 @@ export type SellerStorefrontPayload = {
   };
   sections: SellerShopSection[];
   featured_product_ids: string[];
-  featured_layout: "standard" | "mixed_grid";
+  featured_layout: "standard" | "mixed_grid" | "none";
   banner: SellerShopBannerPayload | null;
   shop_page: SellerShopPagePayload | null;
   stats: {

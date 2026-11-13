@@ -60,7 +60,7 @@ export function ProductPageMeetTheMakerAside({
     <div
       className={
         inline
-          ? "flex w-auto min-w-0 flex-col items-center gap-2"
+          ? "flex w-full min-w-0 flex-row flex-wrap items-center justify-center gap-2 md:w-auto"
           : "flex w-full flex-col lg:max-w-[min(100%,22rem)] lg:shrink-0"
       }
     >
@@ -80,7 +80,7 @@ export function ProductPageMeetTheMakerAside({
       {afterFollow}
       {followersCount > 0 ? (
         <div
-          className={`mt-2 flex items-center justify-center gap-2 ${inline ? "" : "lg:justify-end"}`}
+          className={`mt-2 flex items-center justify-center gap-2 ${inline ? "w-full" : "lg:justify-end"}`}
         >
           <div className="flex -space-x-2" aria-hidden>
             {followerSamples.slice(0, 3).map((sample, index) => (

@@ -28,6 +28,7 @@ interface ProductCarouselProps {
   listName?: string;
   variant?: "default" | "etsy";
   spaceBetween?: number;
+  mobileSlidesPerView?: number;
   sellerShopDiscovery?: {
     sellerId: string;
     listId: SellerShopListId;
@@ -43,10 +44,9 @@ interface ProductCarouselProps {
 }
 
 const NAV_BUTTON_BASE =
-  "absolute top-1/2 z-20 flex size-10 -translate-y-1/2 cursor-pointer items-center justify-center rounded-[var(--marketplace-radius-md)] border border-marketplace-border bg-marketplace-surface text-marketplace-muted-foreground shadow-[var(--marketplace-shadow-card)] transition hover:bg-marketplace-canvas hover:text-marketplace-foreground disabled:cursor-default disabled:opacity-35";
+  "absolute top-1/2 z-20 flex size-11 -translate-y-1/2 cursor-pointer items-center justify-center rounded-full bg-[#302a31] text-white shadow-lg transition-[background-color,box-shadow,opacity] duration-200 ease-out hover:bg-[#1f1b22] disabled:cursor-default disabled:opacity-35 motion-reduce:transition-none";
 
-const NAV_BUTTON_ETSY =
-  "absolute top-[36%] z-20 flex size-10 -translate-y-1/2 items-center justify-center rounded-full bg-[#222] text-white shadow-lg transition-[background-color,box-shadow,opacity] duration-200 ease-out hover:bg-black disabled:cursor-default motion-reduce:transition-none";
+const NAV_BUTTON_ETSY = NAV_BUTTON_BASE;
 
 export function ProductCarousel({
   products,
@@ -56,6 +56,7 @@ export function ProductCarousel({
   listName = "Featured Products",
   variant = "default",
   spaceBetween,
+  mobileSlidesPerView,
   sellerShopDiscovery,
   homeRailSection,
   dismissibleRecommendations,
@@ -104,7 +105,7 @@ export function ProductCarousel({
 
   const isEtsy = variant === "etsy";
   const navClass = isEtsy ? NAV_BUTTON_ETSY : NAV_BUTTON_BASE;
-  const cardDensity = isEtsy ? "rail" : "standard";
+  const cardDensity = "rail";
   const showPrev = hasOverflow && !isBeginning;
   const showNext = hasOverflow && !isEnd;
 
@@ -151,8 +152,8 @@ export function ProductCarousel({
         <SwiperComponent
           modules={[Navigation]}
           watchOverflow={false}
-          spaceBetween={spaceBetween ?? (isEtsy ? 12 : 24)}
-          slidesPerView={isEtsy ? 2.2 : 1}
+          spaceBetween={spaceBetween ?? 16}
+          slidesPerView={mobileSlidesPerView ?? 2.2}
           navigation={{
             prevEl: prevRef.current,
             nextEl: nextRef.current,
@@ -166,24 +167,16 @@ export function ProductCarousel({
           onResize={updateNavState}
           onBreakpoint={updateNavState}
           onUpdate={updateNavState}
-          breakpoints={
-            isEtsy
-              ? {
-                  640: { slidesPerView: 3.15, spaceBetween: 12 },
-                  768: { slidesPerView: 4.1, spaceBetween: 12 },
-                  1024: { slidesPerView: 5.15, spaceBetween: 12 },
-                  1280: { slidesPerView: 5.85, spaceBetween: 12 },
-                }
-              : {
-                  640: { slidesPerView: 2, spaceBetween: 24 },
-                  768: { slidesPerView: 3, spaceBetween: 24 },
-                  1024: { slidesPerView: 4, spaceBetween: 24 },
-                }
-          }
+          breakpoints={{
+            640: { slidesPerView: 3.15, spaceBetween: 16 },
+            768: { slidesPerView: 4.1, spaceBetween: 16 },
+            1024: { slidesPerView: 5, spaceBetween: 16 },
+            1280: { slidesPerView: 5, spaceBetween: 16 },
+          }}
           className="product-carousel !w-full max-w-full"
         >
           {products.map((product, index) => (
-            <SwiperSlide key={product.id} className={isEtsy ? "" : "p-1"}>
+            <SwiperSlide key={product.id}>
               <ProductCard
                 product={product}
                 dismissibleRecommendation={dismissibleRecommendations}
@@ -238,7 +231,7 @@ export function ProductCarousel({
                 currency={currency}
                 fetchPriority={index === 0 ? "high" : undefined}
                 density={cardDensity}
-                showFavorite
+                showFavorite={false}
                 merchandisingSurface={
                   sellerShopDiscovery
                     ? "seller_shop"

@@ -11,12 +11,18 @@ describe("analyticsConsentGranted", () => {
     window.localStorage.clear();
   });
 
-  it("withholds events until a choice is saved", () => {
+  it("allows events by default when consent banner is disabled", () => {
+    expect(analyticsConsentGranted()).toBe(true);
+  });
+
+  it("withholds events until a choice is saved when consent is required", () => {
+    vi.stubEnv("NEXT_PUBLIC_ANALYTICS_REQUIRE_CONSENT", "true");
     expect(analyticsConsentGranted()).toBe(false);
     expect(analyticsConsentChoice()).toBeNull();
   });
 
-  it("allows events only after analytics is granted", () => {
+  it("allows events only after analytics is granted when consent is required", () => {
+    vi.stubEnv("NEXT_PUBLIC_ANALYTICS_REQUIRE_CONSENT", "true");
     expect(analyticsConsentGranted()).toBe(false);
     setAnalyticsConsent("granted");
     expect(analyticsConsentGranted()).toBe(true);

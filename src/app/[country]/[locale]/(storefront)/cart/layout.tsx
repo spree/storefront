@@ -6,8 +6,8 @@ export default function CartLayout({
   children: React.ReactNode;
 }) {
   return (
-    <div className="flex min-h-[calc(100dvh-8rem)] flex-col">
-      <div className="flex-1 pb-10">{children}</div>
+    <div className="flex min-h-0 flex-col">
+      <div className="flex-1">{children}</div>
       <CartFooter />
     </div>
   );

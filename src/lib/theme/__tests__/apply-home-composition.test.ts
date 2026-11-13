@@ -4,6 +4,8 @@ import { applyHomePersonalization } from "@/lib/theme/apply-home-composition";
 describe("applyHomePersonalization", () => {
   const template = {
     id: "tpl_1",
+    key: "default",
+    full_key: "home.default",
     name: "Home",
     template_type: "home",
     template_key: "default",

@@ -1,4 +1,5 @@
 import type { Policy, Seller } from "@spree/sdk";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 import Link from "next/link";
 import { getTranslations } from "next-intl/server";
 import { MarketplaceEmptyState } from "@/components/marketplace";
@@ -16,6 +17,7 @@ import {
 import { SellerPersonalizedDiscoveryRail } from "./SellerPersonalizedDiscoveryRail";
 import { SellerShopRatingSummary } from "./SellerShopRatingSummary";
 import { SellerShopReviewCard } from "./SellerShopReviewCard";
+import { SellerShopReviewSortForm } from "./SellerShopReviewSortForm";
 import { SellerStorefrontAbout } from "./SellerStorefrontAbout";
 import { SellerStorefrontPolicies } from "./SellerStorefrontPolicies";
 import { SellerStorefrontProducts } from "./SellerStorefrontProducts";
@@ -30,7 +32,7 @@ interface SellerStorefrontHomeProps {
   aboutHtml?: string | null;
   about?: string | null;
   reviewsCount: number;
-  featuredLayout?: "standard" | "mixed_grid";
+  featuredLayout?: "standard" | "mixed_grid" | "none";
   productCount?: number;
   policies?: Policy[];
   marketplaceName?: string;
@@ -42,6 +44,9 @@ interface SellerStorefrontHomeProps {
   query?: string;
   sort?: string;
   onSale?: string;
+  reviewPage?: number;
+  reviewSort?: string;
+  reviewDistribution?: Record<string, number> | null;
   minPrice?: string;
   maxPrice?: string;
   minRating?: string;
@@ -76,6 +81,9 @@ export async function SellerStorefrontHome({
   query,
   sort,
   onSale,
+  reviewPage = 1,
+  reviewSort,
+  reviewDistribution,
   minPrice,
   maxPrice,
   minRating,
@@ -96,10 +104,47 @@ export async function SellerStorefrontHome({
     (await getSellerProducts(slug, { sellerId, page: 1, limit: 1 })
       .then((result) => result.meta.count ?? 0)
       .catch(() => 0));
+  const normalizedReviewSort =
+    reviewSort === "newest" ||
+    reviewSort === "highest" ||
+    reviewSort === "lowest"
+      ? reviewSort
+      : undefined;
   const reviews =
     reviewsCount > 0
-      ? await getSellerReviews(slug, 1, 10).catch(() => ({ data: [] }))
-      : { data: [] };
+      ? await getSellerReviews(
+          slug,
+          reviewPage,
+          10,
+          normalizedReviewSort,
+        ).catch(() => ({
+          data: [],
+          meta: { pages: 1, count: 0 },
+        }))
+      : { data: [], meta: { pages: 1, count: 0 } };
+  const reviewPageCount = Math.max(
+    reviews.meta.pages || Math.ceil((reviews.meta.count || reviewsCount) / 10),
+    1,
+  );
+  const distributionRatings = Object.entries(reviewDistribution ?? {})
+    .map(([rating, count]) => [Number(rating), Number(count)] as const)
+    .filter(([rating, count]) => rating >= 1 && rating <= 5 && count > 0);
+  const distributionCount = distributionRatings.reduce(
+    (sum, [, count]) => sum + count,
+    0,
+  );
+  const distributionAverage = distributionCount
+    ? distributionRatings.reduce(
+        (sum, [rating, count]) => sum + rating * count,
+        0,
+      ) / distributionCount
+    : null;
+  const loadedAverage = reviews.data.length
+    ? reviews.data.reduce((sum, review) => sum + review.rating, 0) /
+      reviews.data.length
+    : null;
+  const averageRating =
+    seller?.average_rating ?? distributionAverage ?? loadedAverage;
   const hasAnnouncement = Boolean(
     shopAnnouncementHtml?.trim() || shopAnnouncement?.trim(),
   );
@@ -173,7 +218,7 @@ export async function SellerStorefrontHome({
         id="shop-reviews"
         className={`${sellerShopShellClass} border-t border-[#e3ddd8] bg-[#faf9f7] py-7`}
       >
-        <div className="mb-4 flex items-end justify-between gap-4 border-b border-[#e8e3df] pb-3">
+        <div className="mb-4 flex flex-wrap items-end justify-between gap-4 border-b border-[#e8e3df] pb-3">
           <div>
             <h2 className="text-lg font-semibold text-marketplace-foreground">
               {t("tab_reviews")}
@@ -182,13 +227,13 @@ export async function SellerStorefrontHome({
               {tReviews("reviewCount", { count: reviewsCount })}
             </p>
           </div>
-          {reviewsCount > reviews.data.length ? (
-            <Link
-              href={sellerShopPath(basePath, slug, "reviews")}
-              className="shrink-0 text-sm font-medium text-marketplace-foreground underline underline-offset-4 hover:text-marketplace-brand"
-            >
-              {t("viewAll")}
-            </Link>
+          {reviewsCount > 0 ? (
+            <SellerShopReviewSortForm
+              action={shopPath}
+              sort={normalizedReviewSort}
+              tab="home"
+              sortParam="review_sort"
+            />
           ) : null}
         </div>
         {reviews.data.length ? (
@@ -196,23 +241,99 @@ export async function SellerStorefrontHome({
             <aside className="border-b border-[#e8e3df] pb-4 lg:border-b-0 lg:border-r lg:pb-0 lg:pr-6">
               <SellerShopRatingSummary
                 locale={locale}
-                averageRating={seller?.average_rating ?? null}
+                averageRating={averageRating}
                 reviewsCount={reviewsCount}
               />
             </aside>
-            <div className="divide-y divide-marketplace-border-subtle">
-              {reviews.data.slice(0, 5).map((review) => (
-                <SellerShopReviewCard
-                  key={review.id}
-                  review={review}
-                  locale={locale}
-                  basePath={basePath}
-                  reportLoginHref={buildAccountLoginHref(
-                    basePath,
-                    sellerShopPath(basePath, slug, "reviews"),
+            <div className="min-w-0">
+              <div className="flex flex-col">
+                {reviews.data.map((review) => (
+                  <SellerShopReviewCard
+                    key={review.id}
+                    review={review}
+                    locale={locale}
+                    basePath={basePath}
+                    reportLoginHref={buildAccountLoginHref(
+                      basePath,
+                      sellerShopPath(basePath, slug, "reviews"),
+                    )}
+                  />
+                ))}
+              </div>
+              {reviewPageCount > 1 ? (
+                <nav
+                  className="mt-7 flex items-center justify-center gap-2"
+                  aria-label={tReviews("pagination")}
+                >
+                  {reviewPage > 1 ? (
+                    <Link
+                      href={sellerShopPath(basePath, slug, "home", {
+                        review_page: String(reviewPage - 1),
+                        review_sort: normalizedReviewSort,
+                      })}
+                      aria-label={tReviews("previousPage")}
+                      className="inline-flex size-9 items-center justify-center rounded-full bg-[#f1eeeb] text-[#39332e] transition-colors hover:bg-[#e8e2dc]"
+                    >
+                      <ChevronLeft className="size-4" aria-hidden />
+                    </Link>
+                  ) : (
+                    <span
+                      aria-hidden="true"
+                      className="inline-flex size-9 items-center justify-center rounded-full bg-[#f1eeeb] text-[#c0b9b3]"
+                    >
+                      <ChevronLeft className="size-4" />
+                    </span>
                   )}
-                />
-              ))}
+                  {Array.from(
+                    { length: reviewPageCount },
+                    (_, index) => index + 1,
+                  ).map((pageNumber) =>
+                    pageNumber === reviewPage ? (
+                      <span
+                        key={pageNumber}
+                        aria-current="page"
+                        className="inline-flex size-9 items-center justify-center rounded-full border border-[#39332e] bg-white text-sm font-semibold tabular-nums text-[#39332e]"
+                      >
+                        {pageNumber}
+                      </span>
+                    ) : (
+                      <Link
+                        key={pageNumber}
+                        href={sellerShopPath(basePath, slug, "home", {
+                          review_page: String(pageNumber),
+                          review_sort: normalizedReviewSort,
+                        })}
+                        aria-label={tReviews("pageOf", {
+                          page: pageNumber,
+                          total: reviewPageCount,
+                        })}
+                        className="inline-flex size-9 items-center justify-center rounded-full bg-[#f1eeeb] text-sm font-medium tabular-nums text-[#39332e] transition-colors hover:bg-[#e8e2dc]"
+                      >
+                        {pageNumber}
+                      </Link>
+                    ),
+                  )}
+                  {reviewPage < reviewPageCount ? (
+                    <Link
+                      href={sellerShopPath(basePath, slug, "home", {
+                        review_page: String(reviewPage + 1),
+                        review_sort: normalizedReviewSort,
+                      })}
+                      aria-label={tReviews("nextPage")}
+                      className="inline-flex size-9 items-center justify-center rounded-full bg-[#f1eeeb] text-[#39332e] transition-colors hover:bg-[#e8e2dc]"
+                    >
+                      <ChevronRight className="size-4" aria-hidden />
+                    </Link>
+                  ) : (
+                    <span
+                      aria-hidden="true"
+                      className="inline-flex size-9 items-center justify-center rounded-full bg-[#f1eeeb] text-[#c0b9b3]"
+                    >
+                      <ChevronRight className="size-4" />
+                    </span>
+                  )}
+                </nav>
+              ) : null}
             </div>
           </div>
         ) : (
@@ -221,7 +342,6 @@ export async function SellerStorefrontHome({
           </p>
         )}
       </section>
-
       <div
         id="shop-about"
         className="border-t border-marketplace-border-subtle"
@@ -234,11 +354,11 @@ export async function SellerStorefrontHome({
           aboutHtml={aboutHtml}
           about={about}
           salesCount={salesCount}
+          accentColor={seller?.shop_accent_color}
           shopPage={shopPage}
           editorPreview={editorPreview}
         />
       </div>
-
       <div
         id="shop-policies"
         className="border-t border-marketplace-border-subtle"

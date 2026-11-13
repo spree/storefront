@@ -1,3 +1,4 @@
+import { connection } from "next/server";
 import { CartDrawer } from "@/components/cart/CartDrawer";
 import { CartProvider } from "@/contexts/CartContext";
 import { getCustomer } from "@/lib/data/customer";
@@ -52,6 +53,7 @@ export async function WholesaleGate({
   children,
   allowGuestBrowse = false,
 }: WholesaleGateProps) {
+  await connection();
   const [customer, channel] = await Promise.all([
     getCustomer(),
     getWholesaleChannel(),

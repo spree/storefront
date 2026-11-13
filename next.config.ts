@@ -29,10 +29,13 @@ function spreeImagePatterns(): RemotePattern[] {
     }
   }
   const pathname = "/rails/active_storage/**";
-  return [
-    { protocol: "http", hostname, pathname },
-    { protocol: "https", hostname, pathname },
-  ];
+  // Dev often mixes 127.0.0.1 (API URL) with localhost (Rails default_url_options).
+  // Allow both so next/image does not trip the route error boundary.
+  const hostnames = Array.from(new Set([hostname, "localhost", "127.0.0.1"]));
+  return hostnames.flatMap((host) => [
+    { protocol: "http" as const, hostname: host, pathname },
+    { protocol: "https" as const, hostname: host, pathname },
+  ]);
 }
 
 function spreeApiRewriteOrigin(): string | null {
@@ -47,11 +50,12 @@ function spreeApiRewriteOrigin(): string | null {
 
 const nextConfig: NextConfig = {
   distDir:
-    process.env.E2E_CMS_STOREFRONT === "1"
+    process.env.SPREE_NEXT_DIST_DIR ||
+    (process.env.E2E_CMS_STOREFRONT === "1"
       ? process.env.E2E_CMS_STOREFRONT_DIST_DIR || ".next-cms-e2e"
       : process.env.E2E_USE_WEBPACK === "1"
         ? ".next-e2e-webpack"
-        : ".next",
+        : ".next"),
   output: "standalone",
   allowedDevOrigins: [
     "shop.lvh.me",
@@ -129,7 +133,9 @@ const nextConfig: NextConfig = {
   },
   images: {
     qualities: [25, 50, 75, 85, 100],
-    dangerouslyAllowLocalIP: true, // Allow localhost images in development
+    dangerouslyAllowLocalIP:
+      process.env.NODE_ENV !== "production" ||
+      process.env.SPREE_ALLOW_LOCAL_IMAGES === "true",
     deviceSizes: [640, 750, 828, 1080, 1200, 1920, 2048, 3840],
     imageSizes: [16, 32, 48, 64, 96, 128, 256, 384],
     remotePatterns: [

@@ -37,6 +37,7 @@ export function SpreeIcon({
       style={{ scale: 1.18, ...style }}
       role={title ? "img" : undefined}
       aria-hidden={title ? undefined : true}
+      data-icon={name}
       {...props}
     >
       {title ? <title>{title}</title> : null}

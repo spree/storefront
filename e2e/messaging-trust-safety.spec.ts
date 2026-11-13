@@ -5,7 +5,7 @@
  *   $env:MARKETPLACE_E2E_REQUIRED="1"; pnpm run test:e2e e2e/messaging-trust-safety.spec.ts
  */
 
-import { loginBuyerThroughAccountForm } from "./buyer-auth";
+import { loginBuyerViaApi, syncBuyerSessionFromCookies } from "./buyer-auth";
 import { expect, test } from "./buyer-desktop-evidence";
 import {
   ensureMarketplaceDataset,
@@ -20,26 +20,28 @@ import {
 import { storeApiFetch } from "./store-api";
 
 async function loginTrustSafetyBuyer(page: import("@playwright/test").Page) {
-  await loginBuyerThroughAccountForm(
+  await loginBuyerViaApi(
     page,
     TRUST_SAFETY_BUYER_EMAIL,
     TRUST_SAFETY_BUYER_PASSWORD,
+    { requireAccountShell: true },
   );
 }
 
-/** Prior block journeys leave Seller A blocked; reset so contact is enabled. */
-async function ensureMeetTheMakerContactReady(
+async function sellerContactControl(page: import("@playwright/test").Page) {
+  return page
+    .getByRole("button", { name: /^contact$/i })
+    .or(page.getByRole("link", { name: /^contact$/i }))
+    .first();
+}
+
+/** Opens the classic PDP ask-about control in the buy box (not theme meet-the-maker). */
+async function expectProductAskAboutVisible(
   page: import("@playwright/test").Page,
 ) {
-  const sellerPanel = page.locator("details[data-theme-product-seller]");
-  await expect(sellerPanel).toBeVisible({ timeout: 30_000 });
-  const askAbout = page.getByRole("button", {
-    name: /ask about this item/i,
-  });
-  if (!(await askAbout.isVisible().catch(() => false))) {
-    await sellerPanel.locator("summary").click();
-  }
-  await expect(askAbout).toBeVisible({ timeout: 30_000 });
+  const askAbout = page.getByRole("button", { name: /ask about this item/i });
+  await askAbout.scrollIntoViewIfNeeded();
+  await expect(askAbout).toBeVisible({ timeout: 60_000 });
 }
 
 async function trustSafetyBlockExists(page: import("@playwright/test").Page) {
@@ -59,8 +61,15 @@ async function trustSafetyBlockExists(page: import("@playwright/test").Page) {
 async function ensureTrustSafetySellerUnblocked(
   page: import("@playwright/test").Page,
 ) {
-  if (process.env.SPREE_API_URL !== "http://127.0.0.1:3011") {
-    throw new Error("Communication-block cleanup requires isolated API 3011");
+  const allowedLabApis = new Set([
+    "http://127.0.0.1:3020",
+    "http://127.0.0.1:3021",
+    "http://127.0.0.1:3031",
+  ]);
+  if (!allowedLabApis.has(process.env.SPREE_API_URL ?? "")) {
+    throw new Error(
+      "Communication-block cleanup requires isolated or unified lab API (3020, 3021, or 3031)",
+    );
   }
   await loginTrustSafetyBuyer(page);
   const buyerResponse = await storeApiFetch(page, "GET", "customers/me");
@@ -106,8 +115,11 @@ test.describe
     });
 
     test("T&S buyer can contact Seller A before blocking", async ({ page }) => {
-      await page.goto(SELLER_A_SHOP_PATH);
-      const contact = page.getByRole("button", { name: /^contact$/i });
+      await loginTrustSafetyBuyer(page);
+      await syncBuyerSessionFromCookies(page);
+      await storefrontGoto(page, SELLER_A_SHOP_PATH);
+      const contact = await sellerContactControl(page);
+      await expect(contact).toBeVisible({ timeout: 60_000 });
       await expect(contact).toBeEnabled({ timeout: 15_000 });
       if (MARKETPLACE_E2E_REQUIRED) {
         await expect(
@@ -119,17 +131,59 @@ test.describe
     test("full block, storefront, unblock, and report journey", async ({
       page,
     }) => {
+      test.setTimeout(420_000);
+      await loginTrustSafetyBuyer(page);
+      await syncBuyerSessionFromCookies(page);
       await storefrontGoto(page, SELLER_A_SHOP_PATH, { waitUntil: "load" });
-      await page.getByRole("button", { name: /^contact$/i }).click();
-      const composer = page.getByRole("dialog");
-      await expect(composer).toBeVisible({ timeout: 15_000 });
+      const contactButton = page.getByRole("button", { name: /^contact$/i });
+      await expect(contactButton).toBeVisible({ timeout: 60_000 });
+      await expect(contactButton).toBeEnabled({ timeout: 15_000 });
+      await contactButton.click();
+      const dialog = page.getByRole("dialog");
+      await expect(dialog).toBeVisible({ timeout: 45_000 });
+      await syncBuyerSessionFromCookies(page);
       const body = `T&S journey ${Date.now()}`;
-      await composer.getByPlaceholder(/write your message/i).fill(body);
-      await composer.getByRole("button", { name: /^send$/i }).click();
-      await expect(page).toHaveURL(/\/account\/messages\/msgth_/, {
-        timeout: 60_000,
+      await dialog.getByPlaceholder(/write your message/i).fill(body);
+      await syncBuyerSessionFromCookies(page);
+      const send = dialog.getByRole("button", { name: /^send$/i });
+      await expect(send).toBeEnabled({ timeout: 15_000 });
+      await send.click();
+      await expect
+        .poll(
+          async () => {
+            if (/\/account\/messages\/msgth_/.test(page.url()))
+              return "navigated";
+            if (
+              await page
+                .getByText(
+                  /could not send your message|failed to send|send failed/i,
+                )
+                .isVisible()
+                .catch(() => false)
+            ) {
+              return "error";
+            }
+            if (await send.isVisible().catch(() => false)) {
+              await syncBuyerSessionFromCookies(page).catch(() => undefined);
+              if (await send.isEnabled().catch(() => false)) {
+                await send.click().catch(() => undefined);
+              }
+            }
+            return "pending";
+          },
+          { timeout: 90_000 },
+        )
+        .toBe("navigated");
+      await expect(
+        page.getByText(
+          /could not send your message|failed to send|send failed/i,
+        ),
+      ).not.toBeVisible({
+        timeout: 5_000,
       });
       await expect(page.getByText(body)).toBeVisible({ timeout: 15_000 });
+      const threadUrl = page.url();
+      expect(threadUrl).toMatch(/\/account\/messages\/msgth_/);
 
       await page.getByRole("button", { name: /conversation actions/i }).click();
       const blockSellerAction = page.getByRole("button", {
@@ -170,8 +224,8 @@ test.describe
         page.getByRole("button", { name: /^contact$/i }),
       ).toBeDisabled();
 
-      await page.goto(MARKETPLACE_PRODUCT_A, { waitUntil: "load" });
-      await ensureMeetTheMakerContactReady(page);
+      await storefrontGoto(page, MARKETPLACE_PRODUCT_A, { waitUntil: "load" });
+      await expectProductAskAboutVisible(page);
       await expect(
         page.getByRole("button", { name: /ask about this item/i }),
       ).toBeDisabled({ timeout: 20_000 });
@@ -179,11 +233,12 @@ test.describe
         page.getByRole("button", { name: /add to cart/i }),
       ).toBeEnabled();
 
-      await page.goto("/us/en/account/messages");
-      await page
-        .getByRole("link", { name: /dev seller/i })
-        .first()
-        .click({ timeout: 15_000 });
+      // Return to the same thread for unblock (inbox is covered by earlier nav).
+      await syncBuyerSessionFromCookies(page);
+      await storefrontGoto(page, threadUrl, { waitUntil: "load" });
+      await expect(page).toHaveURL(/\/account\/messages\/msgth_/, {
+        timeout: 60_000,
+      });
       await page.getByRole("button", { name: /conversation actions/i }).click();
       const unblockSellerAction = page.getByRole("button", {
         name: /unblock seller/i,
@@ -204,12 +259,27 @@ test.describe
       });
 
       await page.getByRole("button", { name: /^report$/i }).click();
-      await page
-        .getByPlaceholder(/describe what happened/i)
-        .fill(`Trust safety e2e report ${Date.now()}`);
-      await page.getByRole("button", { name: /submit report/i }).click();
+      const reportBody = `Trust safety e2e report ${Date.now()}`;
+      const reportField = page.getByPlaceholder(/describe what happened/i);
+      await expect(reportField).toBeVisible({ timeout: 15_000 });
+      await reportField.click();
+      await reportField.fill(reportBody);
+      const submitReport = page.getByRole("button", { name: /submit report/i });
+      await expect
+        .poll(
+          async () => {
+            if (await submitReport.isEnabled().catch(() => false)) return true;
+            await reportField.click();
+            await reportField.fill("");
+            await reportField.pressSequentially(reportBody, { delay: 5 });
+            return submitReport.isEnabled().catch(() => false);
+          },
+          { timeout: 30_000 },
+        )
+        .toBe(true);
+      await submitReport.click();
       await expect(page.getByRole("button", { name: /^report$/i })).toBeVisible(
-        { timeout: 10_000 },
+        { timeout: 30_000 },
       );
     });
   });

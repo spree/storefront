@@ -52,6 +52,21 @@ describe("ProductThemeBody template ownership", () => {
     expect(html).not.toContain('data-legacy-lower="reviews"');
   });
 
+  it("places configured reviews inside the product details when supplied", async () => {
+    const html = renderToStaticMarkup(
+      await ProductThemeBody({
+        context,
+        documentDriven: true,
+        productReviewsSectionPresent: true,
+        embeddedReviews: <div data-configured-reviews="true" />,
+      }),
+    );
+    expect(html).toContain(
+      '<div data-testid="product-details"><div data-configured-reviews="true"></div></div>',
+    );
+    expect(html).not.toContain('data-legacy-lower="reviews"');
+  });
+
   it("keeps lower-section fallback for legacy product templates", async () => {
     const html = renderToStaticMarkup(
       await ProductThemeBody({

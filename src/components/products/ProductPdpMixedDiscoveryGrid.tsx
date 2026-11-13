@@ -40,7 +40,7 @@ export function ProductPdpMixedDiscoveryGrid({
         currency={currency}
         listId={listId}
         listName={listName}
-        density="compact"
+        density="discovery"
         columns={PDP_GRID_COLUMNS}
         mobileColumns={PDP_GRID_MOBILE_COLUMNS}
         priorityCount={6}
@@ -71,7 +71,7 @@ export function ProductPdpMixedDiscoveryGrid({
             basePath={basePath}
             index={index}
             currency={currency}
-            density="compact"
+            density="discovery"
           />
         ) : (
           <ProductCard
@@ -83,7 +83,8 @@ export function ProductPdpMixedDiscoveryGrid({
             listName={listName}
             fetchPriority={index < 6 ? "high" : undefined}
             currency={currency}
-            density="compact"
+            density="discovery"
+            showFavorite={false}
             recommendationClick={recommendationClick}
           />
         ),

@@ -21,8 +21,10 @@ export default async function FollowedShopsPage({
   });
   const basePath = `/${country}/${locale}`;
   const result = await listFollowedShops();
-  // actionResult spreads the paginated response: { success, data, meta }
-  const rows = result.success && Array.isArray(result.data) ? result.data : [];
+  const rows =
+    result.success && "data" in result && Array.isArray(result.data)
+      ? result.data
+      : [];
   const sellers = rows
     .map((row) => (row as { seller?: Seller }).seller)
     .filter(Boolean) as Seller[];

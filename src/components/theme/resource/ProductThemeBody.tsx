@@ -70,6 +70,7 @@ export async function ProductThemeBody({
   productPersonalizationBlockPresent = false,
   documentDriven = false,
   productReviewsSectionPresent = false,
+  embeddedReviews,
   showTemplateRelated = true,
   showTemplateRecommended = true,
   showTemplateRecentlyViewed = true,
@@ -85,6 +86,7 @@ export async function ProductThemeBody({
   productPersonalizationBlockPresent?: boolean;
   documentDriven?: boolean;
   productReviewsSectionPresent?: boolean;
+  embeddedReviews?: ReactNode;
   showTemplateRelated?: boolean;
   showTemplateRecommended?: boolean;
   showTemplateRecentlyViewed?: boolean;
@@ -118,7 +120,7 @@ export async function ProductThemeBody({
 
   return (
     <>
-      <div className="container mx-auto px-4 sm:px-6 lg:px-8 pt-6">
+      <div className="container mx-auto hidden px-4 pt-6 sm:px-6 lg:px-8 md:block">
         {breadcrumbCategory && (
           <Breadcrumbs
             category={breadcrumbCategory}
@@ -152,33 +154,23 @@ export async function ProductThemeBody({
         templatePersonalizationBlockPresent={productPersonalizationBlockPresent}
         templateMediaSettings={productMediaSettings}
         templateMediaBlockId={productMediaBlockId}
+        madeTogether={context.madeTogether ?? null}
       >
-        {!documentDriven &&
-        !productBlocksActive &&
-        themeSettingEnabled(themeSettings.product_page?.show_reviews, true) &&
-        themeSettingEnabled(sectionSettings.show_reviews, true) ? (
-          <Suspense fallback={<ProductReviewsSectionSkeleton embedded />}>
-            <ProductReviewsSection
-              product={product}
-              locale={locale}
-              sort={reviewSort}
-              embedded
-            />
-          </Suspense>
-        ) : null}
+        {embeddedReviews ??
+          (((documentDriven && !productReviewsSectionPresent) ||
+            (!documentDriven && !productBlocksActive)) &&
+          themeSettingEnabled(themeSettings.product_page?.show_reviews, true) &&
+          themeSettingEnabled(sectionSettings.show_reviews, true) ? (
+            <Suspense fallback={<ProductReviewsSectionSkeleton embedded />}>
+              <ProductReviewsSection
+                product={product}
+                locale={locale}
+                sort={reviewSort}
+                embedded
+              />
+            </Suspense>
+          ) : null)}
       </ProductDetails>
-      {documentDriven &&
-      !productReviewsSectionPresent &&
-      themeSettingEnabled(themeSettings.product_page?.show_reviews, true) &&
-      themeSettingEnabled(sectionSettings.show_reviews, true) ? (
-        <Suspense fallback={<ProductReviewsSectionSkeleton />}>
-          <ProductReviewsSection
-            product={product}
-            locale={locale}
-            sort={reviewSort}
-          />
-        </Suspense>
-      ) : null}
       {!documentDriven &&
       productBlocksActive &&
       themeSettingEnabled(themeSettings.product_page?.show_reviews, true) &&

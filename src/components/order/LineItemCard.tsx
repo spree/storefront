@@ -26,10 +26,10 @@ export function LineItemCard({
 }: LineItemCardProps) {
   const t = useTranslations("orders");
   return (
-    <div className="flex gap-4">
+    <div className="flex min-w-0 gap-3 sm:gap-4">
       <Link
         href={`${basePath}/products/${item.slug}`}
-        className="relative size-20 shrink-0 overflow-hidden rounded-md bg-marketplace-surface-warm sm:size-24"
+        className="relative size-[4.5rem] shrink-0 overflow-hidden rounded-md bg-marketplace-surface-warm sm:size-24"
       >
         <ProductImage
           src={item.thumbnail_url}
@@ -51,9 +51,6 @@ export function LineItemCard({
           {reviewState?.kind === "write" ? (
             <LineItemReviewActions state={reviewState} />
           ) : null}
-        </div>
-        <div className="mt-1 text-sm text-marketplace-foreground">
-          {item.display_price}
         </div>
         {item.options_text && (
           <p className="mt-1 text-xs text-marketplace-muted-foreground">

@@ -1,11 +1,13 @@
 "use client";
 
 import type { Category } from "@spree/sdk";
+import { ChevronRight } from "lucide-react";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
 import { useRef, useState } from "react";
 import { flushSync } from "react-dom";
 import { SpreeIcon } from "@/components/icons";
+import { CmsNavigationIcon } from "@/components/layout/CmsNavigationIcon";
 import { RegionPreferences } from "@/components/layout/RegionPreferences";
 import { Button } from "@/components/ui/button";
 import { CategoryImage } from "@/components/ui/category-image";
@@ -23,9 +25,13 @@ import type {
   CmsNavigationPayload,
 } from "@/lib/data/cms-navigation";
 import { marketplaceEtsyPillLinkClass } from "@/lib/marketplace-etsy-motion";
+import { getCollectionStockImage } from "@/lib/marketplace-stock-images";
 import { themeSettingEnabled } from "@/lib/theme/setting-value";
 
-type PanelType = { kind: "main" } | { kind: "category"; category: Category };
+type PanelType =
+  | { kind: "main" }
+  | { kind: "category"; category: Category }
+  | { kind: "cms"; item: CmsNavigationItem };
 
 interface MobileMenuProps {
   rootCategories: Category[];
@@ -72,14 +78,55 @@ export function MobileMenu({
 
   const currentPanel = panelStack[panelStack.length - 1];
   const categoryIndex = new Map<string, Category>();
+  const categoryList: Category[] = [];
   const indexCategories = (categories: Category[]) => {
     for (const category of categories) {
+      categoryList.push(category);
       categoryIndex.set(category.id, category);
       categoryIndex.set(category.permalink, category);
       indexCategories(category.children || []);
     }
   };
   indexCategories(rootCategories);
+  const resolveMenuCategory = (item: CmsNavigationItem) => {
+    if (item.category_id) {
+      const category = categoryIndex.get(item.category_id);
+      if (category) return category;
+    }
+    const targetPermalink = item.target?.match(/\/c\/([^/?#]+)/)?.[1];
+    if (targetPermalink) {
+      const category = categoryIndex.get(decodeURIComponent(targetPermalink));
+      if (category) return category;
+    }
+    const normalize = (value: string) =>
+      value.toLocaleLowerCase().replace(/[^\p{L}\p{N}]+/gu, "");
+    const label = normalize(item.label);
+    return categoryList.find(
+      (category) =>
+        normalize(category.name) === label ||
+        normalize(
+          category.permalink.split("/").at(-1) || category.permalink,
+        ) === label,
+    );
+  };
+  const cmsHref = (item: CmsNavigationItem) => {
+    if (item.type === "category") {
+      const category = item.category_id
+        ? categoryIndex.get(item.category_id)
+        : undefined;
+      return category ? `${basePath}/c/${category.permalink}` : null;
+    }
+    return cmsNavigationHref(item, basePath);
+  };
+  const mobileFeaturedPanels = cmsItems
+    .filter((item) => item.enabled !== false)
+    .flatMap((item) => item.featured_panels || [])
+    .filter((panel) => panel.mobile_visible !== false);
+  const exploreImageUrl =
+    mobileFeaturedPanels[0]?.image_url ||
+    rootCategories[0]?.square_image_url ||
+    rootCategories[0]?.image_url ||
+    getCollectionStockImage(0, "Explore");
 
   const cancelPendingCallbacks = () => {
     if (rafRef.current !== null) {
@@ -128,7 +175,7 @@ export function MobileMenu({
   // Shared link style
   const linkClass = `text-left text-marketplace-foreground hover:text-marketplace-brand hover:bg-marketplace-surface-subtle px-3 py-2.5 text-[15px] transition-colors ${showDividers ? "border-b border-marketplace-border rounded-none" : "rounded-lg"}`;
 
-  const categoryButtonClass = `flex items-center justify-between w-full text-left text-marketplace-foreground hover:text-marketplace-brand hover:bg-marketplace-surface-subtle px-3 py-2.5 text-[15px] transition-colors ${showDividers ? "border-b border-marketplace-border rounded-none" : "rounded-lg"}`;
+  const categoryButtonClass = `flex min-h-12 w-full items-center justify-between gap-3 text-left text-marketplace-foreground hover:text-marketplace-brand hover:bg-marketplace-surface-subtle px-3 py-3 text-[15px] transition-colors ${showDividers ? "border-b border-marketplace-border rounded-none" : "rounded-lg"}`;
 
   const renderAccordionCategory = (
     category: Category,
@@ -177,7 +224,7 @@ export function MobileMenu({
       {/* Animated hamburger / X button — two-phase animation matching Lottie reference */}
       <Button
         variant="ghost"
-        size={triggerVariant === "icon" ? "icon-lg" : "default"}
+        size={triggerVariant === "icon" ? "icon" : "default"}
         onClick={() => {
           if (!hasInteracted) setHasInteracted(true);
           setOpen(!open);
@@ -188,8 +235,8 @@ export function MobileMenu({
         }
         className={
           triggerVariant === "bottom-nav"
-            ? "relative z-[60] h-16 min-w-0 flex-col gap-1 rounded-none px-1 text-[11px] text-marketplace-muted-foreground hover:bg-marketplace-muted hover:text-marketplace-brand"
-            : "relative z-[60] cursor-pointer"
+            ? "relative z-[60] h-16 min-w-0 flex-col gap-0.5 rounded-none px-1 text-[10px] font-medium text-marketplace-muted-foreground hover:bg-marketplace-muted hover:text-marketplace-brand"
+            : "relative z-[60] h-9 w-9 cursor-pointer sm:h-10 sm:w-10"
         }
       >
         {triggerVariant === "bottom-nav" ? (
@@ -273,7 +320,9 @@ export function MobileMenu({
             <span>
               {currentPanel.kind === "category"
                 ? currentPanel.category.name
-                : ""}
+                : currentPanel.kind === "cms"
+                  ? currentPanel.item.label
+                  : ""}
             </span>
           </button>
           <Button
@@ -297,129 +346,167 @@ export function MobileMenu({
             }`}
           >
             <nav
-              className="flex flex-col gap-1 px-4 flex-1 overflow-y-auto pt-2"
+              data-theme-mobile-menu-scroll
+              className="flex min-h-0 flex-1 flex-col overflow-y-auto pb-5 pt-2"
               style={{
                 backgroundColor: menuBackgroundColor,
                 color: menuTextColor,
               }}
             >
               <Link
-                href={basePath || "/"}
-                onClick={() => setOpen(false)}
-                className={linkClass}
-              >
-                {t("home")}
-              </Link>
-              <Link
                 href={`${basePath}/products`}
                 onClick={() => setOpen(false)}
-                className={linkClass}
+                className="flex min-h-[76px] items-center gap-4 border-b border-marketplace-border/70 px-4 text-marketplace-foreground transition-colors hover:bg-marketplace-curator active:bg-marketplace-curator focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-marketplace-brand"
               >
-                {t("allProducts")}
+                <CategoryImage
+                  src={exploreImageUrl}
+                  alt=""
+                  width={48}
+                  height={48}
+                  className="size-12 shrink-0 rounded-md object-cover"
+                  sizes="48px"
+                />
+                <span className="flex-1 text-[15px] font-medium">
+                  {t("navExplore")}
+                </span>
+                <ChevronRight
+                  className="size-5 shrink-0 text-marketplace-foreground"
+                  aria-hidden
+                />
               </Link>
-              <Link
-                href={`${basePath}/shops`}
-                onClick={() => setOpen(false)}
-                className={linkClass}
-              >
-                {t("shops")}
-              </Link>
-              {rootCategories.map((category) =>
-                accordionNavigation && category.children?.length ? (
-                  renderAccordionCategory(category)
-                ) : category.children && category.children.length > 0 ? (
-                  <button
-                    key={category.id}
-                    type="button"
-                    onClick={() => pushPanel({ kind: "category", category })}
-                    className={categoryButtonClass}
-                  >
-                    <span>{category.name}</span>
-                    <SpreeIcon
-                      name="forward"
-                      className="size-4 text-marketplace-muted-foreground"
-                    />
-                  </button>
-                ) : (
-                  <Link
-                    key={category.id}
-                    href={`${basePath}/c/${category.permalink}`}
-                    onClick={() => setOpen(false)}
-                    className={linkClass}
-                  >
-                    {category.name}
-                  </Link>
-                ),
-              )}
-              {cmsItems
-                .filter((item) => item.enabled !== false)
-                .flatMap((item) => item.featured_panels || [])
-                .filter((panel) => panel.mobile_visible !== false)
-                .map((panel) => {
-                  const category = panel.category_id
-                    ? categoryIndex.get(panel.category_id)
-                    : undefined;
-                  const destination =
-                    panel.destination_type === "category" && category
-                      ? `${basePath}/c/${category.permalink}`
-                      : cmsNavigationHref(
-                          {
-                            id: panel.id,
-                            type: panel.destination_type || "",
-                            label: panel.heading,
-                            target: panel.target,
-                            category_id: panel.category_id,
-                            collection_id: panel.collection_id,
-                          },
-                          basePath,
-                        );
-                  const content = (
-                    <span
-                      key={panel.id}
-                      className="flex min-w-0 items-center gap-3"
-                    >
-                      {panel.image_url ? (
+              {cmsItems.some((item) => item.enabled !== false) ? (
+                <section aria-labelledby="mobile-menu-categories">
+                  <h2 id="mobile-menu-categories" className="sr-only">
+                    {t("shopByCategory")}
+                  </h2>
+                  {cmsItems
+                    .filter((item) => item.enabled !== false)
+                    .map((item, index) => {
+                      const href = cmsHref(item);
+                      const category = resolveMenuCategory(item);
+                      const panelImageUrl = item.featured_panels?.find(
+                        (panel) =>
+                          panel.mobile_visible !== false && panel.image_url,
+                      )?.image_url;
+                      const imageUrl =
+                        category?.square_image_url ||
+                        category?.image_url ||
+                        panelImageUrl ||
+                        getCollectionStockImage(index, item.label);
+                      const rowImage = (
                         <CategoryImage
-                          src={panel.image_url}
+                          key={item.id}
+                          src={imageUrl}
                           alt=""
                           width={48}
                           height={48}
-                          className="size-12 shrink-0 rounded-sm object-cover"
+                          className="size-12 shrink-0 rounded-md object-cover"
                           sizes="48px"
                         />
-                      ) : null}
-                      <span className="min-w-0">
-                        <span className="block font-medium">
-                          {panel.heading}
+                      );
+                      return item.children?.length ? (
+                        <button
+                          key={item.id}
+                          type="button"
+                          onClick={() => pushPanel({ kind: "cms", item })}
+                          className="flex min-h-[76px] w-full items-center gap-4 border-b border-marketplace-border/70 px-4 text-left text-marketplace-foreground transition-colors hover:bg-marketplace-curator active:bg-marketplace-curator focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-marketplace-brand"
+                        >
+                          {rowImage}
+                          <span className="min-w-0 flex-1 truncate text-[15px] font-medium">
+                            {item.label}
+                          </span>
+                          <ChevronRight
+                            className="size-5 shrink-0 text-marketplace-foreground"
+                            aria-hidden
+                          />
+                        </button>
+                      ) : href ? (
+                        <Link
+                          key={item.id}
+                          href={href}
+                          onClick={() => setOpen(false)}
+                          className="flex min-h-[76px] items-center gap-4 border-b border-marketplace-border/70 px-4 text-marketplace-foreground transition-colors hover:bg-marketplace-curator active:bg-marketplace-curator focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-marketplace-brand"
+                        >
+                          {rowImage}
+                          <span className="min-w-0 flex-1 truncate text-[15px] font-medium">
+                            {item.label}
+                          </span>
+                          <ChevronRight
+                            className="size-5 shrink-0 text-marketplace-foreground"
+                            aria-hidden
+                          />
+                        </Link>
+                      ) : null;
+                    })}
+                </section>
+              ) : rootCategories.length ? (
+                <section aria-labelledby="mobile-menu-categories">
+                  <h2 id="mobile-menu-categories" className="sr-only">
+                    {t("shopByCategory")}
+                  </h2>
+                  {rootCategories.map((category, index) =>
+                    accordionNavigation && category.children?.length ? (
+                      renderAccordionCategory(category)
+                    ) : category.children && category.children.length > 0 ? (
+                      <button
+                        key={category.id}
+                        type="button"
+                        onClick={() =>
+                          pushPanel({ kind: "category", category })
+                        }
+                        className="flex min-h-[76px] w-full items-center gap-4 border-b border-marketplace-border/70 px-4 text-left text-marketplace-foreground transition-colors hover:bg-marketplace-curator active:bg-marketplace-curator focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-marketplace-brand"
+                      >
+                        <CategoryImage
+                          src={
+                            category.square_image_url ||
+                            category.image_url ||
+                            getCollectionStockImage(index, category.name)
+                          }
+                          alt=""
+                          width={48}
+                          height={48}
+                          className="size-12 shrink-0 rounded-md object-cover"
+                          sizes="48px"
+                        />
+                        <span className="min-w-0 flex-1 truncate text-[15px] font-medium">
+                          {category.name}
                         </span>
-                        {panel.text ? (
-                          <span className="mt-0.5 block line-clamp-2 text-sm text-marketplace-muted-foreground">
-                            {panel.text}
-                          </span>
-                        ) : null}
-                        {panel.cta_label ? (
-                          <span className="mt-1 block text-sm underline underline-offset-4">
-                            {panel.cta_label}
-                          </span>
-                        ) : null}
-                      </span>
-                    </span>
-                  );
-                  return destination ? (
-                    <Link
-                      key={panel.id}
-                      href={destination}
-                      onClick={() => setOpen(false)}
-                      className={linkClass}
-                    >
-                      {content}
-                    </Link>
-                  ) : (
-                    <div key={panel.id} className={linkClass}>
-                      {content}
-                    </div>
-                  );
-                })}
+                        <ChevronRight
+                          className="size-5 shrink-0 text-marketplace-foreground"
+                          aria-hidden
+                        />
+                      </button>
+                    ) : (
+                      <Link
+                        key={category.id}
+                        href={`${basePath}/c/${category.permalink}`}
+                        onClick={() => setOpen(false)}
+                        className="flex min-h-[76px] items-center gap-4 border-b border-marketplace-border/70 px-4 text-marketplace-foreground transition-colors hover:bg-marketplace-curator active:bg-marketplace-curator focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-marketplace-brand"
+                      >
+                        <CategoryImage
+                          src={
+                            category.square_image_url ||
+                            category.image_url ||
+                            getCollectionStockImage(index, category.name)
+                          }
+                          alt=""
+                          width={48}
+                          height={48}
+                          className="size-12 shrink-0 rounded-md object-cover"
+                          sizes="48px"
+                        />
+                        <span className="min-w-0 flex-1 truncate text-[15px] font-medium">
+                          {category.name}
+                        </span>
+                        <ChevronRight
+                          className="size-5 shrink-0 text-marketplace-foreground"
+                          aria-hidden
+                        />
+                      </Link>
+                    ),
+                  )}
+                </section>
+              ) : null}
               {cmsSettings?.show_for_you && forYouCategoryIds.length ? (
                 <section className="mt-3 border-t border-marketplace-border pt-3">
                   <p className="px-3 pb-1 text-xs font-semibold uppercase text-marketplace-muted-foreground">
@@ -459,20 +546,20 @@ export function MobileMenu({
                   ))}
                 </section>
               ) : null}
-              <Link
-                href={`${basePath}/#contact`}
-                onClick={() => setOpen(false)}
-                className={linkClass}
-              >
-                {t("contact")}
-              </Link>
-              {/* Secondary links — kept out of the category list above. */}
-              <div className="mt-2 pt-2 border-t border-marketplace-border">
+              {/* Secondary links stay visually quiet, like the utility links in the menu reference. */}
+              <div className="mt-3 border-t border-marketplace-border px-1 pt-2">
+                <Link
+                  href={`${basePath}/#contact`}
+                  onClick={() => setOpen(false)}
+                  className="flex min-h-10 items-center px-3 text-sm text-marketplace-muted-foreground transition-colors hover:text-marketplace-foreground"
+                >
+                  {t("contact")}
+                </Link>
                 {wholesaleEnabled && (
                   <Link
                     href={`${basePath}/wholesale`}
                     onClick={() => setOpen(false)}
-                    className={`${linkClass} block`}
+                    className="flex min-h-10 items-center px-3 text-sm text-marketplace-muted-foreground transition-colors hover:text-marketplace-foreground"
                   >
                     {t("wholesale")}
                   </Link>
@@ -480,7 +567,7 @@ export function MobileMenu({
                 <SheetClose asChild>
                   <Link
                     href={`${basePath}/account`}
-                    className={`${linkClass} block`}
+                    className="flex min-h-10 items-center px-3 text-sm text-marketplace-muted-foreground transition-colors hover:text-marketplace-foreground"
                   >
                     {t("myAccount")}
                   </Link>
@@ -512,7 +599,7 @@ export function MobileMenu({
             )}
 
             {/* Footer: centered Region and language control (mobile only) */}
-            <SheetFooter className="lg:hidden items-center border-t border-marketplace-border pt-4 gap-2">
+            <SheetFooter className="lg:hidden items-center gap-2 border-t border-marketplace-border px-4 pt-3 pb-[calc(env(safe-area-inset-bottom)_+_0.75rem)]">
               <RegionPreferences variant="menu" />
             </SheetFooter>
           </div>
@@ -520,7 +607,7 @@ export function MobileMenu({
           {/* Category sub-panels — one for each level in the stack */}
           {!accordionNavigation &&
             panelStack.map((panel, index) => {
-              if (panel.kind !== "category") return null;
+              if (panel.kind === "main") return null;
               const isAnimatedIn = index <= animatedIndex;
               let translateClass = "translate-x-full";
               if (isAnimatedIn && index < panelStack.length - 1)
@@ -529,7 +616,7 @@ export function MobileMenu({
 
               return (
                 <div
-                  key={`cat-${panel.category.id}-${index}`}
+                  key={`${panel.kind}-${panel.kind === "category" ? panel.category.id : panel.item.id}-${index}`}
                   className={`absolute inset-0 flex flex-col bg-marketplace-surface transition-transform duration-300 ease-in-out ${translateClass}`}
                 >
                   {/* Back button (mobile only — desktop uses the global header) */}
@@ -540,49 +627,91 @@ export function MobileMenu({
                       className="flex items-center gap-2 py-2 text-base font-medium text-marketplace-foreground hover:text-marketplace-brand"
                     >
                       <SpreeIcon name="back" className="size-5" />
-                      <span>{panel.category.name}</span>
+                      <span>
+                        {panel.kind === "category"
+                          ? panel.category.name
+                          : panel.item.label}
+                      </span>
                     </button>
                   </div>
 
                   {/* Children */}
-                  <nav className="flex flex-col gap-1 px-4 flex-1 overflow-y-auto pt-2">
-                    {panel.category.children?.map((child) =>
-                      child.children && child.children.length > 0 ? (
-                        <button
-                          key={child.id}
-                          type="button"
-                          onClick={() =>
-                            pushPanel({ kind: "category", category: child })
-                          }
-                          className={categoryButtonClass}
-                        >
-                          <span>{child.name}</span>
-                          <SpreeIcon
-                            name="forward"
-                            className="size-4 text-marketplace-muted-foreground"
-                          />
-                        </button>
-                      ) : (
-                        <Link
-                          key={child.id}
-                          href={`${basePath}/c/${child.permalink}`}
-                          onClick={() => handleOpenChange(false)}
-                          className={linkClass}
-                        >
-                          {child.name}
-                        </Link>
-                      ),
-                    )}
-                  </nav>
+                  {panel.kind === "category" ? (
+                    <nav
+                      data-theme-mobile-menu-scroll
+                      className="flex flex-col gap-1 px-4 flex-1 overflow-y-auto pt-2"
+                    >
+                      {panel.category.children?.map((child) =>
+                        child.children && child.children.length > 0 ? (
+                          <button
+                            key={child.id}
+                            type="button"
+                            onClick={() =>
+                              pushPanel({ kind: "category", category: child })
+                            }
+                            className={categoryButtonClass}
+                          >
+                            <span>{child.name}</span>
+                            <SpreeIcon
+                              name="forward"
+                              className="size-4 text-marketplace-muted-foreground"
+                            />
+                          </button>
+                        ) : (
+                          <Link
+                            key={child.id}
+                            href={`${basePath}/c/${child.permalink}`}
+                            onClick={() => handleOpenChange(false)}
+                            className={linkClass}
+                          >
+                            {child.name}
+                          </Link>
+                        ),
+                      )}
+                    </nav>
+                  ) : (
+                    <nav
+                      data-theme-mobile-menu-scroll
+                      className="flex flex-col gap-1 px-4 flex-1 overflow-y-auto pt-2"
+                    >
+                      {panel.item.children
+                        ?.filter((item) => item.enabled !== false)
+                        .map((item) => {
+                          const href = cmsHref(item);
+                          return href ? (
+                            <Link
+                              key={item.id}
+                              href={href}
+                              onClick={() => handleOpenChange(false)}
+                              className={`${linkClass} flex items-center gap-3`}
+                            >
+                              <CmsNavigationIcon
+                                name={item.icon}
+                                className="size-4 shrink-0"
+                              />
+                              <span>{item.label}</span>
+                            </Link>
+                          ) : null;
+                        })}
+                    </nav>
+                  )}
 
                   {/* "View all" at the bottom */}
                   <div className="border-t border-marketplace-border px-4 py-3">
                     <Link
-                      href={`${basePath}/c/${panel.category.permalink}`}
+                      href={
+                        panel.kind === "category"
+                          ? `${basePath}/c/${panel.category.permalink}`
+                          : cmsHref(panel.item) || `${basePath}/products`
+                      }
                       onClick={() => handleOpenChange(false)}
                       className="block w-full py-2 text-center text-sm text-marketplace-muted-foreground transition-colors hover:text-marketplace-brand"
                     >
-                      {t("viewAllCategory", { category: panel.category.name })}
+                      {panel.kind === "category"
+                        ? t("viewAllCategory", {
+                            category: panel.category.name,
+                          })
+                        : `View all ${panel.item.label}`}
                     </Link>
                   </div>
                 </div>

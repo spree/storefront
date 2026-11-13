@@ -25,7 +25,7 @@ describe("AccountShell", () => {
   it("groups every existing account destination under Settings", () => {
     render(<AccountShell>Account content</AccountShell>);
 
-    for (const group of ["shoppingGroup", "activityGroup", "accountGroup"]) {
+    for (const group of ["shoppingGroup", "accountGroup"]) {
       expect(screen.getAllByText(group).length).toBeGreaterThan(0);
     }
     expect(

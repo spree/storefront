@@ -46,6 +46,7 @@ interface HeaderProps {
   showCountryRegionSelector?: boolean;
   showLanguageSelector?: boolean;
   transparent?: boolean;
+  mobileProductLayout?: boolean;
 }
 
 interface HeaderMobileMenuProps {
@@ -121,6 +122,7 @@ export async function Header({
   categoryMenuKey,
   hideCategoryRow = false,
   transparent = false,
+  mobileProductLayout = false,
 }: HeaderProps) {
   const backgroundColor = themeMenuColor(
     menuSettings.background_color,
@@ -231,10 +233,16 @@ export async function Header({
     headerLayout !== "menu_bottom" && headerSettings.menu_row === "top";
   const searchOnBottom = headerSettings.search_row === "bottom";
   const accountOnBottom = headerSettings.account_row === "bottom";
+  const inlineMobileSearch =
+    mobileProductLayout &&
+    searchEnabled &&
+    headerLayout === "inline" &&
+    !searchOnBottom;
 
   const headerContent = (
     <header
       data-theme-header="true"
+      data-pdp-mobile-header={mobileProductLayout ? "true" : undefined}
       data-theme-base-path={basePath}
       data-header-style={headerLayout}
       data-transparent={transparent ? "true" : "false"}
@@ -254,7 +262,7 @@ export async function Header({
       {menuOnTop ? categoryRow : null}
       <div data-theme-header-main style={dividerStyle} className="border-b">
         <div
-          className={`mx-auto flex max-w-[1400px] items-center gap-2 px-4 sm:gap-4 ${headerLayout === "big_search" || searchOnBottom || accountOnBottom ? "flex-wrap" : ""} ${compact ? "py-1.5" : "py-2.5 sm:py-3"} lg:px-6`}
+          className={`mx-auto flex max-w-[1400px] items-center ${mobileProductLayout ? "gap-1.5 px-3 sm:gap-4" : "gap-2 px-4 sm:gap-4"} ${headerLayout === "big_search" || searchOnBottom || accountOnBottom ? "flex-wrap" : ""} ${compact ? "py-1.5" : "py-2.5 sm:py-3"} lg:px-6`}
           style={{ maxWidth }}
         >
           <div
@@ -288,7 +296,7 @@ export async function Header({
 
           <search
             data-theme-header-search
-            className={`relative z-30 ${headerLayout === "big_search" || searchOnBottom ? "basis-full" : "hidden min-w-0 flex-1 md:block"}`}
+            className={`relative z-30 ${headerLayout === "big_search" || searchOnBottom ? "basis-full" : inlineMobileSearch ? "flex min-w-0 flex-1 md:block" : "hidden min-w-0 flex-1 md:block"}`}
             style={{
               order:
                 headerLayout === "big_search" || searchOnBottom
@@ -304,7 +312,7 @@ export async function Header({
 
           <div
             data-theme-header-actions
-            className={`${accountOnBottom ? "order-last basis-full flex" : headerSettings.account_position === "left" ? "" : "ml-auto"}`}
+            className={`${accountOnBottom ? "order-last basis-full flex" : headerSettings.account_position === "left" ? "" : "ml-auto"} min-w-0`}
             style={{
               order: accountOnBottom
                 ? 6
@@ -333,7 +341,9 @@ export async function Header({
         {headerLayout !== "big_search" && (
           <div
             data-theme-header-mobile-search
-            className="mx-auto px-4 pb-3 md:hidden"
+            className={
+              inlineMobileSearch ? "hidden" : "mx-auto px-4 pb-3 md:hidden"
+            }
             style={{ maxWidth, display: searchEnabled ? undefined : "none" }}
           >
             <SearchBar basePath={basePath} appearance="etsy" />

@@ -2437,6 +2437,27 @@ function renderCollectionTile(
         ? marketplaceEtsyOutlineButtonClass
         : "inline-flex w-fit items-center justify-center rounded-full border border-current px-3 py-1 text-xs font-semibold";
   const buttonSize = string(settings, "button_size") || "small";
+  const fallbackPalette = [
+    { background: "#e7eee8", foreground: "#315244" },
+    { background: "#f2e8df", foreground: "#754d37" },
+    { background: "#e7edf2", foreground: "#3c586d" },
+    { background: "#f1ead4", foreground: "#705c22" },
+    { background: "#efe5e8", foreground: "#704b5a" },
+  ];
+  const paletteIndex =
+    Array.from(item.name).reduce(
+      (hash, character) => (hash * 31 + character.charCodeAt(0)) >>> 0,
+      0,
+    ) % fallbackPalette.length;
+  const fallbackColors = fallbackPalette[paletteIndex];
+  const initials = item.name
+    .replace(/^\[[^\]]+\]\s*/, "")
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((word) => word[0])
+    .join("")
+    .toUpperCase();
 
   return (
     <Link
@@ -2465,12 +2486,15 @@ function renderCollectionTile(
         ) : (
           <div
             aria-hidden="true"
-            className="flex h-full w-full items-center justify-center bg-marketplace-surface-warm text-marketplace-muted-foreground"
+            className="relative flex h-full w-full items-center justify-center overflow-hidden"
+            style={{ backgroundColor: fallbackColors.background }}
           >
-            <SpreeIcon
-              name={kind === "category" ? "categories" : "storefront"}
-              className="size-12 opacity-70"
-            />
+            <span
+              className="select-none font-serif text-6xl font-semibold leading-none"
+              style={{ color: fallbackColors.foreground, opacity: 0.78 }}
+            >
+              {initials || (kind === "category" ? "C" : "S")}
+            </span>
           </div>
         )}
         {overlay && (
@@ -3015,7 +3039,7 @@ async function renderProductRail(
   );
   const sectionBackground = string(settings, "background_color");
   const warmRailSurface =
-    isCarousel && !sectionBackground ? "bg-[#faf9f7]" : "";
+    isCarousel && !sectionBackground ? "bg-marketplace-background" : "";
   const framedSection = isCarousel
     ? {
         ...section,
@@ -3611,16 +3635,39 @@ async function renderShopRail(
     >
       <MarketplacePage>
         <MarketplaceSectionHeader title={string(settings, "heading")} />
-        <MarketplaceRail>
-          {sellers.map((seller) => (
+        <CollectionTileCarousel
+          items={sellers.map((seller) => (
             <ShopCard
               key={seller.id}
               seller={seller}
               basePath={context.basePath}
               locale={context.locale}
+              className="h-full w-full"
             />
           ))}
-        </MarketplaceRail>
+          columnsDesktop={boundedSetting(settings.columns_desktop, 4, 1, 6)}
+          columnsTablet={boundedSetting(settings.columns_tablet, 2, 1, 6)}
+          columnsMobile={boundedSetting(settings.columns_mobile, 1, 1, 6)}
+          gap={boundedSetting(settings.grid_gap, 24, 0, 80)}
+          mobileGap={boundedSetting(settings.grid_gap_mobile, 16, 0, 80)}
+          loop={settings.infinite_loop === true}
+          autoRotate={settings.auto_rotate === true}
+          speed={Number(settings.autoplay_speed) || 5}
+          arrowsDesktop={settings.show_arrows_desktop !== false}
+          arrowsMobile={settings.show_arrows_mobile === true}
+          paginationDesktop={settings.show_pagination_desktop === true}
+          paginationMobile={settings.show_pagination_mobile === true}
+          arrowColor={safeColor(string(settings, "arrow_color"), "#ffffff")}
+          arrowBackground={safeColor(
+            string(settings, "arrow_background"),
+            "#222222",
+          )}
+          paginationColor={safeColor(
+            string(settings, "pagination_color"),
+            "#222222",
+          )}
+          itemLabel="shops"
+        />
       </MarketplacePage>
     </MarketplaceSection>
   );
@@ -3742,7 +3789,7 @@ async function renderEditorial(section: MarketplaceSectionWire) {
       </div>
     </div>,
     string(settings, "background_color") === "default"
-      ? "bg-marketplace-surface-warm"
+      ? "bg-marketplace-background"
       : "",
   );
 }

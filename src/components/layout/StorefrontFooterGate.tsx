@@ -10,8 +10,8 @@ function isCartPath(pathname: string | null): boolean {
 }
 
 /**
- * Hides storefront chrome (main footer / bottom nav) on the cart page so the
- * cart route can render its own compact footer without a double footer.
+ * Hides the global site footer on the cart page so the cart route can render
+ * its own compact footer without stacking two footers.
  */
 export function StorefrontFooterGate({ children }: { children: ReactNode }) {
   const pathname = usePathname();

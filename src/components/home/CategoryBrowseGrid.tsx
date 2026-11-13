@@ -1,7 +1,11 @@
 import type { Category } from "@spree/sdk";
 import Link from "next/link";
 import { getTranslations } from "next-intl/server";
-import { MarketplacePage, MarketplaceSection } from "@/components/marketplace";
+import {
+  MarketplacePage,
+  MarketplaceSection,
+  MarketplaceSectionHeader,
+} from "@/components/marketplace";
 import { ProductImage } from "@/components/ui/product-image";
 import { resolveCatalogImageUrl } from "@/lib/marketplace-stock-images";
 
@@ -37,9 +41,10 @@ export async function CategoryBrowseGrid({
       data-theme-section="category_grid"
     >
       <MarketplacePage>
-        <h2 className="text-xl font-bold tracking-tight text-marketplace-foreground md:text-2xl">
-          {t("featuredInterestsTitle")}
-        </h2>
+        <MarketplaceSectionHeader
+          title={t("featuredInterestsTitle")}
+          density="home"
+        />
         <ul className="mt-4 grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-4 lg:grid-cols-5">
           {items.map((category, index) => (
             <li key={category.id}>

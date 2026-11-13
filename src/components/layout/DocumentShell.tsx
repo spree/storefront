@@ -1,6 +1,6 @@
 import { Analytics } from "@vercel/analytics/next";
 import { SpeedInsights } from "@vercel/speed-insights/next";
-import { Geist, Playfair_Display } from "next/font/google";
+import localFont from "next/font/local";
 import { Suspense } from "react";
 import { StorefrontAnalyticsConsent } from "@/components/layout/StorefrontAnalyticsConsent";
 import { localeDirection } from "@/i18n/locales";
@@ -15,16 +15,20 @@ const spreeApiOrigin = (() => {
   }
 })();
 
-const geist = Geist({
+/** Geist Sans — bundled via the `geist` package (Vercel OFL). */
+const geist = localFont({
+  src: "../../../node_modules/geist/dist/fonts/geist-sans/Geist-Variable.woff2",
   variable: "--font-geist",
-  subsets: ["latin"],
   display: "swap",
+  weight: "100 900",
 });
 
-const playfair = Playfair_Display({
+/** Playfair Display — @fontsource-variable (SIL OFL). */
+const playfair = localFont({
+  src: "../../../node_modules/@fontsource-variable/playfair-display/files/playfair-display-latin-wght-normal.woff2",
   variable: "--font-playfair",
-  subsets: ["latin"],
   display: "swap",
+  weight: "400 900",
 });
 
 interface DocumentShellProps {
@@ -46,7 +50,7 @@ export function DocumentShell({ children, locale }: DocumentShellProps) {
         )}
       </head>
       <body
-        className={`${geist.variable} ${playfair.variable} antialiased min-h-screen flex flex-col`}
+        className={`${geist.variable} ${playfair.variable} antialiased min-h-screen flex flex-col bg-white text-foreground`}
         suppressHydrationWarning
       >
         <StorefrontAnalyticsConsent />

@@ -1,7 +1,62 @@
 import { expect, type Page } from "@playwright/test";
 import { createClient } from "@spree/sdk";
 import { storefrontGoto } from "./marketplace-fixtures";
+import { storeApiFetch } from "./store-api";
 import { loadSpreeEnv } from "./store-cart";
+
+/** Re-applies tokens through the Playwright-only bootstrap route so Server Actions see the session. */
+export async function syncBuyerSessionForServerActions(
+  page: Page,
+  accessToken: string,
+  refreshToken: string,
+) {
+  if (process.env.SPREE_REVIEW_E2E !== "1") return;
+  const origin = storefrontOrigin(page).replace(/\/$/, "");
+  if (page.url().startsWith("about:") || !page.url().startsWith(origin)) {
+    await storefrontGoto(page, "/us/en");
+  }
+  await page.evaluate(
+    async ({
+      accessToken: token,
+      refreshToken: refresh,
+    }: {
+      accessToken: string;
+      refreshToken: string;
+    }) => {
+      await fetch("/api/e2e/bootstrap-session", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ token, refresh_token: refresh }),
+        credentials: "same-origin",
+      });
+    },
+    { accessToken, refreshToken },
+  );
+}
+
+/** Re-bootstrap from cookies already on the page (before a Server Action). */
+export async function syncBuyerSessionFromCookies(page: Page) {
+  const cookies = await page.context().cookies();
+  const accessToken = cookies.find(
+    (cookie) => cookie.name === "_spree_jwt",
+  )?.value;
+  const refreshToken = cookies.find(
+    (cookie) => cookie.name === "_spree_refresh_token",
+  )?.value;
+  if (!accessToken || !refreshToken) {
+    throw new Error("Buyer session cookies missing before server action.");
+  }
+  await syncBuyerSessionForServerActions(page, accessToken, refreshToken);
+}
+
+async function buyerApiEmail(page: Page): Promise<string | null> {
+  const response = await storeApiFetch(page, "GET", "customers/me").catch(
+    () => null,
+  );
+  if (!response?.ok) return null;
+  const customer = await response.json();
+  return typeof customer.email === "string" ? customer.email : null;
+}
 
 async function waitForAccountLoginOrOverview(page: Page) {
   const overview = page.getByRole("heading", { name: /account overview/i });
@@ -25,14 +80,17 @@ async function clearStorefrontAuthCookies(page: Page) {
 }
 
 function storefrontOrigin(page: Page): string {
-  const port = process.env.STOREFRONT_E2E_PORT;
-  const configured =
-    process.env.MERCH_E2E_STOREFRONT_URL ||
-    process.env.BASE_URL ||
-    (port ? `http://localhost:${port}` : "http://localhost:3001");
+  // Prefer the live page host. Lab Playwright binds 127.0.0.1 while older
+  // helpers defaulted to localhost — cookies for one host never reach the other.
   if (page.url() && !page.url().startsWith("about:")) {
     return new URL(page.url()).origin;
   }
+  const port = process.env.STOREFRONT_E2E_PORT;
+  const configured =
+    process.env.NEXT_PUBLIC_SITE_URL ||
+    process.env.MERCH_E2E_STOREFRONT_URL ||
+    process.env.BASE_URL ||
+    (port ? `http://127.0.0.1:${port}` : "http://127.0.0.1:3001");
   return configured.replace(/\/$/, "");
 }
 
@@ -69,14 +127,27 @@ export async function loginBuyerThroughAccountForm(
 /**
  * Signs in through the Store API and waits for the storefront session to settle.
  */
+export type LoginBuyerViaApiOptions = {
+  /** When false, a verified Store API session is enough (faster under load). */
+  requireAccountShell?: boolean;
+};
+
 export async function loginBuyerViaApi(
   page: Page,
   email: string,
   password: string,
+  options: LoginBuyerViaApiOptions = {},
 ) {
+  const requireAccountShell = options.requireAccountShell ?? false;
   const { baseUrl, publishableKey } = loadSpreeEnv();
   const client = createClient({ baseUrl, publishableKey });
-  const result = await client.auth.login({ email, password });
+  const turnstileToken =
+    process.env.E2E_TURNSTILE_PASS_TOKEN ?? "XXXX.DUMMY.TOKEN.XXXX";
+  const result = await client.auth.login({
+    email,
+    password,
+    turnstile_token: turnstileToken,
+  });
   if ("mfa_required" in result) {
     throw new Error("Buyer MFA is not supported in merchandising E2E.");
   }
@@ -88,12 +159,15 @@ export async function loginBuyerViaApi(
     return;
   }
 
-  const origin = storefrontOrigin(page).replace(/\/$/, "");
-  const cookieSecure =
-    process.env.COOKIE_SECURE !== "false" && /^https:/i.test(origin);
-
   async function plantSessionCookies() {
+    // Navigate first so cookie domain matches the Playwright baseURL host
+    // (127.0.0.1 in lab configs), not a stale localhost default.
+    await page.context().clearCookies();
+    await storefrontGoto(page, "/us/en");
+    const origin = storefrontOrigin(page).replace(/\/$/, "");
     const { hostname } = new URL(origin);
+    const cookieSecure =
+      process.env.COOKIE_SECURE !== "false" && /^https:/i.test(origin);
     const cookieBase = {
       domain: hostname,
       path: "/",
@@ -101,8 +175,6 @@ export async function loginBuyerViaApi(
       secure: cookieSecure,
       sameSite: "Lax" as const,
     };
-    await page.context().clearCookies({ domain: hostname, path: "/" });
-    await storefrontGoto(page, "/us/en");
     await page.context().addCookies([
       { name: "_spree_jwt", value: accessToken, ...cookieBase },
       {
@@ -111,13 +183,15 @@ export async function loginBuyerViaApi(
         ...cookieBase,
       },
     ]);
+    // Reload so SSR/header chrome picks up the planted session.
+    await storefrontGoto(page, "/us/en");
   }
 
   const useServerBootstrap = process.env.SPREE_REVIEW_E2E === "1";
 
   if (useServerBootstrap) {
     await storefrontGoto(page, "/us/en");
-    const bootstrap = await page.evaluate(
+    const _bootstrap = await page.evaluate(
       async ({
         accessToken,
         refreshToken,
@@ -141,17 +215,26 @@ export async function loginBuyerViaApi(
         refreshToken,
       },
     );
-    if (!bootstrap.ok) {
-      await plantSessionCookies();
-    }
   } else {
     await plantSessionCookies();
   }
+
+  await plantSessionCookies();
+  await syncBuyerSessionForServerActions(page, accessToken, refreshToken);
 
   const accountWaitUntil = process.env.E2E_PREVIEW === "1" ? "load" : undefined;
   await storefrontGoto(page, "/us/en/account", {
     waitUntil: accountWaitUntil,
   });
+
+  const apiEmail = await buyerApiEmail(page);
+  if (apiEmail === email) {
+    await expectBuyerSessionCookies(page);
+    if (requireAccountShell) {
+      await expectBuyerAccountShell(page);
+    }
+    return;
+  }
 
   const overview = page.getByRole("heading", { name: /account overview/i });
   const emailField = page.getByLabel(/^email$/i);
@@ -166,6 +249,14 @@ export async function loginBuyerViaApi(
       landing = "login";
       break;
     }
+    const retryEmail = await buyerApiEmail(page);
+    if (retryEmail === email) {
+      await expectBuyerSessionCookies(page);
+      if (requireAccountShell) {
+        await expectBuyerAccountShell(page);
+      }
+      return;
+    }
     await page.reload({ waitUntil: accountWaitUntil ?? "domcontentloaded" });
   }
 
@@ -174,11 +265,23 @@ export async function loginBuyerViaApi(
     await page.getByLabel(/^password$/i).fill(password);
     await page.getByRole("button", { name: /sign in|log in/i }).click();
   } else if (landing === "pending") {
+    const recoveredEmail = await buyerApiEmail(page);
+    if (recoveredEmail === email) {
+      await expectBuyerSessionCookies(page);
+      if (requireAccountShell) {
+        await expectBuyerAccountShell(page);
+      }
+      return;
+    }
     await loginBuyerThroughAccountForm(page, email, password);
     return;
   }
 
-  await expectBuyerAccountShell(page);
+  if (requireAccountShell) {
+    await expectBuyerAccountShell(page);
+  } else {
+    await expectBuyerSessionCookies(page);
+  }
 }
 
 const BUYER_AUTH_TIMEOUT_MS = 180_000;

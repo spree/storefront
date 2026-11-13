@@ -40,7 +40,7 @@ export async function RatingDistribution({
 
   const shellClass =
     variant === "card"
-      ? "rounded-2xl border border-[#e1e3df] bg-[#faf9f7] px-5 py-6 sm:px-6"
+      ? "rounded-2xl border border-marketplace-border-subtle bg-marketplace-surface px-5 py-6 sm:px-6"
       : "";
 
   return (
@@ -48,7 +48,7 @@ export async function RatingDistribution({
       <div className="grid gap-8 sm:grid-cols-[minmax(0,11rem)_minmax(0,1fr)] sm:items-center sm:gap-10 lg:gap-14">
         <div className="flex flex-col items-center text-center sm:items-start sm:text-left">
           <p
-            className="text-[2.75rem] font-semibold leading-none tracking-tight text-[#222] sm:text-5xl"
+            className="text-[2.75rem] font-semibold leading-none tracking-tight text-marketplace-foreground sm:text-5xl"
             aria-hidden="true"
           >
             {average.toFixed(1)}
@@ -56,7 +56,7 @@ export async function RatingDistribution({
           <div className="mt-2">
             <StarRatingDisplay rating={average} size="md" tone="dark" />
           </div>
-          <p className="mt-2 text-sm text-[#595959]">
+          <p className="mt-2 text-sm text-marketplace-muted-foreground">
             {t("reviewCount", { count })}
           </p>
           <p className="sr-only">
@@ -75,15 +75,15 @@ export async function RatingDistribution({
                 key={star}
                 className="grid grid-cols-[3.25rem_minmax(0,1fr)_2.25rem] items-center gap-x-3 gap-y-0"
               >
-                <span className="inline-flex items-center justify-end gap-0.5 text-sm font-medium text-[#222]">
+                <span className="inline-flex items-center justify-end gap-0.5 text-sm font-medium text-marketplace-foreground">
                   {star}
                   <Star
-                    className="size-3.5 shrink-0 fill-[#222] text-[#222]"
+                    className="size-3.5 shrink-0 fill-marketplace-foreground text-marketplace-foreground"
                     aria-hidden
                   />
                 </span>
                 <div
-                  className="h-2 overflow-hidden rounded-full bg-[#eceae6]"
+                  className="h-2 overflow-hidden rounded-full bg-marketplace-border-subtle"
                   role="progressbar"
                   aria-label={t("starBucketLabel", { star, count: value })}
                   aria-valuemin={0}
@@ -91,11 +91,11 @@ export async function RatingDistribution({
                   aria-valuenow={value}
                 >
                   <div
-                    className="h-full rounded-full bg-[#222] transition-[width] duration-300 ease-out"
+                    className="h-full rounded-full bg-marketplace-brand transition-[width] duration-300 ease-out"
                     style={{ width: `${width}%` }}
                   />
                 </div>
-                <span className="text-right text-xs tabular-nums text-[#595959]">
+                <span className="text-right text-xs tabular-nums text-marketplace-muted-foreground">
                   {value}
                 </span>
               </li>

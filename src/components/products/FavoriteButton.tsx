@@ -1,18 +1,19 @@
 "use client";
 
 import { useTranslations } from "next-intl";
-import { useState, useTransition } from "react";
+import { useEffect, useState, useTransition } from "react";
 import { Heart } from "@/components/icons";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
 import { useStoreThemeSettings } from "@/contexts/ThemeSettingsContext";
-import { addFavorite, removeFavorite } from "@/lib/data/favorites";
+import { addFavorite, isFavorited, removeFavorite } from "@/lib/data/favorites";
 import { themeSettingEnabled } from "@/lib/theme/setting-value";
 import { cn } from "@/lib/utils";
 
 interface FavoriteButtonProps {
   productId: string;
   variantId?: string | null;
+  /** When omitted, signed-in buyers hydrate from their Favorites list. */
   favorited?: boolean;
   onChange?: (productId: string, favorited: boolean) => void;
   className?: string;
@@ -25,7 +26,7 @@ interface FavoriteButtonProps {
 export function FavoriteButton({
   productId,
   variantId,
-  favorited = false,
+  favorited,
   onChange,
   className,
   overlay = false,
@@ -35,7 +36,30 @@ export function FavoriteButton({
   const { isAuthenticated } = useAuth();
   const { general } = useStoreThemeSettings();
   const [pending, startTransition] = useTransition();
-  const [saved, setSaved] = useState(favorited);
+  const [saved, setSaved] = useState(Boolean(favorited));
+
+  useEffect(() => {
+    if (favorited !== undefined) {
+      setSaved(favorited);
+    }
+  }, [favorited]);
+
+  useEffect(() => {
+    if (favorited !== undefined || !isAuthenticated) return;
+
+    let cancelled = false;
+    void isFavorited({
+      productId,
+      variantId: variantId ?? undefined,
+    }).then((result) => {
+      if (cancelled || !result.success) return;
+      setSaved(result.favorited);
+    });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [favorited, isAuthenticated, productId, variantId]);
 
   if (!themeSettingEnabled(general?.enable_wishlist, true)) return null;
 
@@ -120,8 +144,8 @@ export function FavoriteButton({
           className={cn(
             "size-[18px]",
             saved
-              ? "fill-[#F1641E] text-[#F1641E]"
-              : "fill-none text-[#F1641E]",
+              ? "fill-marketplace-brand-accent text-marketplace-brand-accent"
+              : "fill-none text-marketplace-brand-accent",
           )}
           aria-hidden
         />

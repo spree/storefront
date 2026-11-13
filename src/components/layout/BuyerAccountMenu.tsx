@@ -57,13 +57,13 @@ export function BuyerAccountMenu({ basePath }: BuyerAccountMenuProps) {
           type="button"
           data-header-hover-trigger="true"
           aria-label={t("myAccount")}
-          className="relative flex h-10 items-center gap-1 rounded-full px-1 text-marketplace-foreground transition-[background-color,color] duration-200 ease-out hover:bg-marketplace-accent focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-marketplace-brand motion-reduce:transition-none"
+          className="relative flex h-9 w-9 items-center justify-center gap-1 rounded-full px-0 text-marketplace-foreground transition-[background-color,color] duration-200 ease-out hover:bg-marketplace-accent focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-marketplace-brand motion-reduce:transition-none sm:h-10 sm:w-auto sm:px-1"
         >
-          <span className="flex size-7 items-center justify-center rounded-full bg-marketplace-foreground text-xs font-semibold text-marketplace-surface">
+          <span className="flex size-6 items-center justify-center rounded-full bg-marketplace-foreground text-xs font-semibold text-marketplace-surface sm:size-7">
             {initial}
           </span>
           <span className="sr-only">{displayName}</span>
-          <ChevronDown className="size-3" aria-hidden="true" />
+          <ChevronDown className="hidden size-3 sm:block" aria-hidden="true" />
           <span aria-hidden="true" className="marketplace-header-hover-label">
             {t("myAccount")}
           </span>
@@ -99,6 +99,12 @@ export function BuyerAccountMenu({ basePath }: BuyerAccountMenuProps) {
           <span className="ml-auto text-marketplace-muted-foreground">
             {creditBalance ?? "—"}
           </span>
+        </DropdownMenuItem>
+        <DropdownMenuItem asChild>
+          <Link href={`${basePath}/account/quotes`}>
+            <Tag aria-hidden="true" />
+            {t("quotes")}
+          </Link>
         </DropdownMenuItem>
         <DropdownMenuItem asChild>
           <Link href={`${basePath}/account/offers`}>

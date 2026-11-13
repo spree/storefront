@@ -3,10 +3,37 @@ import { setAccessToken, setRefreshToken } from "@/lib/spree/cookies";
 
 function reviewE2eBootstrapAllowed(request: Request): boolean {
   if (process.env.SPREE_REVIEW_E2E !== "1") return false;
-  if (process.env.E2E_PREVIEW === "1") return false;
-  if (process.env.SPREE_API_URL !== "http://127.0.0.1:3011") return false;
+  // Explicit opt-in only in lab Playwright configs — never set on public production hosts.
+  if (process.env.SPREE_E2E_BOOTSTRAP_ENABLED !== "1") return false;
+  // Server-side lab marker (not sent on requests) — Host alone is not sufficient.
+  if (process.env.SPREE_MARKETPLACE_LAB_CERT !== "1") return false;
+  if (
+    process.env.SPREE_DEPLOYMENT_PHASE === "production" ||
+    process.env.NEXT_PUBLIC_DEPLOYMENT_PHASE === "production"
+  ) {
+    return false;
+  }
+  const labApi = process.env.SPREE_API_URL;
+  const allowedLabApis = new Set([
+    "http://127.0.0.1:3011",
+    "http://127.0.0.1:3020",
+    "http://127.0.0.1:3021",
+    "http://127.0.0.1:3031",
+  ]);
+  if (!labApi || !allowedLabApis.has(labApi)) return false;
   if (process.env.VERCEL_ENV && process.env.VERCEL_ENV !== "development") {
     return false;
+  }
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL;
+  if (siteUrl) {
+    try {
+      const siteHost = new URL(siteUrl).hostname;
+      if (siteHost !== "localhost" && siteHost !== "127.0.0.1") {
+        return false;
+      }
+    } catch {
+      return false;
+    }
   }
   const hostname = new URL(request.url).hostname;
   return hostname === "localhost" || hostname === "127.0.0.1";

@@ -63,6 +63,7 @@ export default async function ShopsPage({
         <MarketplaceSectionHeader
           title={t("pageTitle")}
           description={t("pageDescription")}
+          headingLevel="h1"
         />
 
         <MarketplaceToolbar className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">

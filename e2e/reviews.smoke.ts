@@ -1,8 +1,13 @@
-import { loginBuyerViaApi } from "./buyer-auth";
+import {
+  expectBuyerAccountShell,
+  loginBuyerViaApi,
+  syncBuyerSessionFromCookies,
+} from "./buyer-auth";
 import { expect, test } from "./buyer-desktop-evidence";
 import {
   MARKETPLACE_BUYER_EMAIL,
   MARKETPLACE_BUYER_PASSWORD,
+  SELLER_A_PRODUCT_PATH,
   storefrontGoto,
 } from "./marketplace-fixtures";
 
@@ -28,10 +33,16 @@ test.describe("product reviews", () => {
       MARKETPLACE_BUYER_EMAIL,
       MARKETPLACE_BUYER_PASSWORD,
     );
-    await storefrontGoto(page, "/us/en/account");
+    await syncBuyerSessionFromCookies(page);
+    await storefrontGoto(page, "/us/en/account", { waitUntil: "load" });
+    await expectBuyerAccountShell(page);
 
-    await expect(page.getByRole("link", { name: /^reviews$/i })).toBeVisible({
-      timeout: 15_000,
+    await expect(
+      page
+        .getByRole("navigation", { name: /^account$/i })
+        .getByRole("link", { name: /^reviews$/i }),
+    ).toBeVisible({
+      timeout: 45_000,
     });
 
     await storefrontGoto(page, "/us/en/account/reviews", { waitUntil: "load" });
@@ -41,10 +52,10 @@ test.describe("product reviews", () => {
       }),
     ).toBeVisible({ timeout: 30_000 });
 
-    await page.goto("/us/en/products");
-    const productLink = page.locator('a[href*="/products/"]').first();
-    await expect(productLink).toBeVisible({ timeout: 15_000 });
-    await productLink.click();
-    await expect(page.locator("#reviews")).toBeVisible({ timeout: 15_000 });
+    await storefrontGoto(page, SELLER_A_PRODUCT_PATH, { waitUntil: "load" });
+    const reviews = page.locator("#reviews");
+    await expect(reviews).toBeAttached({ timeout: 60_000 });
+    await reviews.scrollIntoViewIfNeeded();
+    await expect(reviews).toBeVisible({ timeout: 60_000 });
   });
 });

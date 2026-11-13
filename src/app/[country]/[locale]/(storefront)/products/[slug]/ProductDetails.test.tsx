@@ -1,6 +1,7 @@
 import type { Product } from "@spree/sdk";
-import { render, screen } from "@testing-library/react";
+import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import { renderToString } from "react-dom/server";
 import { describe, expect, it, vi } from "vitest";
 import { PRODUCT_PAGE_EXPAND } from "@/lib/data/cached";
 import { ProductDetails } from "./ProductDetails";
@@ -25,7 +26,22 @@ vi.mock("next/navigation", () => ({
 }));
 
 vi.mock("@/components/products/MediaGallery", () => ({
-  MediaGallery: () => null,
+  MediaGallery: ({ overlayTopLeft }: { overlayTopLeft?: React.ReactNode }) => (
+    <div data-testid="media-gallery">
+      {overlayTopLeft ? (
+        <div className="md:hidden">{overlayTopLeft}</div>
+      ) : null}
+    </div>
+  ),
+}));
+vi.mock("@/components/products/useProductStickyPurchaseBar", () => ({
+  useProductStickyPurchaseBar: () => ({
+    purchaseRef: { current: null },
+    showSticky: false,
+  }),
+}));
+vi.mock("@/components/products/ProductMobileStickyPurchaseBar", () => ({
+  ProductMobileStickyPurchaseBar: () => null,
 }));
 
 vi.mock("@/components/products/FavoriteButton", () => ({
@@ -41,11 +57,34 @@ vi.mock("@/components/products/ProductCustomFields", () => ({
 }));
 
 vi.mock("@/components/cart/QuantityPickerField", () => ({
-  QuantityPickerField: () => <div data-testid="quantity-picker" />,
+  QuantityPickerField: ({
+    quantity,
+    onQuantityChange,
+  }: {
+    quantity: number;
+    onQuantityChange: (value: number) => void;
+  }) => (
+    <select
+      aria-label="quantity"
+      data-testid="quantity-picker"
+      value={quantity}
+      onChange={(event) => onQuantityChange(Number(event.target.value))}
+    >
+      <option value={1}>1</option>
+      <option value={2}>2</option>
+    </select>
+  ),
+}));
+
+vi.mock("@/components/products/ProductShippingCost", () => ({
+  ProductShippingCost: () => null,
+}));
+vi.mock("@/lib/data/made-together", () => ({
+  loadMadeTogetherPresentation: vi.fn(async () => null),
 }));
 
 vi.mock("@/contexts/CartContext", () => ({
-  useCart: () => ({ addItem, updating: false }),
+  useCart: () => ({ addItem, updating: false, isOpen: false }),
 }));
 vi.mock("@/contexts/AuthContext", () => ({
   useAuth: () => authState,
@@ -132,9 +171,77 @@ const productWithOptionalFile = {
   ],
 } as unknown as Product;
 
+const productWithBlockedMessaging = {
+  ...productWithoutCustomVariants,
+  seller: {
+    id: "seller_1",
+    name: "Dev Seller 01",
+    slug: "dev-seller-01",
+    reviews_count: 2,
+    average_rating: 4.8,
+    sales_count: 10,
+    badges: [],
+  },
+  messaging_available: false,
+} as unknown as Product;
+
 describe("ProductDetails", () => {
+  it("adds the selected quantity to the cart", async () => {
+    const user = userEvent.setup();
+    addItem.mockClear();
+    addItem.mockResolvedValue({ success: true, cart: { id: "cart-123" } });
+    render(
+      <ProductDetails
+        product={productWithoutCustomVariants}
+        basePath="/us/en"
+      />,
+    );
+    await user.selectOptions(
+      screen.getByRole("combobox", { name: "quantity" }),
+      "2",
+    );
+    await user.click(screen.getByRole("button", { name: "addToCart" }));
+    expect(addItem).toHaveBeenCalledWith(
+      "variant-master",
+      2,
+      undefined,
+      undefined,
+    );
+  });
   it("requests the default variant for the product page", () => {
     expect(PRODUCT_PAGE_EXPAND).toContain("default_variant");
+  });
+
+  it("does not show ask-about in the purchase column", () => {
+    render(
+      <ProductDetails
+        product={productWithBlockedMessaging}
+        basePath="/us/en"
+      />,
+    );
+
+    expect(
+      screen.queryByRole("button", { name: "askAboutItem" }),
+    ).not.toBeInTheDocument();
+  });
+
+  it("uses the seller display name for the avatar fallback", () => {
+    const product = {
+      ...productWithBlockedMessaging,
+      seller: {
+        ...productWithBlockedMessaging.seller!,
+        name: "[dev-dataset] Merch Seller A",
+      },
+    } as Product;
+    render(<ProductDetails product={product} basePath="/us/en" />);
+
+    const sellerLinks = screen.getAllByRole("link", { name: "Merch Seller A" });
+    expect(
+      sellerLinks.some(
+        (link) => link.getAttribute("href") === "/us/en/sellers/dev-seller-01",
+      ),
+    ).toBe(true);
+    expect(screen.getByText("M")).toBeInTheDocument();
   });
 
   it("shows the master SKU when a product has no custom variants", () => {
@@ -161,29 +268,43 @@ describe("ProductDetails", () => {
     expect(screen.queryByTestId("quantity-picker")).not.toBeInTheDocument();
   });
 
-  it("keeps personalization collapsed until the buyer expands it", async () => {
+  it("keeps optional personalization collapsed until the buyer expands it", async () => {
     const user = userEvent.setup();
     render(
-      <ProductDetails product={productWithPersonalization} basePath="/us/en" />,
+      <ProductDetails
+        product={{
+          ...productWithPersonalization,
+          personalization_fields:
+            productWithPersonalization.personalization_fields!.map((field) => ({
+              ...field,
+              required: false,
+            })),
+        }}
+        basePath="/us/en"
+      />,
     );
 
     expect(screen.queryByLabelText(/Name to engrave/)).not.toBeInTheDocument();
     expect(
-      screen.getByRole("button", { name: "addPersonalization" }),
+      screen.getByRole("button", { name: "addPersonalizationOptionalLabel" }),
     ).toBeVisible();
 
     await user.click(
-      screen.getByRole("button", { name: "addPersonalization" }),
+      screen.getByRole("button", { name: "addPersonalizationOptionalLabel" }),
     );
 
     expect(screen.getByLabelText(/Name to engrave/)).toBeVisible();
   });
 
-  it("opens a single optional photo upload in the compact product form", () => {
+  it("opens a single optional photo upload in the compact product form", async () => {
+    const user = userEvent.setup();
     render(
       <ProductDetails product={productWithOptionalFile} basePath="/us/en" />,
     );
 
+    await user.click(
+      screen.getByRole("button", { name: "addPersonalizationOptionalLabel" }),
+    );
     expect(screen.getByText("uploadFile")).toBeVisible();
     expect(screen.getByText("uploadFileHelp")).toBeVisible();
   });
@@ -198,7 +319,7 @@ describe("ProductDetails", () => {
       />,
     );
 
-    await user.click(screen.getByRole("button", { name: "buyNow" }));
+    await user.click(screen.getByRole("button", { name: "buyItNow" }));
 
     expect(addItem).toHaveBeenCalledWith(
       "variant-master",
@@ -257,7 +378,8 @@ describe("ProductDetails", () => {
 
     render(<ProductDetails product={product} basePath="/us/en" />);
 
-    expect(screen.getByText("Bestseller")).toBeVisible();
+    const gallery = screen.getByTestId("media-gallery");
+    expect(within(gallery).getByText("Bestseller")).toBeVisible();
     expect(screen.queryByText("New")).not.toBeInTheDocument();
   });
 
@@ -310,13 +432,16 @@ describe("ProductDetails", () => {
 
     render(<ProductDetails product={product} basePath="/us/en" />);
 
-    expect(screen.getByText("Popular now")).toBeVisible();
+    const gallery = screen.getByTestId("media-gallery");
+    expect(within(gallery).getByText("Popular now")).toBeVisible();
     expect(screen.queryByText("New")).not.toBeInTheDocument();
     expect(screen.getByText("limitedTimeSale")).toBeVisible();
     expect(
-      document.querySelector('[data-merchandising-pdp-signal="sale"]'),
-    ).toBeNull();
-    expect(screen.getByText("Only 3 left")).toBeVisible();
+      document.querySelectorAll('[data-merchandising-pdp-signal="sale"]'),
+    ).toHaveLength(1);
+    expect(
+      document.querySelector('p[data-merchandising-pdp-signal="low_stock"]'),
+    ).toHaveTextContent("Only 3 left");
   });
 
   it("places the product badge before the product title", () => {
@@ -335,7 +460,8 @@ describe("ProductDetails", () => {
 
     render(<ProductDetails product={product} basePath="/us/en" />);
 
-    const badge = document.querySelector(
+    const gallery = screen.getByTestId("media-gallery");
+    const badge = gallery.querySelector(
       '[data-merchandising-pdp-signal="popular_now"]',
     );
     const title = screen.getByRole("heading", {
@@ -495,10 +621,23 @@ describe("ProductDetails", () => {
     ).toBeVisible();
     expect(screen.getByText("$25.00")).toBeVisible();
     expect(screen.getByRole("button", { name: "addToCart" })).toBeVisible();
-    expect(screen.getByRole("button", { name: "buyNow" })).toBeVisible();
-    expect(screen.getByText("purchaseProtection")).toBeVisible();
-    expect(screen.getByText("deliveryBody")).toBeVisible();
-    expect(screen.getByText("inStock")).toBeVisible();
+    expect(screen.getByRole("button", { name: "addToCart" })).toBeEnabled();
+    expect(screen.getByRole("button", { name: "buyItNow" })).toBeVisible();
+    expect(screen.getAllByText("deliveryBody")[0]).toBeVisible();
+  });
+
+  it("keeps add to cart inactive in the server markup until the client can handle the click", () => {
+    const html = renderToString(
+      <ProductDetails
+        product={productWithoutCustomVariants}
+        basePath="/us/en"
+      />,
+    );
+    const addToCart = html.match(
+      /<button\b(?=[^>]*\bdisabled\b)[^>]*>[\s\S]*?addToCart[\s\S]*?<\/button>/,
+    );
+
+    expect(addToCart).not.toBeNull();
   });
 
   it("does not show a custom-order action on the product page", () => {
@@ -539,7 +678,7 @@ describe("ProductDetails", () => {
       />,
     );
 
-    expect(screen.getByText("estimatedDelivery")).toBeVisible();
+    expect(screen.getAllByText("orderTodayGetBy").length).toBeGreaterThan(0);
     expect(screen.queryByText("deliveryBody")).not.toBeInTheDocument();
   });
 });

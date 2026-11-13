@@ -13,7 +13,15 @@ function fetchWithTimeout(timeoutMs: number): typeof fetch {
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), timeoutMs);
     try {
-      return await fetch(input, { ...init, signal: controller.signal });
+      const cache =
+        typeof window === "undefined"
+          ? ("no-store" as RequestCache)
+          : init?.cache;
+      return await fetch(input, {
+        ...init,
+        cache,
+        signal: controller.signal,
+      });
     } finally {
       clearTimeout(timer);
     }
@@ -46,18 +54,112 @@ export function initSpreeNext(config: SpreeNextConfig): void {
   });
 }
 
+let dotenvLocal: Record<string, string> | undefined;
+
+/**
+ * Cache and prefetch workers do not inherit `.env.local`. Read it from disk.
+ * This module is also bundled for the browser, so Node built-ins are resolved
+ * at runtime: a static `node:fs` import breaks the webpack client build.
+ */
+function nodeBuiltins(): {
+  fs: typeof import("node:fs");
+  path: typeof import("node:path");
+} | null {
+  const getBuiltinModule = (
+    globalThis.process as
+      | (NodeJS.Process & { getBuiltinModule?: (id: string) => unknown })
+      | undefined
+  )?.getBuiltinModule;
+  if (typeof getBuiltinModule !== "function") return null;
+  return {
+    fs: getBuiltinModule("node:fs") as typeof import("node:fs"),
+    path: getBuiltinModule("node:path") as typeof import("node:path"),
+  };
+}
+
+function readEnvFile(
+  readFileSync: typeof import("node:fs").readFileSync,
+  path: string,
+): string {
+  const buffer = readFileSync(path);
+  const utf16 =
+    (buffer.length >= 2 && buffer[0] === 0xff && buffer[1] === 0xfe) ||
+    (buffer.length >= 4 && buffer[1] === 0 && buffer[3] === 0);
+  return buffer.toString(utf16 ? "utf16le" : "utf8").replace(/^\uFEFF/, "");
+}
+
+function readDotEnvLocal(): Record<string, string> {
+  if (dotenvLocal) return dotenvLocal;
+  const parsed: Record<string, string> = {};
+  if (typeof window !== "undefined") {
+    dotenvLocal = parsed;
+    return parsed;
+  }
+
+  try {
+    const builtins = nodeBuiltins();
+    if (!builtins) {
+      dotenvLocal = parsed;
+      return parsed;
+    }
+    const { existsSync, readFileSync } = builtins.fs;
+    const { dirname, join } = builtins.path;
+    let directory = process.cwd();
+    for (let depth = 0; depth < 6; depth += 1) {
+      const candidate = join(directory, ".env.local");
+      if (existsSync(candidate)) {
+        for (const line of readEnvFile(readFileSync, candidate).split(
+          /\r?\n/,
+        )) {
+          const trimmed = line.trim();
+          if (!trimmed || trimmed.startsWith("#")) continue;
+          const separator = trimmed.indexOf("=");
+          if (separator === -1) continue;
+          const key = trimmed.slice(0, separator).trim();
+          let value = trimmed.slice(separator + 1).trim();
+          if (
+            (value.startsWith('"') && value.endsWith('"')) ||
+            (value.startsWith("'") && value.endsWith("'"))
+          ) {
+            value = value.slice(1, -1);
+          }
+          parsed[key] = value;
+        }
+        if (parsed.SPREE_API_URL || parsed.SPREE_PUBLISHABLE_KEY) break;
+      }
+      const parent = dirname(directory);
+      if (parent === directory) break;
+      directory = parent;
+    }
+  } catch {
+    // Keep the process.env values when the file cannot be read.
+  }
+
+  dotenvLocal = parsed;
+  return parsed;
+}
+
+function envValue(
+  fromProcess: string | undefined,
+  fromFile: string | undefined,
+): string {
+  return fromProcess?.trim() || fromFile?.trim() || "";
+}
+
 function resolveSpreeCredentials(): {
   baseUrl: string;
   publishableKey: string;
 } {
-  const publishableKey =
-    process.env.NEXT_PUBLIC_SPREE_PUBLISHABLE_KEY?.trim() ||
-    process.env.SPREE_PUBLISHABLE_KEY?.trim() ||
-    "";
-  const serverBaseUrl =
-    process.env.SPREE_API_URL?.trim() ||
-    process.env.NEXT_PUBLIC_SPREE_API_URL?.trim() ||
-    "";
+  const fileEnv = readDotEnvLocal();
+  const publishableKey = envValue(
+    process.env.NEXT_PUBLIC_SPREE_PUBLISHABLE_KEY ||
+      process.env.SPREE_PUBLISHABLE_KEY,
+    fileEnv.NEXT_PUBLIC_SPREE_PUBLISHABLE_KEY || fileEnv.SPREE_PUBLISHABLE_KEY,
+  );
+  const serverBaseUrl = envValue(
+    process.env.NEXT_PUBLIC_SPREE_API_URL || process.env.SPREE_API_URL,
+    fileEnv.NEXT_PUBLIC_SPREE_API_URL || fileEnv.SPREE_API_URL,
+  );
   // Browser calls go through the Next.js `/api/v3` rewrite to the configured API.
   const baseUrl = typeof window !== "undefined" ? "" : serverBaseUrl;
   return { baseUrl, publishableKey };

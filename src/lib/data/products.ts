@@ -2,6 +2,7 @@
 
 import type { PaginatedResponse, Product, ProductListParams } from "@spree/sdk";
 import { cacheLife, cacheTag } from "next/cache";
+import { withProductSort } from "@/lib/catalog-sort";
 import {
   cacheTagSuffix,
   DEFAULT_SURFACE,
@@ -49,13 +50,16 @@ export async function cachedListProducts(
   cacheLife("tenMinutes");
   cacheTag(`products${cacheTagSuffix(surface)}`);
   try {
-    return await getClientForSurface(surface).products.list(params, {
-      ...options,
-      // Wholesale catalog requires the customer JWT — the channel is gated.
-      ...(surface === "wholesale" && userToken
-        ? { token: userToken }
-        : undefined),
-    });
+    return await getClientForSurface(surface).products.list(
+      withProductSort(params),
+      {
+        ...options,
+        // Wholesale catalog requires the customer JWT — the channel is gated.
+        ...(surface === "wholesale" && userToken
+          ? { token: userToken }
+          : undefined),
+      },
+    );
   } catch {
     return EMPTY_PRODUCT_LIST;
   }
@@ -69,7 +73,7 @@ export async function getProducts(
   const userToken = await getAccessToken();
   if (userToken) {
     return getClientForSurface(surface)
-      .products.list(params, {
+      .products.list(withProductSort(params), {
         ...options,
         token: userToken,
         cache: "no-store",

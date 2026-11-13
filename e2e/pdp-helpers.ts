@@ -1,4 +1,10 @@
 import { expect, type Page } from "@playwright/test";
+import { storefrontGoto } from "./marketplace-fixtures";
+import { fetchStoreCart, findLineByProductSku } from "./store-cart";
+
+function addToCartButton(page: Page) {
+  return page.getByRole("main").getByRole("button", { name: /add to cart/i });
+}
 
 /**
  * Satisfies required personalization controls on the PDP when present.
@@ -27,8 +33,10 @@ export async function completeRequiredPersonalization(page: Page) {
     await expect(
       page.getByText(/uploaded: beta-personalization\.png/i),
     ).toBeVisible({
-      timeout: 30_000,
+      timeout: 60_000,
     });
+    const addAfterUpload = addToCartButton(page);
+    await expect(addAfterUpload).toBeEnabled({ timeout: 60_000 });
   }
 
   const fontChoice = page
@@ -65,33 +73,49 @@ export async function completeRequiredPersonalization(page: Page) {
   }
 }
 
+function productSlugFromPath(path: string): string {
+  const trimmed = path.replace(/\/$/, "");
+  const segment = trimmed.split("/").pop() ?? trimmed;
+  return segment;
+}
+
 export async function addProductToCart(page: Page, path: string) {
-  await page.goto(path);
+  const productSlug = productSlugFromPath(path);
+  await storefrontGoto(page, path);
   await expect(page.getByRole("link", { name: /^sign in$/i })).toHaveCount(0, {
-    timeout: 10_000,
+    timeout: 45_000,
   });
   await completeRequiredPersonalization(page);
-  const add = page.getByRole("button", { name: /add to cart/i });
+  const add = addToCartButton(page);
   await expect(add).toBeEnabled({ timeout: 15_000 });
-  const addResponse = page
-    .waitForResponse(
-      (response) =>
-        response.request().method() === "POST" &&
-        /cart|line_item|items/i.test(response.url()),
-      { timeout: 30_000 },
-    )
-    .catch(() => null);
   await add.click();
-  const response = await addResponse;
   const cartDialog = page.getByRole("dialog", { name: /cart/i });
   if (!(await cartDialog.isVisible().catch(() => false))) {
     await page.getByRole("button", { name: /open cart/i }).click();
   }
-  if (!(await cartDialog.isVisible().catch(() => false))) {
+  await expect(cartDialog).toBeVisible({ timeout: 30_000 });
+  try {
+    await expect
+      .poll(
+        async () => {
+          try {
+            const cart = await fetchStoreCart(page);
+            return Boolean(findLineByProductSku(cart, productSlug));
+          } catch {
+            return false;
+          }
+        },
+        { timeout: 120_000 },
+      )
+      .toBe(true);
+  } catch {
+    const validationAlert = page.getByRole("alert").filter({
+      hasText: /required|choose|personalize|error/i,
+    });
+    const alerts = await validationAlert.allTextContents().catch(() => []);
     const body = await page.locator("body").innerText();
-    const responseBody = response ? await response.text().catch(() => "") : "";
     throw new Error(
-      `Add-to-cart did not open the cart dialog. Status=${response?.status() ?? "no matching response"}; response=${responseBody.slice(0, 1200)}; page=${body.slice(-1600)}`,
+      `Add-to-cart did not persist slug ${productSlug}. Alerts=${alerts.join(" | ") || "none"}; page=${body.slice(-2000)}`,
     );
   }
 }

@@ -42,6 +42,7 @@ interface CartLineItemsProps {
   customerNote?: string | null;
   shippingFree?: boolean;
   shippingAmount?: string | null;
+  shippingPending?: boolean;
   onClose?: () => void;
   onRemove: (item: LineItem) => void | Promise<void>;
   onSaveForLater?: (item: LineItem) => void | Promise<void>;
@@ -96,6 +97,7 @@ export function CartLineItems({
   customerNote = null,
   shippingFree = false,
   shippingAmount = null,
+  shippingPending = false,
   onClose,
   onRemove,
   onSaveForLater,
@@ -373,7 +375,11 @@ export function CartLineItems({
                 <span className="font-bold text-marketplace-foreground">
                   {tc("shipping")}:
                 </span>{" "}
-                {shippingFree ? (
+                {shippingPending ? (
+                  <span className="text-marketplace-muted-foreground">
+                    {t("shippingEstimateLoading")}
+                  </span>
+                ) : shippingFree ? (
                   <span className="font-bold text-emerald-600">
                     {t("shippingFree")}
                   </span>
