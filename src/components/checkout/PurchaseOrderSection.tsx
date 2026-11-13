@@ -13,6 +13,10 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
+const FIELD_ID = "po-number";
+const ERROR_ID = "po-number-errors";
+const HINT_ID = "po-number-hint";
+
 export interface PurchaseOrderSectionHandle {
   /**
    * Persists what is typed but not yet saved. Place Order awaits this, so a
@@ -92,6 +96,8 @@ export function PurchaseOrderSection({
   useImperativeHandle(ref, () => ({ flush: save }), [save]);
 
   const required = cart.po_number_required;
+  const invalid = !!errors && errors.length > 0;
+  const describedBy = invalid ? `${ERROR_ID} ${HINT_ID}` : HINT_ID;
 
   return (
     <div>
@@ -107,8 +113,11 @@ export function PurchaseOrderSection({
         )}
       </div>
 
-      {errors && errors.length > 0 && (
-        <div className="rounded-sm border border-red-300 bg-red-50 px-4 py-3 mb-3">
+      {invalid && (
+        <div
+          id={ERROR_ID}
+          className="rounded-sm border border-red-300 bg-red-50 px-4 py-3 mb-3"
+        >
           {errors.map((error, index) => (
             <p key={index} className="text-sm text-red-700">
               {error}
@@ -117,22 +126,24 @@ export function PurchaseOrderSection({
         </div>
       )}
 
-      <Label htmlFor="po-number" className="mb-1.5 text-gray-700">
+      <Label htmlFor={FIELD_ID} className="mb-1.5 text-gray-700">
         {required ? t("poNumberRequiredLabel") : t("poNumberOptionalLabel")}
       </Label>
       <Input
-        id="po-number"
+        id={FIELD_ID}
         name="po_number"
         autoComplete="off"
         spellCheck={false}
         required={required}
         disabled={processing}
+        aria-invalid={invalid || undefined}
+        aria-describedby={describedBy}
         value={poNumber}
         onChange={(e) => setPoNumber(e.target.value)}
         onBlur={save}
         placeholder={t("poNumberPlaceholder")}
       />
-      <p className="text-xs text-gray-500 mt-1.5">
+      <p id={HINT_ID} className="text-xs text-gray-500 mt-1.5">
         {required
           ? cart.company_name
             ? t("poNumberRequiredByCompany", { company: cart.company_name })

@@ -48,6 +48,31 @@ describe("PurchaseOrderSection", () => {
     expect(screen.getByText("poNumberOptionalHint")).toBeInTheDocument();
   });
 
+  it("reads the hint out with the field, and the errors once it has them", () => {
+    const { rerender } = render(
+      <PurchaseOrderSection cart={cartWith({})} onSave={vi.fn()} />,
+    );
+
+    const input = screen.getByLabelText("poNumberRequiredLabel");
+    expect(input).not.toHaveAttribute("aria-invalid");
+    expect(input).toHaveAccessibleDescription(
+      "poNumberRequiredByCompany:Acme Supplies",
+    );
+
+    rerender(
+      <PurchaseOrderSection
+        cart={cartWith({})}
+        onSave={vi.fn()}
+        errors={["A purchase order number is required for this account"]}
+      />,
+    );
+
+    expect(input).toHaveAttribute("aria-invalid", "true");
+    expect(input).toHaveAccessibleDescription(
+      "A purchase order number is required for this account poNumberRequiredByCompany:Acme Supplies",
+    );
+  });
+
   it("saves the trimmed number on blur, and only once per change", async () => {
     const user = userEvent.setup();
     const onSave = vi.fn().mockResolvedValue(true);
