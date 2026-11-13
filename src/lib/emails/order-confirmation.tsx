@@ -13,7 +13,7 @@ import {
   Section,
   Text,
 } from "react-email";
-import { getStoreName, getStoreUrl } from "@/lib/store";
+import { FALLBACK_STORE_NAME, getStoreUrl } from "@/lib/store";
 
 interface LineItem {
   name: string;
@@ -57,7 +57,7 @@ interface OrderConfirmationEmailProps {
 export function OrderConfirmationEmail({
   orderNumber,
   customerName,
-  storeName = getStoreName(),
+  storeName = FALLBACK_STORE_NAME,
   storeUrl = getStoreUrl(),
   items,
   displayItemTotal,

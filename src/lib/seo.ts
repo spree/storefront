@@ -1,5 +1,5 @@
 import type { Category, Media, Product } from "@spree/sdk";
-import { ensureProtocol, getStoreName, getStoreUrl } from "@/lib/store";
+import { ensureProtocol, getStoreUrl } from "@/lib/store";
 
 /**
  * Default social image path (stored in public/).
@@ -127,11 +127,13 @@ export function buildBreadcrumbJsonLd(
 }
 
 /**
- * Build JSON-LD Organization schema from environment variables.
+ * Build JSON-LD Organization schema from the store name (Store API) and the
+ * optional social/contact environment variables.
  * https://schema.org/Organization
  */
-export function buildOrganizationJsonLd(): Record<string, unknown> {
-  const storeName = getStoreName();
+export function buildOrganizationJsonLd(
+  storeName: string,
+): Record<string, unknown> {
   const storeUrl = getStoreUrl();
   const logoUrl = process.env.STORE_LOGO_URL;
   const facebook = process.env.STORE_FACEBOOK;

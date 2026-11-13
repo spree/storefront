@@ -11,7 +11,7 @@ import {
   Section,
   Text,
 } from "react-email";
-import { getStoreName, getStoreUrl } from "@/lib/store";
+import { FALLBACK_STORE_NAME, getStoreUrl } from "@/lib/store";
 
 interface DataRequestConfirmationEmailProps {
   confirmUrl: string;
@@ -34,7 +34,7 @@ const COPY = {
 export function DataRequestConfirmationEmail({
   confirmUrl,
   kind,
-  storeName = getStoreName(),
+  storeName = FALLBACK_STORE_NAME,
   storeUrl = getStoreUrl(),
 }: DataRequestConfirmationEmailProps) {
   const copy = COPY[kind];
