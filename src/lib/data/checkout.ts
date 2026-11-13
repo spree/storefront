@@ -179,6 +179,21 @@ export async function updateOrderAddresses(
   }, "Failed to update addresses");
 }
 
+export async function updateCartPoNumber(cartId: string, poNumber: string) {
+  return actionResult(async () => {
+    const surface = await resolveSurfaceForCart(cartId);
+    const options = await getCartOptions(surface);
+    const id = await requireCartId(surface);
+    const cart = await getClientForSurface(surface).carts.update(
+      id,
+      { po_number: poNumber.trim() || null },
+      options,
+    );
+    updateTag(checkoutTag(surface));
+    return { cart };
+  }, "Failed to save the purchase order number");
+}
+
 export async function updateCartMarket(
   cartId: string,
   params: { currency: CurrencyCode; locale: LocaleCode },

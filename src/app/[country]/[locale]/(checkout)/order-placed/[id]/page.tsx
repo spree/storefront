@@ -142,6 +142,11 @@ export default function OrderPlacedPage({ params }: OrderPlacedPageProps) {
         <p className="text-gray-500">
           {t("orderNumber", { number: purchase.number })}
         </p>
+        {purchase.po_number && (
+          <p className="text-gray-500">
+            {t("poNumber", { number: purchase.po_number })}
+          </p>
+        )}
         <p className="text-sm text-gray-400 mt-2">{t("emailConfirmation")}</p>
         {purchase.split && (
           <p className="text-sm text-gray-500 mt-2">

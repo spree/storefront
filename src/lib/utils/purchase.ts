@@ -50,6 +50,7 @@ export interface Purchase {
    * the split copies the note onto every child, so one of them carries it.
    */
   customer_note: string | null;
+  po_number: string | null;
   billing_address: Address | null;
   shipping_address: Address | null;
   payments: Payment[];
@@ -92,6 +93,7 @@ export function toPurchase(result: CompletedPurchase): Purchase {
     currency: result.currency,
     customer_note:
       orders.find((order) => order.customer_note)?.customer_note ?? null,
+    po_number: orders.find((order) => order.po_number)?.po_number ?? null,
     billing_address: result.billing_address,
     shipping_address: result.shipping_address,
     // The payment is made once, against the group — a child serializes an

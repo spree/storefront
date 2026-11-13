@@ -68,6 +68,7 @@ import {
   removeGiftCard,
   selectDeliveryRate,
   updateCartMarket,
+  updateCartPoNumber,
   updateOrderAddresses,
 } from "@/lib/data/checkout";
 
@@ -150,6 +151,45 @@ describe("checkout server actions", () => {
       expect(result).toEqual({
         success: false,
         error: "Failed to update addresses",
+      });
+    });
+  });
+
+  describe("updateCartPoNumber", () => {
+    it("writes the trimmed reference to the cart", async () => {
+      const updatedOrder = { ...mockOrder, po_number: "PO-2026-0418" };
+      mockClient.carts.update.mockResolvedValue(updatedOrder);
+
+      const result = await updateCartPoNumber("order-1", "  PO-2026-0418 ");
+
+      expect(mockClient.carts.update).toHaveBeenCalledWith(
+        "order-1",
+        { po_number: "PO-2026-0418" },
+        { spreeToken: "order-token-123", token: undefined },
+      );
+      expect(result).toEqual({ success: true, cart: updatedOrder });
+    });
+
+    it("clears the reference when the field is emptied", async () => {
+      mockClient.carts.update.mockResolvedValue(mockOrder);
+
+      await updateCartPoNumber("order-1", "   ");
+
+      expect(mockClient.carts.update).toHaveBeenCalledWith(
+        "order-1",
+        { po_number: null },
+        { spreeToken: "order-token-123", token: undefined },
+      );
+    });
+
+    it("returns error on failure", async () => {
+      mockClient.carts.update.mockRejectedValue("unexpected");
+
+      const result = await updateCartPoNumber("order-1", "PO-1");
+
+      expect(result).toEqual({
+        success: false,
+        error: "Failed to save the purchase order number",
       });
     });
   });
