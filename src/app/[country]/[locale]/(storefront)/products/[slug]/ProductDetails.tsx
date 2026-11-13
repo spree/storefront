@@ -4,7 +4,7 @@ import type { Media, Product, Seller, Variant } from "@spree/sdk";
 import { CircleCheckBig, CircleX, Loader2, ShoppingBag } from "lucide-react";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useEffectEvent, useMemo, useState } from "react";
 import { QuantityPickerField } from "@/components/cart/QuantityPickerField";
 import { HiddenPricePrompt } from "@/components/products/HiddenPricePrompt";
 import { MediaGallery } from "@/components/products/MediaGallery";
@@ -16,6 +16,10 @@ import { useHiddenPricing } from "@/contexts/HiddenPricingContext";
 import { useStore } from "@/contexts/StoreContext";
 import { useFormatMoney } from "@/hooks/useFormatMoney";
 import { trackAddToCart, trackViewItem } from "@/lib/analytics/gtm";
+import {
+  trackKlaviyoAddedToCart,
+  trackKlaviyoViewedProduct,
+} from "@/lib/analytics/klaviyo";
 import { strikethroughAmount } from "@/lib/utils/price";
 
 interface ProductDetailsProps {
@@ -64,10 +68,15 @@ export function ProductDetails({
   const [quantity, setQuantity] = useState(1);
   const [loading, setLoading] = useState(false);
 
-  // Track product view (analytics - client-only side effect)
-  useEffect(() => {
+  const trackView = useEffectEvent(() => {
     trackViewItem(product, currency);
-  }, [product, currency]);
+    trackKlaviyoViewedProduct(product, basePath);
+  });
+
+  // biome-ignore lint/correctness/useExhaustiveDependencies: a cart change hands over a new product object for the same product, which is not a new view
+  useEffect(() => {
+    trackView();
+  }, [product.id]);
 
   const galleryImages = useMemo((): Media[] => {
     return product.media || [];
@@ -115,9 +124,12 @@ export function ProductDetails({
     }
 
     setLoading(true);
-    await addItem(variantId, quantity);
+    const added = await addItem(variantId, quantity);
     setLoading(false);
     trackAddToCart(product, selectedVariant, quantity, currency);
+    // Klaviyo flows act on this event, so a failed add sends nothing.
+    if (added)
+      trackKlaviyoAddedToCart(product, selectedVariant, quantity, basePath);
   };
 
   return (
