@@ -16,6 +16,9 @@ export function CollectionCard({
   viewLabel,
 }: CollectionCardProps): React.JSX.Element {
   const image = collection.image_url || collection.square_image_url;
+  const imageAlt = collection.image_url
+    ? collection.image_alt
+    : collection.square_image_alt;
 
   return (
     <Link
@@ -25,7 +28,7 @@ export function CollectionCard({
       <div className="relative aspect-[4/3] bg-gray-100">
         <ProductImage
           src={image}
-          alt=""
+          alt={imageAlt ?? ""}
           fill
           sizes="(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw"
           className="object-cover"
