@@ -69,16 +69,23 @@ export function PurchaseOrderSection({
 
   const save = useCallback((): Promise<boolean> => {
     const write = async (): Promise<boolean> => {
-      const value = poNumberRef.current.trim();
+      let value = poNumberRef.current.trim();
       if (value === savedRef.current) return true;
 
       setSaving(true);
       try {
-        // Left unrecorded on failure, so the next blur or the flush below
-        // retries rather than reporting a number the cart never took.
-        const saved = await onSave(value);
-        if (saved) savedRef.current = value;
-        return saved;
+        // Goes round again when the field moved while the write was in
+        // flight — the buyer may still be correcting the reference after
+        // pressing Place Order, and success here means the cart holds what
+        // the field shows, not merely what it showed when this started.
+        while (value !== savedRef.current) {
+          // Left unrecorded on failure, so the next blur or the flush below
+          // retries rather than reporting a number the cart never took.
+          if (!(await onSave(value))) return false;
+          savedRef.current = value;
+          value = poNumberRef.current.trim();
+        }
+        return true;
       } finally {
         setSaving(false);
       }

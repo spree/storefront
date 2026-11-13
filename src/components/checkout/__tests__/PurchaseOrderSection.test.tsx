@@ -180,6 +180,37 @@ describe("PurchaseOrderSection", () => {
     await expect(flushed).resolves.toBe(true);
   });
 
+  it("does not report success while the field holds a newer value", async () => {
+    const user = userEvent.setup();
+    const settlers: Array<(saved: boolean) => void> = [];
+    const onSave = vi.fn(
+      () =>
+        new Promise<boolean>((resolve) => {
+          settlers.push(resolve);
+        }),
+    );
+    const ref = createRef<PurchaseOrderSectionHandle>();
+    render(
+      <PurchaseOrderSection ref={ref} cart={cartWith({})} onSave={onSave} />,
+    );
+
+    const input = screen.getByLabelText("poNumberRequiredLabel");
+    await user.type(input, "PO-A");
+    const flushed = ref.current?.flush();
+    expect(onSave).toHaveBeenCalledExactlyOnceWith("PO-A");
+
+    // Typed while Place Order's write is still in flight.
+    await user.clear(input);
+    await user.type(input, "PO-B");
+    settlers[0](true);
+
+    await waitFor(() => expect(onSave).toHaveBeenCalledTimes(2));
+    expect(onSave).toHaveBeenLastCalledWith("PO-B");
+
+    settlers[1](true);
+    await expect(flushed).resolves.toBe(true);
+  });
+
   it("reports a failed flush so the order is not placed on the old reference", async () => {
     const user = userEvent.setup();
     const onSave = vi.fn().mockResolvedValue(false);
