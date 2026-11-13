@@ -150,7 +150,6 @@ export async function handleOrderFulfilled(
   if (isAlreadyProcessed(event.id)) return;
   const order = event.data;
   if (!order.email) return;
-  const { name: storeName } = await getStore(order.locale ?? undefined);
 
   const customerName =
     order.shipping_address?.full_name || order.billing_address?.full_name || "";
@@ -185,6 +184,7 @@ export async function handleOrderFulfilled(
     });
 
   if (shipments.length === 0) return;
+  const { name: storeName } = await getStore(order.locale ?? undefined);
 
   await sendEmail({
     to: order.email,
@@ -213,7 +213,6 @@ export async function handlePasswordReset(
   if (isAlreadyProcessed(event.id)) return;
   const { email, reset_token, redirect_url } = event.data;
   if (!email || !reset_token) return;
-  const { name: storeName } = await getStore();
 
   // Build the reset URL by appending the token to the redirect_url.
   // If no redirect_url was provided (e.g. no allowed origins configured),
@@ -223,6 +222,7 @@ export async function handlePasswordReset(
       "Missing NEXT_PUBLIC_SITE_URL configuration — cannot build password reset link",
     );
   }
+  const { name: storeName } = await getStore();
   const url = new URL(redirect_url ?? "/account/reset-password", SITE_URL);
   url.searchParams.set("token", reset_token);
   const resetUrl = url.toString();
@@ -253,13 +253,13 @@ export async function handleDataRequestConfirmation(
   if (isAlreadyProcessed(event.id)) return;
   const { email, confirmation_token, redirect_url, kind } = event.data;
   if (!email || !confirmation_token) return;
-  const { name: storeName } = await getStore();
 
   if (!SITE_URL) {
     throw new Error(
       "Missing NEXT_PUBLIC_SITE_URL configuration — cannot build data request confirmation link",
     );
   }
+  const { name: storeName } = await getStore();
   const url = new URL(
     redirect_url ?? "/account/data-requests/confirm",
     SITE_URL,
