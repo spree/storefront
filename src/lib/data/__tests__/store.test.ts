@@ -44,13 +44,43 @@ describe("getStore", () => {
       publishableKey: "pk_test",
       retry: false,
     });
+  });
 
-    const fetchSpy = vi
-      .spyOn(globalThis, "fetch")
-      .mockResolvedValue(new Response("{}"));
-    await options.fetch("https://api.example/store", { method: "GET" });
-    expect(fetchSpy.mock.calls[0][1]?.signal).toBeInstanceOf(AbortSignal);
+  it("cancels a stalled request at 3 seconds and falls back", async () => {
+    const consoleError = vi
+      .spyOn(console, "error")
+      .mockImplementation(() => {});
+    const deadline = new AbortController();
+    const timeoutSpy = vi
+      .spyOn(AbortSignal, "timeout")
+      .mockReturnValue(deadline.signal);
+    // A Store API that never answers: the request settles only when aborted.
+    const fetchSpy = vi.spyOn(globalThis, "fetch").mockImplementation(
+      (_input, init) =>
+        new Promise((_resolve, reject) => {
+          init?.signal?.addEventListener("abort", () =>
+            reject(init.signal?.reason),
+          );
+        }),
+    );
+    const { fetch: boundedFetch } = createClient.mock.calls[0][0];
+    getStoreApi.mockImplementation(() =>
+      boundedFetch("https://api.example/store", { method: "GET" }),
+    );
+
+    const result = getStore("fr");
+    await vi.waitFor(() => expect(fetchSpy).toHaveBeenCalled());
+    expect(timeoutSpy).toHaveBeenCalledWith(3000);
+    expect(fetchSpy.mock.calls[0][1]?.signal).toBe(deadline.signal);
+
+    deadline.abort(
+      new DOMException("The operation timed out.", "TimeoutError"),
+    );
+    await expect(result).resolves.toMatchObject({ name: FALLBACK_STORE_NAME });
+
     fetchSpy.mockRestore();
+    timeoutSpy.mockRestore();
+    consoleError.mockRestore();
   });
 
   it("falls back to the default store name when the lookup fails", async () => {
