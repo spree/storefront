@@ -29,16 +29,14 @@ ARG NODE_VERSION=22-alpine
 # ---- base: Node with pnpm (same version as package.json's `packageManager`) ----
 FROM node:${NODE_VERSION} AS base
 RUN npm install -g pnpm@10.33.4
+RUN apk add --no-cache libc6-compat
 
 
 # ---- deps: install production+dev dependencies for the build ----
 FROM base AS deps
 WORKDIR /app
 
-# libc6-compat keeps a few native modules happy on Alpine (musl).
-RUN apk add --no-cache libc6-compat
-
-COPY package.json pnpm-lock.yaml ./
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml .pnpmfile.cjs ./
 RUN --mount=type=cache,id=pnpm,target=/pnpm/store \
     pnpm install --frozen-lockfile --store-dir /pnpm/store
 
@@ -80,6 +78,8 @@ RUN --mount=type=secret,id=sentry_auth_token,required=false \
 # ---- runner: minimal runtime image ----
 FROM node:${NODE_VERSION} AS runner
 WORKDIR /app
+
+RUN apk add --no-cache libc6-compat
 
 ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
