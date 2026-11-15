@@ -70,10 +70,8 @@ describe("InfiniteProductList", () => {
     await waitFor(() => {
       expect(visibleIds()).toEqual(["one", "two", "three"]);
     });
-    expect(fetchPage).toHaveBeenCalledExactlyOnceWith({
-      limit: 12,
-      page: 2,
-    });
+    expect(fetchPage).toHaveBeenCalledTimes(1);
+    expect(fetchPage).toHaveBeenCalledWith({ limit: 12, page: 2 });
   });
 
   it("does not request a page beyond the last one when the sentinel intersects again", async () => {
