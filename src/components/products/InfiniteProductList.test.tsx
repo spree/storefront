@@ -1,5 +1,5 @@
-import { act, render, screen, waitFor } from "@testing-library/react";
 import type { Product } from "@spree/sdk";
+import { act, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { InfiniteProductList } from "./InfiniteProductList";
 
