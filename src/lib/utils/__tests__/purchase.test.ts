@@ -127,6 +127,24 @@ describe("toPurchase", () => {
     ).toEqual([null, corrected]);
   });
 
+  // The group serializes no reference of its own; the split copies the cart's
+  // onto every child, so the summary reads it off one of them.
+  it("carries the purchase-order reference, split or not", () => {
+    expect(toPurchase(order({ po_number: "PO-2026-0418" })).po_number).toBe(
+      "PO-2026-0418",
+    );
+    expect(
+      toPurchase({
+        ...group,
+        orders: group.orders.map((child) => ({
+          ...child,
+          po_number: "PO-2026-0418",
+        })),
+      }).po_number,
+    ).toBe("PO-2026-0418");
+    expect(toPurchase(group).po_number).toBeNull();
+  });
+
   // The group rolls its children's figures up itself — and the payment-side
   // ones (gift card, store credit, amount due) exist only on the group.
   it("takes the totals from the group itself", () => {

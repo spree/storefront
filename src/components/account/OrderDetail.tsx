@@ -47,9 +47,18 @@ export async function OrderDetail({
       <h1 className="text-2xl font-bold text-gray-900">
         {t("orderTitle", { number: purchase.number })}
       </h1>
-      <p className="text-sm text-gray-500 mt-1 mb-6">
-        {t("placedOn", { date: formatDateTime(purchase.completed_at, locale) })}
-      </p>
+      <div className="mt-1 mb-6">
+        <p className="text-sm text-gray-500">
+          {t("placedOn", {
+            date: formatDateTime(purchase.completed_at, locale),
+          })}
+        </p>
+        {purchase.po_number && (
+          <p className="text-sm text-gray-500">
+            {t("poNumber", { number: purchase.po_number })}
+          </p>
+        )}
+      </div>
 
       {/* Walked per seller order: a parcel with no manifest falls back to its
           own seller's items, and a seller order with no parcels yet still
