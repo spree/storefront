@@ -6,8 +6,10 @@ import { updateCartMarket } from "@/lib/data/checkout";
 import { setStoreCookies } from "@/lib/utils/cookies";
 import { useCountrySwitch } from "../useCountrySwitch";
 
+const mockPathname = vi.hoisted(() => ({ value: "/us/en/products" }));
+
 vi.mock("next/navigation", () => ({
-  usePathname: () => "/us/en/products",
+  usePathname: () => mockPathname.value,
 }));
 
 vi.mock("@/contexts/CartContext", () => ({
@@ -56,6 +58,8 @@ describe("useCountrySwitch", () => {
   });
 
   afterEach(() => {
+    mockPathname.value = "/us/en/products";
+    document.head.innerHTML = "";
     vi.restoreAllMocks();
     vi.unstubAllGlobals();
   });
@@ -156,5 +160,54 @@ describe("useCountrySwitch", () => {
     expect(mockAssign).toHaveBeenCalledWith(
       "/de/de/products?redirect=%2Fde%2Fde%2Faccount%2Forders",
     );
+  });
+
+  it("lands on the target locale's translated slug", async () => {
+    mockPathname.value = "/fr/fr/products/friteuse-a-air-double-panier-8l";
+    document.head.innerHTML = `
+      <link rel="alternate" hreflang="fr-FR" href="https://shop.example/fr/fr/products/friteuse-a-air-double-panier-8l" />
+      <link rel="alternate" hreflang="de-DE" href="https://shop.example/de/de/products/doppelkorb-heissluftfritteuse-8l" />
+      <link rel="alternate" hreflang="x-default" href="https://shop.example/us/en/products/dual-basket-air-fryer-8l" />
+    `;
+
+    const { result } = renderHook(() =>
+      useCountrySwitch({
+        currentCountry: "fr",
+        currentLocale: "fr",
+      }),
+    );
+    const mockAssign = vi.fn();
+    vi.stubGlobal("window", {
+      location: { assign: mockAssign, hash: "", search: "" },
+    });
+
+    await act(async () => {
+      await result.current.handleCountrySelect(targetCountry, "de");
+    });
+
+    expect(mockAssign).toHaveBeenCalledWith(
+      "/de/de/products/doppelkorb-heissluftfritteuse-8l",
+    );
+  });
+
+  it("does not reuse a translated slug when the page has no alternates", async () => {
+    mockPathname.value = "/fr/fr/products/friteuse-a-air-double-panier-8l";
+
+    const { result } = renderHook(() =>
+      useCountrySwitch({
+        currentCountry: "fr",
+        currentLocale: "fr",
+      }),
+    );
+    const mockAssign = vi.fn();
+    vi.stubGlobal("window", {
+      location: { assign: mockAssign, hash: "", search: "" },
+    });
+
+    await act(async () => {
+      await result.current.handleCountrySelect(targetCountry, "de");
+    });
+
+    expect(mockAssign).toHaveBeenCalledWith("/de/de/products");
   });
 });
