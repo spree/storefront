@@ -62,6 +62,37 @@ describe("resolveLocaleSwitchPath", () => {
     ).toBe("/pl/pl/products/dual-basket-air-fryer-8l");
   });
 
+  it("ignores an x-default that is the current detail page itself", () => {
+    // buildLocalizedAlternates output when Market data is unavailable.
+    const selfOnly = [
+      {
+        hrefLang: "fr",
+        href: "https://shop.example/fr/fr/products/friteuse-a-air-double-panier-8l",
+      },
+      {
+        hrefLang: "x-default",
+        href: "https://shop.example/fr/fr/products/friteuse-a-air-double-panier-8l",
+      },
+    ];
+
+    expect(
+      resolveLocaleSwitchPath(
+        "/fr/fr/products/friteuse-a-air-double-panier-8l",
+        "/de/de",
+        selfOnly,
+      ),
+    ).toBe("/de/de/products");
+  });
+
+  it("keeps a self-referencing x-default on pages without translated slugs", () => {
+    expect(
+      resolveLocaleSwitchPath("/fr/fr/products", "/de/de", [
+        { hrefLang: "fr", href: "https://shop.example/fr/fr/products" },
+        { hrefLang: "x-default", href: "https://shop.example/fr/fr/products" },
+      ]),
+    ).toBe("/de/de/products");
+  });
+
   it.each([
     ["/fr/fr/products/friteuse", "/de/de/products"],
     ["/fr/fr/c/cuisine/friteuses", "/de/de/products"],

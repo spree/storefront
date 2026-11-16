@@ -7,6 +7,7 @@ import {
   buildLocalizedAlternates,
   translationFingerprint,
 } from "@/lib/metadata/alternates";
+import { resolveLocaleSwitchPath } from "@/lib/utils/locale-switch";
 
 vi.mock("@/lib/data/markets", () => ({
   getStorefrontMarkets: vi.fn(),
@@ -444,5 +445,41 @@ describe("buildHreflangLanguages", () => {
       en: "https://store.example/us/en/products",
       "x-default": "https://store.example/us/en/products",
     });
+  });
+
+  it("points x-default at the current resource slug when Markets are unavailable", async () => {
+    vi.mocked(getStorefrontMarkets).mockRejectedValue(
+      new Error("API unavailable"),
+    );
+    const resolvePath = vi.fn();
+
+    const alternates = await buildLocalizedAlternates({
+      storeUrl: "https://store.example",
+      country: "de",
+      locale: "de",
+      path: "/products/heissluftfritteuse",
+      currentResourceFingerprint: "de",
+      resolvePath,
+    });
+
+    // The switcher must not treat this x-default as a cross-locale slug.
+    expect(alternates).toEqual({
+      canonical: "https://store.example/de/de/products/heissluftfritteuse",
+      languages: {
+        de: "https://store.example/de/de/products/heissluftfritteuse",
+        "x-default": "https://store.example/de/de/products/heissluftfritteuse",
+      },
+    });
+    expect(resolvePath).not.toHaveBeenCalled();
+    expect(
+      resolveLocaleSwitchPath(
+        "/de/de/products/heissluftfritteuse",
+        "/us/en",
+        Object.entries(alternates.languages).map(([hrefLang, href]) => ({
+          hrefLang,
+          href,
+        })),
+      ),
+    ).toBe("/us/en/products");
   });
 });

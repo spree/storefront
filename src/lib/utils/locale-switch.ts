@@ -41,6 +41,12 @@ function pathnameOf(href: string): string | null {
   }
 }
 
+function isSamePath(a: string, b: string): boolean {
+  const normalize = (path: string): string =>
+    (pathnameOf(path) ?? path).replace(/\/+$/, "").toLowerCase();
+  return normalize(a) === normalize(b);
+}
+
 function isUnderBasePath(pathname: string, basePath: string): boolean {
   const path = pathname.toLowerCase();
   const base = basePath.toLowerCase();
@@ -54,9 +60,11 @@ function isUnderBasePath(pathname: string, basePath: string): boolean {
  *    so translated slugs resolve to the target language's slug.
  * 2. The x-default alternate's path. Pages omit alternates for locales without
  *    their own translation; the Store API then serves the default-locale
- *    content, which it also finds by the default-locale slug.
- * 3. For detail pages with translated slugs and no alternates, the section
- *    listing (or home), never the old slug.
+ *    content, which it also finds by the default-locale slug. An x-default
+ *    that is the current detail page itself is skipped: that is the
+ *    no-Market-data output, and its slug is the current locale's.
+ * 3. For detail pages with translated slugs and no usable alternate, the
+ *    section listing (or home), never the old slug.
  * 4. Any other page keeps its path: it carries no translated segments.
  */
 export function resolveLocaleSwitchPath(
@@ -83,16 +91,22 @@ export function resolveLocaleSwitchPath(
     return `${nextBasePath}${getPathWithoutPrefix(targetAlternate.path)}`;
   }
 
+  const pathRest = getPathWithoutPrefix(pathname);
+  const fallback = TRANSLATED_SLUG_FALLBACKS.find(([section]) =>
+    pathRest.startsWith(section),
+  );
+
+  // Without Market data, buildLocalizedAlternates points x-default at the
+  // current page itself. On a translated detail page that is the current
+  // locale's slug, so it is not a slug the target locale is known to resolve.
   const defaultAlternate = alternatePaths.find(
-    (alternate) => alternate.hrefLang === "x-default",
+    (alternate) =>
+      alternate.hrefLang === "x-default" &&
+      !(fallback && isSamePath(alternate.path, pathname)),
   );
   if (defaultAlternate) {
     return `${nextBasePath}${getPathWithoutPrefix(defaultAlternate.path)}`;
   }
 
-  const pathRest = getPathWithoutPrefix(pathname);
-  const fallback = TRANSLATED_SLUG_FALLBACKS.find(([section]) =>
-    pathRest.startsWith(section),
-  );
   return `${nextBasePath}${fallback ? fallback[1] : pathRest}`;
 }
