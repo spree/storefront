@@ -58,6 +58,12 @@ export function PurchaseOrderSection({
 
   const [poNumber, setPoNumber] = useState(cart.po_number ?? "");
   const [saving, setSaving] = useState(false);
+  const [answered, setAnswered] = useState(false);
+  const [reported, setReported] = useState(errors);
+  if (errors !== reported) {
+    setReported(errors);
+    setAnswered(false);
+  }
 
   // What the cart is known to hold, so a blur that changed nothing — and the
   // flush before Place Order — cost no round-trip.
@@ -83,6 +89,7 @@ export function PurchaseOrderSection({
           // retries rather than reporting a number the cart never took.
           if (!(await onSave(value))) return false;
           savedRef.current = value;
+          setAnswered(value !== "");
           value = poNumberRef.current.trim();
         }
         return true;
@@ -103,7 +110,7 @@ export function PurchaseOrderSection({
   useImperativeHandle(ref, () => ({ flush: save }), [save]);
 
   const required = cart.po_number_required;
-  const invalid = !!errors && errors.length > 0;
+  const invalid = !!errors && errors.length > 0 && !answered;
   const describedBy = invalid ? `${ERROR_ID} ${HINT_ID}` : HINT_ID;
 
   return (

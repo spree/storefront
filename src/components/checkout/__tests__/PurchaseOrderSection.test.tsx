@@ -73,6 +73,60 @@ describe("PurchaseOrderSection", () => {
     );
   });
 
+  it("drops the errors once a number is saved, and brings them back if it is cleared", async () => {
+    const user = userEvent.setup();
+    const onSave = vi.fn().mockResolvedValue(true);
+    const errors = ["A purchase order number is required for this account"];
+    render(
+      <PurchaseOrderSection
+        cart={cartWith({})}
+        onSave={onSave}
+        errors={errors}
+      />,
+    );
+
+    const input = screen.getByLabelText("poNumberRequiredLabel");
+    expect(screen.getByText(errors[0])).toBeInTheDocument();
+
+    await user.type(input, "PO-2026-0418");
+    await user.tab();
+
+    await waitFor(() => expect(screen.queryByText(errors[0])).toBeNull());
+    expect(input).not.toHaveAttribute("aria-invalid");
+
+    await user.clear(input);
+    await user.tab();
+
+    await waitFor(() =>
+      expect(screen.getByText(errors[0])).toBeInTheDocument(),
+    );
+    expect(input).toHaveAttribute("aria-invalid", "true");
+  });
+
+  it("re-reports errors raised after the number was saved", async () => {
+    const user = userEvent.setup();
+    const onSave = vi.fn().mockResolvedValue(true);
+    const { rerender } = render(
+      <PurchaseOrderSection cart={cartWith({})} onSave={onSave} />,
+    );
+
+    await user.type(screen.getByLabelText("poNumberRequiredLabel"), "PO-1");
+    await user.tab();
+    await waitFor(() => expect(onSave).toHaveBeenCalledOnce());
+
+    rerender(
+      <PurchaseOrderSection
+        cart={cartWith({})}
+        onSave={onSave}
+        errors={["That purchase order number is already in use"]}
+      />,
+    );
+
+    expect(
+      screen.getByText("That purchase order number is already in use"),
+    ).toBeInTheDocument();
+  });
+
   it("saves the trimmed number on blur, and only once per change", async () => {
     const user = userEvent.setup();
     const onSave = vi.fn().mockResolvedValue(true);
