@@ -6,9 +6,22 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import "@adyen/adyen-web/styles/adyen.css";
 import {
   adyenClientKey,
-  adyenEnvironment,
-  isAdyenConfigured,
+  resolveAdyenEnvironment,
 } from "@/lib/utils/payment-gateway";
+
+/**
+ * The Drop-in components the storefront registers. No gift card: a session
+ * is paid in one payment, and a partial gift card payment never settles.
+ */
+export const ADYEN_DROPIN_COMPONENTS = [
+  "Card",
+  "GooglePay",
+  "ApplePay",
+  "PayPal",
+  "Klarna",
+  "Bancontact",
+  "Redirect",
+] as const;
 
 export interface AdyenPaymentFormHandle {
   confirmPayment: (returnUrl: string) => Promise<{ error?: string }>;
@@ -18,25 +31,47 @@ export interface AdyenPaymentFormHandle {
 interface AdyenPaymentFormProps {
   sessionId: string;
   sessionData: string;
+  /** The session's client key; the environment variable is the fallback. */
+  clientKey?: string;
+  /** The session's environment, "test" or "live". */
+  environment?: unknown;
+  /** The amount due, which Drop-in shows; updated in place. */
+  amount?: { value: number; currency: string };
   onReady: (handle: AdyenPaymentFormHandle) => void;
+  /**
+   * Makes the session payable through Spree before Drop-in pays it, and
+   * answers with the session data to pay it with.
+   */
+  onBeforeSubmit: () => Promise<string>;
   /** Called when Adyen sessions flow completes payment successfully. */
   onApproved: (sessionResult: string) => void;
 }
 
-function AdyenPaymentFormInner({
+export function AdyenPaymentForm({
   sessionId,
   sessionData,
+  clientKey,
+  environment,
+  amount,
   onReady,
+  onBeforeSubmit,
   onApproved,
 }: AdyenPaymentFormProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const dropinRef = useRef<any>(null);
+  const checkoutRef = useRef<any>(null);
   const [error, setError] = useState<string | null>(null);
   const initializedRef = useRef(false);
   const approvedRef = useRef(false);
 
   const onApprovedRef = useRef(onApproved);
   onApprovedRef.current = onApproved;
+  const onBeforeSubmitRef = useRef(onBeforeSubmit);
+  onBeforeSubmitRef.current = onBeforeSubmit;
+  const initialAmountRef = useRef(amount);
+
+  const resolvedClientKey = clientKey || adyenClientKey;
+  const resolvedEnvironment = resolveAdyenEnvironment(environment);
 
   // Adyen sessions flow handles payment internally — the Drop-in
   // calls onPaymentCompleted when done. confirmPayment just checks
@@ -46,8 +81,6 @@ function AdyenPaymentFormInner({
       if (approvedRef.current) {
         return {};
       }
-      // Adyen sessions flow handles submit internally.
-      // Trigger the Drop-in's submit to start the payment.
       if (!dropinRef.current) {
         return { error: "Adyen has not loaded yet" };
       }
@@ -62,14 +95,27 @@ function AdyenPaymentFormInner({
         };
       }
       // The Drop-in will handle the rest via onPaymentCompleted.
-      // Return a pending promise — it will be resolved by onApproved
-      // triggering the checkout completion flow.
       return {};
     },
     [],
   );
 
   const fetchUpdates = useCallback(async () => {}, []);
+
+  // A new amount before the session is payable: Spree took it already, and
+  // Drop-in shows it through its own update.
+  const amountValue = amount?.value;
+  const amountCurrency = amount?.currency;
+  useEffect(() => {
+    if (!checkoutRef.current || amountValue == null || !amountCurrency) return;
+    const initial = initialAmountRef.current;
+    if (initial?.value === amountValue && initial?.currency === amountCurrency)
+      return;
+    initialAmountRef.current = { value: amountValue, currency: amountCurrency };
+    checkoutRef.current.update?.({
+      amount: { value: amountValue, currency: amountCurrency },
+    });
+  }, [amountValue, amountCurrency]);
 
   useEffect(() => {
     if (initializedRef.current) return;
@@ -81,38 +127,43 @@ function AdyenPaymentFormInner({
     async function init() {
       try {
         const adyen = await import("@adyen/adyen-web");
-        const {
-          AdyenCheckout,
-          Dropin,
-          Card,
-          GooglePay,
-          ApplePay,
-          PayPal,
-          Klarna,
-          Bancontact,
-          Redirect,
-        } = adyen;
+        const { AdyenCheckout, Dropin } = adyen;
+        const components = ADYEN_DROPIN_COMPONENTS.map(
+          (name) => (adyen as Record<string, any>)[name],
+        );
         if (cancelled || !containerRef.current) return;
 
-        AdyenCheckout.register(
-          Card,
-          GooglePay,
-          ApplePay,
-          PayPal,
-          Klarna,
-          Bancontact,
-          Redirect,
-        );
+        AdyenCheckout.register(...components);
 
         const checkout = await AdyenCheckout({
-          clientKey: adyenClientKey,
-          environment: adyenEnvironment,
+          clientKey: resolvedClientKey,
+          environment: resolvedEnvironment,
           session: {
             id: sessionId,
             sessionData,
           },
+          ...(initialAmountRef.current && {
+            amount: initialAmountRef.current,
+          }),
           showPayButton: false,
-          onPaymentCompleted: (result) => {
+          // The session opens unpayable; Spree makes it payable at the amount
+          // it holds, and only then may Drop-in pay it.
+          beforeSubmit: (data: any, _component: any, actions: any) => {
+            onBeforeSubmitRef
+              .current()
+              .then((payableSessionData) => {
+                actions.resolve({ ...data, sessionData: payableSessionData });
+              })
+              .catch((err: unknown) => {
+                setError(
+                  err instanceof Error
+                    ? err.message
+                    : "The payment could not be started. Please try again.",
+                );
+                actions.reject();
+              });
+          },
+          onPaymentCompleted: (result: any) => {
             if (
               result.resultCode === "Authorised" ||
               result.resultCode === "Pending" ||
@@ -129,29 +180,22 @@ function AdyenPaymentFormInner({
               setError(msg);
             }
           },
-          onPaymentFailed: (result) => {
+          onPaymentFailed: (result: any) => {
             const msg = `Payment ${result?.resultCode?.toLowerCase() || "failed"}. Please try again.`;
             setError(msg);
           },
-          onError: (err) => {
+          onError: (err: any) => {
             const msg = err?.message || "An error occurred during payment.";
             setError(msg);
           },
-        });
+        } as any);
 
         if (cancelled || !containerRef.current) return;
+        checkoutRef.current = checkout;
 
         const dropin = new Dropin(checkout, {
           openFirstPaymentMethod: true,
-          paymentMethodComponents: [
-            Card,
-            GooglePay,
-            ApplePay,
-            PayPal,
-            Klarna,
-            Bancontact,
-            Redirect,
-          ],
+          paymentMethodComponents: components,
         });
 
         // Mount into a non-React-managed DOM node to avoid Preact/React conflicts
@@ -184,9 +228,18 @@ function AdyenPaymentFormInner({
       if (containerRef.current) {
         containerRef.current.innerHTML = "";
       }
+      checkoutRef.current = null;
       initializedRef.current = false;
     };
-  }, [sessionId, sessionData, onReady, confirmPayment, fetchUpdates]);
+  }, [
+    sessionId,
+    sessionData,
+    resolvedClientKey,
+    resolvedEnvironment,
+    onReady,
+    confirmPayment,
+    fetchUpdates,
+  ]);
 
   return (
     <div>
@@ -199,12 +252,4 @@ function AdyenPaymentFormInner({
       )}
     </div>
   );
-}
-
-export function AdyenPaymentForm(props: AdyenPaymentFormProps) {
-  if (!isAdyenConfigured) {
-    return null;
-  }
-
-  return <AdyenPaymentFormInner {...props} />;
 }
