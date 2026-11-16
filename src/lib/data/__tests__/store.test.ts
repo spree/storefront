@@ -63,10 +63,12 @@ describe("getStore", () => {
           );
         }),
     );
-    const { fetch: boundedFetch } = createClient.mock.calls[0][0];
-    getStoreApi.mockImplementation(() =>
-      boundedFetch("https://api.example/store", { method: "GET" }),
-    );
+    // Read the client's fetch only once getStore has created the client, so
+    // this test does not depend on an earlier one having done it.
+    getStoreApi.mockImplementation(() => {
+      const { fetch: boundedFetch } = createClient.mock.calls[0][0];
+      return boundedFetch("https://api.example/store", { method: "GET" });
+    });
 
     const result = getStore("fr");
     await vi.waitFor(() => expect(fetchSpy).toHaveBeenCalled());
