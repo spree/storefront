@@ -30,6 +30,12 @@ export const getStore = cache(async (locale?: string): Promise<Store> => {
       name: FALLBACK_STORE_NAME,
       seo_title: null,
       meta_description: null,
+      meta_keywords: null,
+      facebook: null,
+      twitter: null,
+      instagram: null,
+      customer_support_email: null,
+      logo_url: null,
     };
   }
 });
