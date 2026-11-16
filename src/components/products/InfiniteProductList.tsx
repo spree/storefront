@@ -89,7 +89,12 @@ export function InfiniteProductList({
         const response = await fetchPage({ ...listParams, page: nextPage });
         setProducts((prev) => {
           const existing = new Set(prev.map((p) => p.id));
-          const appended = response.data.filter((p) => !existing.has(p.id));
+          // Track IDs as they are appended, including duplicates within this page.
+          const appended = response.data.filter((p) => {
+            if (existing.has(p.id)) return false;
+            existing.add(p.id);
+            return true;
+          });
           return [...prev, ...appended];
         });
         setCurrentPage(nextPage);
