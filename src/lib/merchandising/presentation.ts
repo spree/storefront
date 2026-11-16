@@ -479,7 +479,7 @@ export function badgeClassName(
       : "rounded-full bg-marketplace-foreground px-2 py-0.5 text-[11px] font-semibold leading-4 text-marketplace-surface shadow-sm";
   }
   if (presentation === PRESENTATION.MARKETPLACE_BADGE) {
-    return "rounded-full bg-marketplace-surface/95 px-2 py-0.5 text-[11px] font-medium leading-4 text-marketplace-muted-foreground shadow-sm ring-1 ring-marketplace-border";
+    return "rounded-full bg-marketplace-surface/95 px-2 py-0.5 text-[11px] font-medium leading-4 text-marketplace-foreground shadow-sm ring-1 ring-marketplace-border";
   }
   if (presentation === PRESENTATION.SELLER_TRUST) {
     return "inline-flex items-center gap-1 text-[11px] font-medium leading-4 tracking-tight text-[#8b7355]";

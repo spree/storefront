@@ -1,5 +1,10 @@
 import type { Metadata } from "next";
 import { getTranslations } from "next-intl/server";
+import {
+  MarketplacePage,
+  MarketplaceSection,
+  MarketplaceSectionHeader,
+} from "@/components/marketplace";
 import { ProductListing } from "@/components/products/ProductListing";
 import { resolveCurrency } from "@/lib/data/markets";
 import { getProductFilters, getProducts } from "@/lib/data/products";
@@ -42,37 +47,44 @@ export default async function ProductsPage({
   const listName = query ? "Search Results" : "All Products";
 
   return (
-    <div className="mx-auto max-w-[var(--marketplace-container)] px-4 py-8 sm:px-6 md:py-10 lg:px-8">
-      <header className="mb-8 border-b border-marketplace-border pb-6 md:mb-10 md:pb-8">
-        {query ? (
-          <h1 className="marketplace-listing-title text-balance text-marketplace-foreground">
-            {t("searchResultsFor", { query })}
-          </h1>
-        ) : (
-          <>
-            <h1 className="marketplace-listing-title text-balance text-marketplace-foreground">
-              {t("allProducts")}
-            </h1>
-            <p className="mt-2 max-w-2xl text-marketplace-muted-foreground">
-              {t("browseCollection")}
-            </p>
-          </>
-        )}
-      </header>
+    <MarketplaceSection
+      className="pb-10 pt-6 md:pt-8"
+      data-theme-discovery-listing
+    >
+      <MarketplacePage>
+        <header className="mb-6 border-b border-marketplace-border-subtle pb-6 md:mb-8 md:pb-8">
+          {query ? (
+            <MarketplaceSectionHeader
+              density="listing"
+              headingLevel="h1"
+              title={t("searchResultsFor", { query })}
+            />
+          ) : (
+            <MarketplaceSectionHeader
+              density="listing"
+              headingLevel="h1"
+              title={t("allProducts")}
+              description={t("browseCollection")}
+            />
+          )}
+        </header>
 
-      <ProductListing
-        state={listingState}
-        basePath={basePath}
-        currency={currency}
-        locale={locale as Locale}
-        listId={listId}
-        listName={listName}
-        fetchProducts={getProducts}
-        fetchFilters={getProductFilters}
-        emptyMessage={
-          query ? t("noMatchingProducts", { query }) : t("tryAdjustingFilters")
-        }
-      />
-    </div>
+        <ProductListing
+          state={listingState}
+          basePath={basePath}
+          currency={currency}
+          locale={locale as Locale}
+          listId={listId}
+          listName={listName}
+          fetchProducts={getProducts}
+          fetchFilters={getProductFilters}
+          emptyMessage={
+            query
+              ? t("noMatchingProducts", { query })
+              : t("tryAdjustingFilters")
+          }
+        />
+      </MarketplacePage>
+    </MarketplaceSection>
   );
 }

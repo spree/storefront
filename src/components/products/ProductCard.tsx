@@ -14,6 +14,7 @@ import {
 } from "@/components/products/MerchandisingBadges";
 import { MerchandisingReason } from "@/components/products/MerchandisingReason";
 import { RecommendationDismissButton } from "@/components/products/RecommendationDismissButton";
+import { VerifiedHandmadeBadge } from "@/components/products/VerifiedHandmadeBadge";
 import { StarSellerAvatar } from "@/components/shops/StarSellerAvatar";
 import { ProductImage } from "@/components/ui/product-image";
 import { useStoreThemeSettings } from "@/contexts/ThemeSettingsContext";
@@ -357,14 +358,29 @@ export const ProductCard = memo(function ProductCard({
               {sponsoredDisclosure}
             </p>
           ) : null}
-          <h3 className="line-clamp-1 text-xs leading-snug text-marketplace-foreground sm:text-sm">
+          <h3 className="line-clamp-2 text-[0.8125rem] leading-snug text-marketplace-foreground sm:text-sm">
             <Link href={productHref} onClick={handleClick}>
               {product.name}
             </Link>
           </h3>
+          <VerifiedHandmadeBadge
+            product={product}
+            standardsHref={`${basePath}/handmade-standards`}
+          />
           {displayPrice ? (
-            <span className="mt-0.5 flex flex-wrap items-baseline gap-x-1.5 text-xs font-semibold tabular-nums">
-              <span className="text-[#3f6b24]">{displayPrice}</span>
+            <span
+              data-theme-product-price-pill
+              className="mt-1 flex flex-wrap items-baseline gap-x-1.5 text-sm font-semibold tabular-nums"
+            >
+              <span
+                className={
+                  onSale
+                    ? "text-marketplace-sale"
+                    : "text-marketplace-foreground"
+                }
+              >
+                {displayPrice}
+              </span>
               {onSale && strikethroughPrice ? (
                 <span className="font-normal text-marketplace-muted-foreground line-through">
                   {strikethroughPrice}
@@ -446,6 +462,10 @@ export const ProductCard = memo(function ProductCard({
               {product.name}
             </Link>
           </h3>
+          <VerifiedHandmadeBadge
+            product={product}
+            standardsHref={`${basePath}/handmade-standards`}
+          />
           {showPersonalizedSignals && showRelevanceReason ? (
             <MerchandisingReason
               signals={merchandisingSignals}
@@ -650,6 +670,7 @@ export const ProductCard = memo(function ProductCard({
           </p>
         ) : null}
         <h3
+          data-theme-product-title
           className={`relative z-[1] min-w-0 line-clamp-2 font-normal leading-snug text-marketplace-foreground ${isEditorial ? "text-base" : "text-sm"}`}
         >
           <Link
@@ -660,6 +681,10 @@ export const ProductCard = memo(function ProductCard({
             {product.name}
           </Link>
         </h3>
+        <VerifiedHandmadeBadge
+          product={product}
+          standardsHref={`${basePath}/handmade-standards`}
+        />
         {skuLabel ? (
           <p className="relative z-[1] truncate text-xs text-marketplace-muted-foreground">
             {skuLabel}

@@ -30,6 +30,8 @@ function SessionFallback() {
 interface AuthenticatedAccountShellProps {
   children: React.ReactNode;
   loginHref: string;
+  /** Server layout already verified JWT or refresh cookies — do not hide SSR content while the client re-syncs. */
+  hasServerSession?: boolean;
 }
 
 /**
@@ -40,15 +42,19 @@ interface AuthenticatedAccountShellProps {
 export function AuthenticatedAccountShell({
   children,
   loginHref,
+  hasServerSession = false,
 }: AuthenticatedAccountShellProps) {
   const router = useRouter();
   const { isAuthenticated, loading } = useAuth();
 
   useEffect(() => {
+    if (hasServerSession) return;
     if (!loading && !isAuthenticated) router.replace(loginHref);
-  }, [isAuthenticated, loading, loginHref, router]);
+  }, [hasServerSession, isAuthenticated, loading, loginHref, router]);
 
-  if (loading || !isAuthenticated) return <SessionFallback />;
+  if (!hasServerSession && (loading || !isAuthenticated)) {
+    return <SessionFallback />;
+  }
 
   return <AccountShell>{children}</AccountShell>;
 }

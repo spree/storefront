@@ -43,7 +43,7 @@ export async function MarketplaceHomeEditorialHero({
           <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-marketplace-brand">
             {t("marketplaceHeroEyebrow")}
           </p>
-          <h1 className="mt-3 max-w-[14ch] font-display text-[clamp(2rem,1.55rem+2vw,3.25rem)] font-semibold leading-[1.02] tracking-tight text-marketplace-foreground">
+          <h1 className="mt-3 max-w-xl font-display text-[clamp(2.15rem,1.7rem+1.6vw,3.4rem)] font-medium leading-[1.05] tracking-tight text-balance text-marketplace-foreground lg:max-w-2xl">
             {t("marketplaceHeroTitle")}
           </h1>
           <p className="mt-4 max-w-md text-sm leading-relaxed text-marketplace-muted-foreground md:text-base">

@@ -1,5 +1,6 @@
 "use server";
 
+import { cache } from "react";
 import { getClient, getLocaleOptions } from "@/lib/spree";
 
 export type CmsNavigationItem = {
@@ -50,18 +51,20 @@ export type CmsNavigationPayload = {
   };
 };
 
-export async function getPublishedNavigation(
-  key: string,
-): Promise<CmsNavigationPayload | null> {
-  const options = await getLocaleOptions();
-  try {
-    const response = await getClient().request<{ data: CmsNavigationPayload }>(
-      "GET",
-      `/cms/navigations/${encodeURIComponent(key)}`,
-      options,
-    );
-    return response.data ?? null;
-  } catch {
-    return null;
-  }
+const loadPublishedNavigation = cache(
+  async (key: string): Promise<CmsNavigationPayload | null> => {
+    const options = await getLocaleOptions();
+    try {
+      const response = await getClient().request<{
+        data: CmsNavigationPayload;
+      }>("GET", `/cms/navigations/${encodeURIComponent(key)}`, options);
+      return response.data ?? null;
+    } catch {
+      return null;
+    }
+  },
+);
+
+export async function getPublishedNavigation(key: string) {
+  return loadPublishedNavigation(key);
 }

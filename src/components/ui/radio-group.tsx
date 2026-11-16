@@ -18,10 +18,21 @@ function RadioGroup({
   );
 }
 
+type RadioGroupItemProps = React.ComponentProps<
+  typeof RadioGroupPrimitive.Item
+> & {
+  /** Shown to assistive tech when the control has no visible label text. */
+  label?: string;
+};
+
 function RadioGroupItem({
   className,
+  label,
+  "aria-label": ariaLabel,
+  "aria-labelledby": ariaLabelledBy,
   ...props
-}: React.ComponentProps<typeof RadioGroupPrimitive.Item>): React.JSX.Element {
+}: RadioGroupItemProps): React.JSX.Element {
+  const accessibleName = ariaLabel ?? label;
   return (
     <RadioGroupPrimitive.Item
       data-slot="radio-group-item"
@@ -30,12 +41,21 @@ function RadioGroupItem({
         className,
       )}
       {...props}
+      aria-label={accessibleName}
+      aria-labelledby={ariaLabelledBy}
+      title={accessibleName}
     >
+      {accessibleName ? (
+        <span className="sr-only">{accessibleName}</span>
+      ) : null}
       <RadioGroupPrimitive.Indicator
         data-slot="radio-group-indicator"
         className="flex items-center justify-center"
       >
-        <span className="block size-2 rounded-full bg-black" />
+        <span
+          className="block size-2 rounded-full bg-black"
+          aria-hidden="true"
+        />
       </RadioGroupPrimitive.Indicator>
     </RadioGroupPrimitive.Item>
   );

@@ -60,7 +60,10 @@ export function FollowShopButton({
         <Button
           variant="outline"
           size="icon"
-          className="size-9 rounded-full border border-marketplace-border-subtle bg-marketplace-surface text-marketplace-foreground shadow-[var(--marketplace-shadow-card)] hover:bg-marketplace-surface-subtle"
+          className={cn(
+            "size-9 rounded-full border border-marketplace-border-subtle bg-marketplace-surface text-marketplace-foreground shadow-[var(--marketplace-shadow-card)] hover:bg-marketplace-surface-subtle",
+            className,
+          )}
           asChild
         >
           <Link href={loginHref} aria-label={t("follow")}>
@@ -99,7 +102,10 @@ export function FollowShopButton({
         type="button"
         variant="outline"
         size="icon"
-        className="size-9 rounded-full border-0 bg-white text-[#222] shadow-sm hover:bg-white"
+        className={cn(
+          "size-9 rounded-full border border-marketplace-border-subtle bg-marketplace-surface text-marketplace-foreground shadow-sm hover:bg-marketplace-surface-subtle",
+          className,
+        )}
         disabled={pending}
         aria-pressed={following}
         aria-label={following ? t("following") : t("follow")}

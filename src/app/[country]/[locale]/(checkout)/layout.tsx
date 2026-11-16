@@ -54,7 +54,7 @@ function CheckoutHeader() {
       </div>
       <Link
         href={basePath || "/"}
-        className="text-sm text-gray-600 hover:text-gray-900 flex items-center gap-1"
+        className="flex items-center gap-1 text-sm text-marketplace-muted-foreground hover:text-marketplace-foreground"
         style={{
           order: logoPosition === "right" ? 1 : 2,
           marginLeft: logoPosition === "center" ? 0 : "auto",
@@ -77,7 +77,7 @@ function CheckoutFooter() {
   const tp = useTranslations("policies");
 
   return (
-    <footer className="py-4 text-xs text-gray-500 border-t border-gray-200 mt-auto flex flex-wrap items-center gap-x-3 gap-y-1">
+    <footer className="mt-auto flex flex-wrap items-center gap-x-3 gap-y-1 border-t border-marketplace-border py-4 text-xs text-marketplace-muted-foreground">
       <p>
         {t("allRightsReserved", { year: new Date().getFullYear(), storeName })}
       </p>
@@ -86,7 +86,7 @@ function CheckoutFooter() {
           key={policy.slug}
           href={`${basePath}/policies/${policy.slug}`}
           target="_blank"
-          className="text-gray-500 underline hover:text-gray-700"
+          className="text-marketplace-muted-foreground underline hover:text-marketplace-foreground"
         >
           {tp(policy.nameKey)}
         </Link>
@@ -112,7 +112,7 @@ function MobileSummaryToggle() {
 
   return (
     <div
-      className="lg:hidden border-b border-gray-200 bg-gray-50"
+      className="border-b border-marketplace-border bg-marketplace-surface-subtle lg:hidden"
       style={{ backgroundColor: "var(--checkout-summary, #f9fafb)" }}
     >
       <button
@@ -122,12 +122,12 @@ function MobileSummaryToggle() {
         aria-expanded={isOpen}
         aria-controls="checkout-summary-panel"
       >
-        <span className="flex items-center gap-2 text-sm font-medium text-gray-900">
-          <ShoppingBag className="w-5 h-5 text-gray-600" />
+        <span className="flex items-center gap-2 text-sm font-medium text-marketplace-foreground">
+          <ShoppingBag className="h-5 w-5 text-marketplace-muted-foreground" />
           {isOpen ? t("hideOrderSummary") : t("showOrderSummary")}
         </span>
         <ChevronDown
-          className={`w-5 h-5 text-gray-500 transition-transform ${isOpen ? "rotate-180" : ""}`}
+          className={`h-5 w-5 text-marketplace-muted-foreground transition-transform ${isOpen ? "rotate-180" : ""}`}
         />
       </button>
       {isOpen && (
@@ -164,7 +164,8 @@ function CheckoutLayoutContent({ children }: CheckoutLayoutProps) {
       : "var(--marketplace-body-font)";
   return (
     <div
-      className="min-h-screen flex flex-col bg-white"
+      className="flex min-h-screen flex-col bg-marketplace-background"
+      data-marketplace-checkout
       style={{
         backgroundColor: "var(--checkout-main, #ffffff)",
         color: "var(--checkout-text, inherit)",
@@ -190,7 +191,7 @@ function CheckoutLayoutContent({ children }: CheckoutLayoutProps) {
         />
       )}
       {/* Mobile header */}
-      <div className="lg:hidden border-b border-gray-200">
+      <div className="border-b border-marketplace-border lg:hidden">
         <div className="px-5">
           <CheckoutHeader />
         </div>
@@ -212,7 +213,7 @@ function CheckoutLayoutContent({ children }: CheckoutLayoutProps) {
             <div className="hidden lg:block mb-8">
               <CheckoutHeader />
             </div>
-            {children}
+            <main>{children}</main>
           </div>
           <div className="px-5 lg:pl-10 lg:pr-12 pb-4">
             <CheckoutFooter />
@@ -222,7 +223,7 @@ function CheckoutLayoutContent({ children }: CheckoutLayoutProps) {
         {/* Desktop summary sidebar — separated by its background tone, without a divider */}
         {themeSettingEnabled(checkout?.show_order_summary, true) && (
           <div
-            className={`hidden lg:block ${summaryBelow ? "lg:col-start-2 lg:col-span-1 border-t border-gray-200" : "lg:col-start-3"} bg-gray-50`}
+            className={`hidden lg:block ${summaryBelow ? "border-t border-marketplace-border lg:col-span-1 lg:col-start-2" : "lg:col-start-3"} bg-marketplace-surface-subtle`}
             style={{ backgroundColor: "var(--checkout-summary, #f9fafb)" }}
           >
             <div className="sticky top-0 px-10 py-10">

@@ -12,6 +12,10 @@ import {
   getLocaleOptions,
   withAuthRefresh,
 } from "@/lib/spree";
+import {
+  hasStaticGuestHomeComposition,
+  rememberStaticGuestHomeComposition,
+} from "@/lib/theme/guest-home-composition";
 
 const TRAFFIC_SESSION_COOKIE = "spree_traffic_session";
 
@@ -24,12 +28,21 @@ export async function getHomePersonalizationComposition(
   previewPersona?: string,
 ): Promise<HomePersonalizationComposition | null> {
   const options = await buildPersonalizationRequestOptions(previewPersona);
+  const guestScope =
+    !options.token && !previewPersona
+      ? JSON.stringify([options.country, options.locale])
+      : undefined;
+  if (guestScope && hasStaticGuestHomeComposition(guestScope)) return null;
+
   try {
     const response = await getClient().request<HomeCompositionResponse>(
       "GET",
       "/storefront_personalization/home",
       options,
     );
+    if (guestScope && response.data?.composition_version === "static") {
+      rememberStaticGuestHomeComposition(guestScope);
+    }
     return response.data ?? null;
   } catch {
     return null;

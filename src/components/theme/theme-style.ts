@@ -3,12 +3,15 @@ import {
   applyNamedThemeFonts,
   themeTypographyScaleCustomized,
 } from "@/components/theme/theme-fonts";
+import { editorialStorefrontEnabled } from "@/lib/theme/flags";
 import { themeSettingEnabled } from "@/lib/theme/setting-value";
 
 type SettingsGroup = Record<string, unknown>;
 
-/** Page shell and default section canvas stay white; theme cream tokens do not override. */
-export const STOREFRONT_SHELL_BACKGROUND = "#ffffff";
+/** Page shell uses the marketplace paper palette. Theme color keys cannot override it. */
+export const STOREFRONT_SHELL_BACKGROUND = "#f6f3ee";
+export const STOREFRONT_SHELL_SURFACE = "#fffcf8";
+export const STOREFRONT_SHELL_SUBTLE = "#efeae3";
 
 const SHELL_COLOR_KEYS_SKIP = new Set([
   "background",
@@ -23,10 +26,11 @@ export function shouldSkipShellThemeColorKey(key: string) {
 export function pinStorefrontShellBackground(style: Record<string, string>) {
   style["--marketplace-background"] = STOREFRONT_SHELL_BACKGROUND;
   style["--marketplace-canvas"] = STOREFRONT_SHELL_BACKGROUND;
-  style["--marketplace-surface"] = STOREFRONT_SHELL_BACKGROUND;
-  style["--marketplace-surface-warm"] = STOREFRONT_SHELL_BACKGROUND;
-  style["--marketplace-surface-subtle"] = "#f4f4f5";
-  style["--marketplace-muted"] = "#f4f4f5";
+  style["--marketplace-surface"] = STOREFRONT_SHELL_SURFACE;
+  style["--marketplace-surface-elevated"] = STOREFRONT_SHELL_SURFACE;
+  style["--marketplace-surface-warm"] = STOREFRONT_SHELL_SUBTLE;
+  style["--marketplace-surface-subtle"] = STOREFRONT_SHELL_SUBTLE;
+  style["--marketplace-muted"] = STOREFRONT_SHELL_SUBTLE;
 }
 
 export function themeGlobalDataAttributes(
@@ -120,6 +124,7 @@ export function themeGlobalDataAttributes(
 }
 
 export function themeInlineStyle(theme?: CmsTheme | null): React.CSSProperties {
+  const editorial = editorialStorefrontEnabled();
   const settings = (theme?.settings || {}) as CmsTheme["settings"] &
     Record<string, SettingsGroup>;
   const style: Record<string, string> = {};
@@ -150,7 +155,7 @@ export function themeInlineStyle(theme?: CmsTheme | null): React.CSSProperties {
     arrow_icon: "--theme-arrow-icon",
   };
   for (const [key, variable] of Object.entries(colorVariables)) {
-    if (shouldSkipShellThemeColorKey(key)) continue;
+    if (!editorial && shouldSkipShellThemeColorKey(key)) continue;
     const value = colors[key];
     if (typeof value === "string" && /^#[0-9a-fA-F]{6}$/.test(value))
       style[variable] = value;
@@ -379,6 +384,8 @@ export function themeInlineStyle(theme?: CmsTheme | null): React.CSSProperties {
       navigationSizes[String(navigation.font_size)];
   if (navigation.text_case === "uppercase")
     style["--theme-navigation-text-transform"] = "uppercase";
-  pinStorefrontShellBackground(style);
+  if (!editorial) {
+    pinStorefrontShellBackground(style);
+  }
   return style;
 }

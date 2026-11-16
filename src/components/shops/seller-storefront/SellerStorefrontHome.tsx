@@ -9,6 +9,7 @@ import type {
   SellerShopSection,
 } from "@/lib/data/seller-storefront-types";
 import { getSellerProducts, getSellerReviews } from "@/lib/data/sellers";
+import { editorialStorefrontEnabled } from "@/lib/theme/flags";
 import { buildAccountLoginHref } from "@/lib/utils/account-redirect";
 import {
   sellerShopPath,
@@ -210,6 +211,7 @@ export async function SellerStorefrontHome({
             illustration="no-listings-yet"
             title={t("emptyShopTitle")}
             description={t("emptyShopBody")}
+            appearance={editorialStorefrontEnabled() ? "editorial" : "default"}
           />
         </div>
       )}

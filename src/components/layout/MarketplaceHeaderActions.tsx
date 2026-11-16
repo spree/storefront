@@ -19,6 +19,7 @@ interface MarketplaceHeaderActionsProps {
   sellLabel: string;
   variant?: "marketplace" | "compact" | "etsy";
   showAccount?: boolean;
+  editorial?: boolean;
 }
 
 export function MarketplaceHeaderActions({
@@ -27,6 +28,7 @@ export function MarketplaceHeaderActions({
   sellLabel,
   variant = "marketplace",
   showAccount = true,
+  editorial = false,
 }: MarketplaceHeaderActionsProps) {
   const t = useTranslations("header");
   const { isAuthenticated } = useAuth();
@@ -48,10 +50,12 @@ export function MarketplaceHeaderActions({
             icon={
               <span className="relative">
                 <Heart className="size-5 sm:size-6" strokeWidth={1.9} />
-                <span
-                  aria-hidden="true"
-                  className="absolute -right-0.5 -top-0.5 size-2 rounded-full bg-marketplace-sale ring-2 ring-marketplace-header-surface"
-                />
+                {!editorial && (
+                  <span
+                    aria-hidden="true"
+                    className="absolute -right-0.5 -top-0.5 size-2 rounded-full bg-marketplace-sale ring-2 ring-marketplace-header-surface"
+                  />
+                )}
               </span>
             }
             variant="icon"
@@ -96,20 +100,22 @@ export function MarketplaceHeaderActions({
   if (variant === "etsy") {
     return (
       <div className="flex shrink-0 items-center gap-0.5 sm:gap-1">
-        <Link
-          data-theme-header-account="true"
-          href={`${basePath}/account`}
-          className="hidden whitespace-nowrap px-2 py-2 text-sm font-medium text-[#2f2933] hover:underline md:inline"
-          style={showAccount ? undefined : { display: "none" }}
-        >
-          {isAuthenticated ? t("myAccount") : t("signIn")}
-        </Link>
-        {isAuthenticated && showWishlist && (
+        {!editorial && (
+          <Link
+            data-theme-header-account="true"
+            href={`${basePath}/account`}
+            className="hidden whitespace-nowrap px-2 py-2 text-sm font-medium text-[#2f2933] hover:underline md:inline"
+            style={showAccount ? undefined : { display: "none" }}
+          >
+            {isAuthenticated ? t("myAccount") : t("signIn")}
+          </Link>
+        )}
+        {editorial && showWishlist && (
           <HeaderIconLink
             href={wishlistHref}
             label={t("favorites")}
             icon={<Heart className="size-6" />}
-            className="!text-[#2f2933] [&_span]:text-[#2f2933]"
+            variant="icon"
           />
         )}
         {isAuthenticated && (
@@ -127,7 +133,12 @@ export function MarketplaceHeaderActions({
             href={`${basePath}/account`}
             label={isAuthenticated ? t("myAccount") : t("signIn")}
             icon={<UserRound className="size-6" />}
-            className="!text-[#2f2933] md:hidden [&_span]:text-[#2f2933]"
+            className={
+              editorial
+                ? undefined
+                : "!text-[#2f2933] md:hidden [&_span]:text-[#2f2933]"
+            }
+            variant={editorial ? "icon" : undefined}
           />
         )}
       </div>

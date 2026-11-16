@@ -26,3 +26,5 @@ export const BETA_BUYER_DESKTOP_SPECS = [
   "storefront-3-shell.spec.ts",
   "storefront-3-discovery.spec.ts",
 ] as const;
+
+export const BETA_BUYER_MOBILE_SPECS = ["storefront-3-shell.spec.ts"] as const;

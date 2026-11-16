@@ -1,0 +1,60 @@
+.preview[data-preview-inspect="true"] [data-theme-section-id]:hover,
+.preview[data-preview-inspect="true"] [data-preview-selected] {
+  outline: 2px solid #3b3044;
+  outline-offset: -2px;
+}
+
+.preview[data-preview-inspect="true"] [data-theme-section-id]:is(:hover, [data-preview-selected]) {
+  position: relative;
+}
+
+.preview[data-preview-inspect="true"] [data-theme-section-id]:hover::before {
+  position: absolute;
+  z-index: 29;
+  inset: 0 auto auto 0;
+  padding: 0.125rem 0.375rem;
+  background: #3b3044;
+  color: white;
+  content: attr(data-theme-section-type);
+  font-size: 0.6875rem;
+  pointer-events: none;
+}
+
+.toolbar {
+  position: absolute;
+  z-index: 30;
+  inset: 0 0 auto auto;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  max-width: 100%;
+  border-radius: 0 0 0 0.375rem;
+  padding: 0.125rem;
+  background: #3b3044;
+  color: white;
+  font: 600 0.6875rem system-ui, sans-serif;
+}
+
+.toolbar button,
+.error button {
+  padding: 0.375rem;
+}
+
+.toolbar button:hover,
+.toolbar button:focus-visible {
+  background: #5c4d68;
+}
+
+.error {
+  position: sticky;
+  z-index: 31;
+  top: 0;
+  padding: 0.5rem 1rem;
+  background: #fff4dc;
+  color: #302738;
+  font: 0.875rem system-ui, sans-serif;
+}
+
+.error button {
+  text-decoration: underline;
+}

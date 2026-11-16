@@ -333,7 +333,7 @@ export function RegionPreferences({
             <Pencil className="size-3.5 shrink-0 text-[#222]" aria-hidden />
           </button>
         ) : isHeaderVariant ? (
-          <Button variant="ghost" size="icon-lg" aria-label={t("title")}>
+          <Button variant="ghost" size="icon-lg" className="min-h-11 min-w-11">
             {showCountry && (
               <CountryFlag
                 country={country}
@@ -343,13 +343,13 @@ export function RegionPreferences({
             )}
             {showLanguage && <span>{locale.toUpperCase()}</span>}
             {showCurrency && <span>{currency}</span>}
+            <span className="sr-only">{t("title")}</span>
           </Button>
         ) : (
           <button
             type="button"
-            aria-label={t("title")}
             className={cn(
-              "relative flex w-fit items-center gap-2 pb-1 text-left font-semibold uppercase tracking-wide outline-none transition-colors after:absolute after:bottom-0 after:left-0 after:h-px after:w-full after:origin-right after:scale-x-0 after:bg-current after:transition-transform after:duration-500 after:ease-in-out hover:after:origin-left hover:after:scale-x-100 focus-visible:after:origin-left focus-visible:after:scale-x-100 motion-reduce:after:transition-none",
+              "relative flex min-h-11 w-fit items-center gap-2 rounded-sm text-left font-semibold uppercase tracking-wide transition-colors hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-marketplace-focus",
               "text-sm text-foreground hover:text-foreground focus-visible:text-foreground",
             )}
           >
@@ -399,6 +399,7 @@ export function RegionPreferences({
               />
             )}
             {showCurrency && !showCountryName && <span>{currency}</span>}
+            <span className="sr-only">{t("title")}</span>
           </button>
         )}
       </DialogTrigger>

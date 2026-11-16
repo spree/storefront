@@ -45,10 +45,18 @@ export function ThemeSlideshow({
   label?: string;
 }) {
   const slides = Children.toArray(slideChildren);
-  const [activeSlide, setActiveSlide] = useState(0);
+  const [slideIndex, setActiveSlide] = useState(0);
+  const [paused, setPaused] = useState(false);
+  const activeSlide = Math.min(slideIndex, slides.length - 1);
   const slideshowId = useId().replaceAll(":", "");
   useEffect(() => {
-    if (!settings.auto_rotate || slides.length < 2) return;
+    if (
+      !settings.auto_rotate ||
+      paused ||
+      slides.length < 2 ||
+      window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches
+    )
+      return;
     const seconds = Math.max(1, Number(settings.autoplay_speed) || 5);
     const timer = window.setInterval(() => {
       setActiveSlide((current) =>
@@ -59,6 +67,7 @@ export function ThemeSlideshow({
     }, seconds * 1000);
     return () => window.clearInterval(timer);
   }, [
+    paused,
     settings.auto_rotate,
     settings.autoplay_speed,
     settings.infinite_loop,
@@ -101,6 +110,10 @@ export function ThemeSlideshow({
       aria-roledescription="carousel"
       aria-label={label}
       data-theme-slideshow={slideshowId}
+      onFocusCapture={(event) => {
+        if (!event.target.hasAttribute("data-slideshow-rotation"))
+          setPaused(true);
+      }}
       className={`relative w-full ${settings.full_width ? "max-w-none" : "mx-auto max-w-[1440px]"} ${settings.remove_side_margins ? "px-0" : "px-4 sm:px-6 lg:px-8"} ${settings.hide_on_mobile ? "max-md:hidden" : ""} ${settings.hide_on_desktop ? "md:hidden" : ""}`}
       style={{
         paddingTop: settings.padding_top ?? 40,
@@ -117,23 +130,25 @@ export function ThemeSlideshow({
         className={`relative overflow-hidden ${settings.fade_effect ? "grid" : ""}`}
       >
         {slides.map((slide, index) => (
-          <div
+          <fieldset
             key={index}
-            role="group"
             aria-roledescription="slide"
-            aria-label={`${index + 1} of ${slides.length}`}
             aria-hidden={index !== activeSlide}
+            inert={index !== activeSlide}
             className={
               settings.fade_effect
-                ? `transition-opacity duration-500 ${index === activeSlide ? "opacity-100" : "pointer-events-none opacity-0"}`
+                ? `min-w-0 transition-opacity duration-500 motion-reduce:transition-none ${index === activeSlide ? "opacity-100" : "pointer-events-none opacity-0"}`
                 : index === activeSlide
                   ? "block"
                   : "hidden"
             }
             style={settings.fade_effect ? { gridArea: "1 / 1" } : undefined}
           >
+            <legend className="sr-only">
+              {index + 1} of {slides.length}
+            </legend>
             {slide}
-          </div>
+          </fieldset>
         ))}
         {hasControls && showArrows ? (
           <div
@@ -151,7 +166,7 @@ export function ThemeSlideshow({
                     : (current - 1 + slides.length) % slides.length,
                 )
               }
-              className={`pointer-events-auto inline-flex size-10 items-center justify-center shadow-sm disabled:opacity-40 ${controlClass}`}
+              className={`pointer-events-auto inline-flex size-11 items-center justify-center shadow-sm disabled:opacity-40 ${controlClass}`}
               style={{
                 color: settings.arrow_color,
                 backgroundColor:
@@ -176,7 +191,7 @@ export function ThemeSlideshow({
                     : (current + 1) % slides.length,
                 )
               }
-              className={`pointer-events-auto inline-flex size-10 items-center justify-center shadow-sm disabled:opacity-40 ${controlClass}`}
+              className={`pointer-events-auto inline-flex size-11 items-center justify-center shadow-sm disabled:opacity-40 ${controlClass}`}
               style={{
                 color: settings.arrow_color,
                 backgroundColor:
@@ -191,12 +206,11 @@ export function ThemeSlideshow({
         ) : null}
       </div>
       {hasControls && showDots ? (
-        <div
+        <fieldset
           data-slideshow-dots
-          role="group"
-          className="mt-3 flex justify-center gap-2"
-          aria-label="Choose slide"
+          className="flex min-w-0 flex-wrap justify-center"
         >
+          <legend className="sr-only">Choose slide</legend>
           {slides.map((_, index) => (
             <button
               key={index}
@@ -204,13 +218,28 @@ export function ThemeSlideshow({
               aria-label={`Go to slide ${index + 1}`}
               aria-current={index === activeSlide ? "true" : undefined}
               onClick={() => setActiveSlide(index)}
-              className={`size-2.5 ${dotClass} ${index === activeSlide ? "opacity-100" : "opacity-50"}`}
-              style={{
-                backgroundColor: settings.pagination_color || "#ffffff",
-              }}
-            />
+              className="inline-grid size-11 place-items-center rounded-full"
+            >
+              <span
+                aria-hidden
+                className={`size-2.5 ${dotClass} ${index === activeSlide ? "opacity-100" : "opacity-50"}`}
+                style={{
+                  backgroundColor: settings.pagination_color || "#ffffff",
+                }}
+              />
+            </button>
           ))}
-        </div>
+        </fieldset>
+      ) : null}
+      {settings.auto_rotate && slides.length > 1 ? (
+        <button
+          type="button"
+          data-slideshow-rotation
+          onClick={() => setPaused(!paused)}
+          className="mx-auto flex min-h-11 items-center rounded-full px-4 text-sm underline underline-offset-4 motion-reduce:hidden"
+        >
+          {paused ? "Resume slideshow" : "Pause slideshow"}
+        </button>
       ) : null}
     </section>
   );

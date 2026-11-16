@@ -20,10 +20,8 @@ vi.mock("@/components/products/ProductGrid", () => ({
     <div data-product-ids={products.map((product) => product.id).join(",")} />
   ),
 }));
-vi.mock("@/components/shops/ShopCard", () => ({
-  ShopCard: ({ className }: { className?: string }) => (
-    <div data-testid="shop-card" className={className} />
-  ),
+vi.mock("@/components/shops/FeaturedShopFavoriteButton", () => ({
+  FeaturedShopFavoriteButton: () => <button type="button">Follow shop</button>,
 }));
 vi.mock("@/components/theme/ProductsTabs", () => ({
   ProductsTabs: () => <div data-testid="products-tabs" />,

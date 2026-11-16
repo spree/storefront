@@ -8,7 +8,7 @@ export function MarketplacePage({
   return (
     <div
       className={cn(
-        "mx-auto w-full max-w-[var(--marketplace-container,1440px)] bg-marketplace-background px-4 sm:px-6 lg:px-8",
+        "mx-auto w-full min-w-0 max-w-[var(--marketplace-container,1440px)] px-[var(--marketplace-gutter)]",
         className,
       )}
       {...props}

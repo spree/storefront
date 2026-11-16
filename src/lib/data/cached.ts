@@ -47,6 +47,10 @@ export const PRODUCT_CARD_FIELDS = [
   "reviews_count",
   "option_values",
   "merchandising_signals",
+  "handmade_verified",
+  "authenticity_explanation",
+  "authenticity_classification_label",
+  "authenticity_disclosure",
 ];
 
 export const getCachedProduct = cache(

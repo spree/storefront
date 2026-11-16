@@ -8,12 +8,14 @@ export async function ThemeSectionGroupRenderer({
   theme,
   groupKey,
   editorMode = false,
+  livePreview = false,
 }: {
   data: ThemeTemplateDocument;
   context: ThemeRenderContext;
   theme?: CmsTheme | null;
   groupKey: "header" | "footer";
   editorMode?: boolean;
+  livePreview?: boolean;
 }) {
   if (!data?.order?.length) return null;
 
@@ -24,6 +26,7 @@ export async function ThemeSectionGroupRenderer({
         context={context}
         theme={theme}
         editorMode={editorMode}
+        livePreview={livePreview}
       />
     </div>
   );

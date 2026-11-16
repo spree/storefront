@@ -397,6 +397,39 @@
       "cancel": "Abbrechen",
       "submit": "Meldung senden"
     },
+    "handmade": {
+      "badge": "Geprueft handgemacht",
+      "explanation": "Oddkeeps hat die Angabe der machenden Person, die beschriebene Herstellung und einen genannten Produktionspartner geprueft. Dieses Zeichen bedeutet, dass die Pruefung genehmigt ist und weiter gilt.",
+      "standards": "Standards fuer Handgemachtes"
+    },
+    "reportAuthenticity": {
+      "trigger": "Echtheit melden",
+      "title": "Echtheit melden",
+      "description": "Sag Oddkeeps, wenn dieses Angebot nicht zur Angabe der machenden Person passt. Trust and Safety prueft die Meldung.",
+      "reason": "Grund",
+      "reasonOptional": "Grund auswaehlen (optional)",
+      "details": "Was wirkt falsch?",
+      "email": "Deine E-Mail-Adresse",
+      "signInToReport": "Melde dich an, um eine Echtheitsfrage zu melden",
+      "success": "Danke. Wir haben deine Meldung erhalten.",
+      "error": "Deine Meldung konnte nicht gesendet werden. Bitte versuche es erneut.",
+      "cancel": "Abbrechen",
+      "submit": "Meldung senden"
+    },
+    "handmadeStandards": {
+      "title": "Standards fuer Handgemachtes",
+      "intro": "Oddkeeps prueft machende Personen und Angebote, bevor ein Produkt das Zeichen fuer geprueft handgemacht zeigen kann. Verkaufende Personen koennen dieses Zeichen nicht selbst vergeben.",
+      "makerTitle": "Pruefung der machenden Person",
+      "makerBody": "Eine machende Person beschreibt, wer sie ist und wie sie arbeitet. Oddkeeps prueft diese Angabe, bevor Produkte zertifiziert werden koennen.",
+      "productTitle": "Produktzertifizierung",
+      "productBody": "Jedes zertifizierte Produkt wird einzeln geprueft. Oddkeeps sieht die Angabe, die Herstellungsmethode und die oeffentliche Beschreibung. Das Zeichen erscheint nur nach einer genehmigten Pruefung, solange sie gilt.",
+      "partnerTitle": "Produktionspartner",
+      "partnerBody": "Manche Stuecke entwirft die machende Person, und ein genannter Partner stellt sie her. Oddkeeps prueft diesen Partner, bevor solche Angebote das Zeichen zeigen. Die oeffentliche Einordnung nennt die Beteiligung des Partners.",
+      "resaleTitle": "Unzulaessiger Wiederverkauf",
+      "resaleBody": "Das Zeichen gilt nicht fuer Waren, die die verkaufende Person nicht selbst gemacht, entworfen oder wesentlich veraendert hat. Industriell gefertigte Ware, die als handgemacht angeboten wird, ist nicht zulaessig.",
+      "reportTitle": "Eine Frage melden",
+      "reportBody": "Wenn ein Angebot nicht zur Angabe passt, nutze auf der Produktseite Echtheit melden. Die Meldung geht an Trust and Safety. Private Nachweise und Pruefnotizen bleiben bei Oddkeeps."
+    },
     "sellerShopLocation": "{shop} · {location}",
     "askAboutItem": "Ask about this item",
     "addFavorite": "Save to favorites",

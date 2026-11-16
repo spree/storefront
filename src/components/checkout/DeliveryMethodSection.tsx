@@ -44,7 +44,7 @@ export function DeliveryMethodSection({
       )}
 
       {fulfillments.length === 0 ? (
-        <div className="rounded-sm bg-gray-100 px-4 py-3.5 text-sm text-gray-500">
+        <div className="rounded-sm bg-gray-100 px-4 py-3.5 text-sm text-gray-700">
           {t("enterShippingAddressForMethods")}
         </div>
       ) : (
@@ -123,7 +123,7 @@ export function DeliveryMethodSection({
                       }`}
                     >
                       <div className="flex min-w-0 items-center gap-3">
-                        <RadioGroupItem value={rate.id} />
+                        <RadioGroupItem value={rate.id} label={rate.name} />
                         <span className="min-w-0">
                           <span className="block text-sm font-medium text-gray-900">
                             {rate.name}

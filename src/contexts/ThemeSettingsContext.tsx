@@ -44,9 +44,11 @@ const ThemeSettingsContext = createContext<StoreThemeSettings>({});
 
 export function ThemeSettingsProvider({
   settings: initialSettings,
+  editorial = false,
   children,
 }: {
   settings?: StoreThemeSettings;
+  editorial?: boolean;
   children: React.ReactNode;
 }) {
   const [previewSettings, setPreviewSettings] =
@@ -110,11 +112,13 @@ export function ThemeSettingsProvider({
     checkout_text: "--checkout-text",
   };
   Object.entries(settings?.colors || {}).forEach(([key, value]) => {
-    if (shouldSkipShellThemeColorKey(key)) return;
+    if (!editorial && shouldSkipShellThemeColorKey(key)) return;
     if (colorVariables[key] && /^#[0-9a-fA-F]{6}$/.test(value))
       style[colorVariables[key]] = value;
   });
-  pinStorefrontShellBackground(style);
+  if (!editorial) {
+    pinStorefrontShellBackground(style);
+  }
   const radii: Record<string, string> = {
     none: "0px",
     small: "6px",

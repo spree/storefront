@@ -1,0 +1,45 @@
+.editorial {
+  min-height: 15.875rem;
+  justify-content: center;
+  padding: clamp(2rem, 5vw, 3.5rem);
+  border-color: var(--marketplace-border-subtle, #e4ddd1);
+  border-radius: 0.25rem;
+  background:
+    linear-gradient(120deg, color-mix(in srgb, var(--marketplace-surface-warm, #e4e8dd) 24%, transparent), transparent 54%),
+    var(--marketplace-background, #fdfbf7);
+  color: var(--marketplace-foreground, #282b27);
+}
+
+.editorial .illustration {
+  box-sizing: border-box;
+  width: 4.5rem;
+  height: 4.5rem;
+  margin-block-end: 1.25rem;
+  padding: 1rem;
+  border: 1px solid var(--marketplace-border, #dce2d4);
+  border-radius: 50%;
+  background: var(--marketplace-surface-warm, #eef1e9);
+  color: var(--marketplace-brand, #485541);
+}
+
+.editorial .title {
+  font-family: var(--marketplace-heading-font, var(--font-playfair, Georgia)), serif;
+  font-size: clamp(1.375rem, 2vw, 1.625rem);
+  font-weight: 500;
+  letter-spacing: -0.025em;
+  line-height: 1.2;
+}
+
+.editorial .description {
+  max-width: 31rem;
+  margin-block-start: 0.625rem;
+  font-size: 0.9375rem;
+  line-height: 1.6;
+}
+
+@media (max-width: 639px) {
+  .editorial {
+    min-height: 14.75rem;
+    padding-inline: 1.25rem;
+  }
+}

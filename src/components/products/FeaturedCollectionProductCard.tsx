@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useTranslations } from "next-intl";
 import { FavoriteButton } from "@/components/products/FavoriteButton";
 import { ProductCardSwatches } from "@/components/products/ProductCard";
+import { VerifiedHandmadeBadge } from "@/components/products/VerifiedHandmadeBadge";
 import { ProductImage } from "@/components/ui/product-image";
 import { useStoreThemeSettings } from "@/contexts/ThemeSettingsContext";
 import { productDetailPathSegment } from "@/lib/discovery-context";
@@ -331,6 +332,10 @@ export function FeaturedCollectionProductCard({
           </Link>
         </h3>
       )}
+      <VerifiedHandmadeBadge
+        product={product}
+        standardsHref={`${basePath}/handmade-standards`}
+      />
       {showVendor && (product.seller?.name || product.seller_name) ? (
         product.seller?.slug || product.seller_slug ? (
           <Link

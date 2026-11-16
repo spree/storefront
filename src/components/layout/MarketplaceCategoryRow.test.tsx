@@ -64,7 +64,7 @@ describe("MarketplaceCategoryRow", () => {
     const firstTrigger = desktopNavigation?.querySelector<HTMLButtonElement>(
       '[data-mega-trigger="category-1"]',
     );
-    expect(firstTrigger?.className).toContain("rounded-full");
+    expect(firstTrigger?.className).toContain("rounded-md");
     expect(firstTrigger?.className).toContain("hover:bg-marketplace-accent");
     expect(firstTrigger?.querySelector("svg")).toBeNull();
 

@@ -36,7 +36,7 @@ function RatingMetric({
       <p className="mt-1 text-lg font-semibold leading-5 tabular-nums text-[#302a31]">
         {display}
         {format === "decimal" ? (
-          <span className="ml-1 text-[11px] font-normal text-[#817980]">
+          <span className="ml-1 text-[11px] font-normal text-[#756e74]">
             / 5
           </span>
         ) : null}

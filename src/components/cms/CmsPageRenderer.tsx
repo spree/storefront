@@ -15,6 +15,7 @@ import {
 } from "@/components/theme/render-marketplace-sections";
 import { getClient, getLocaleOptions } from "@/lib/spree";
 import { marketplaceFor } from "@/lib/spree/marketplace";
+import { sanitizeThemeRichText } from "@/lib/theme/sanitize-rich-text";
 import type { ThemeRenderContext } from "@/lib/theme/types";
 import type { CmsPage, CmsSection, CmsTheme } from "./types";
 
@@ -365,11 +366,25 @@ async function richText(section: CmsSection) {
             typeof block.text !== "string"
           )
             return null;
-          return block.type === "heading" ? (
-            <h2 key={index} className="mt-6 text-2xl font-semibold">
-              {block.text}
-            </h2>
-          ) : (
+          if (block.type === "heading") {
+            return (
+              <h2 key={index} className="mt-6 text-2xl font-semibold">
+                {block.text}
+              </h2>
+            );
+          }
+          const sanitized = sanitizeThemeRichText(block.text);
+          const isHtml = /<[a-z][\s\S]*>/i.test(sanitized);
+          if (isHtml) {
+            return (
+              <div
+                key={index}
+                className="mt-4 text-marketplace-foreground [&_p]:mt-4 [&_p:first-child]:mt-0"
+                dangerouslySetInnerHTML={{ __html: sanitized }}
+              />
+            );
+          }
+          return (
             <p
               key={index}
               className="mt-4 whitespace-pre-line text-marketplace-foreground"

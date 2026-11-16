@@ -37,7 +37,7 @@ export function getStoreUrl(): string | undefined {
  * Get the store name from environment variables.
  */
 export function getStoreName(): string {
-  return process.env.NEXT_PUBLIC_STORE_NAME || "Spree Store";
+  return process.env.NEXT_PUBLIC_STORE_NAME || "Oddkeeps";
 }
 
 /**

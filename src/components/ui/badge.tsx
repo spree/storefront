@@ -9,9 +9,10 @@ const badgeVariants = cva(
   {
     variants: {
       variant: {
-        default: "bg-primary text-primary-foreground [a]:hover:bg-primary/80",
+        default:
+          "bg-marketplace-brand text-marketplace-brand-foreground [a]:hover:bg-marketplace-brand/90",
         secondary:
-          "bg-secondary text-secondary-foreground [a]:hover:bg-secondary/80",
+          "bg-marketplace-surface-subtle text-marketplace-foreground [a]:hover:bg-marketplace-accent",
         destructive:
           "bg-destructive/10 text-destructive focus-visible:border-destructive focus-visible:[outline:1px_solid_theme(colors.destructive)] dark:bg-destructive/20 [a]:hover:bg-destructive/20",
         outline:

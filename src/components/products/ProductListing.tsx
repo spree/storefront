@@ -14,6 +14,7 @@ import {
   Suspense,
 } from "react";
 import { EmptyStateIllustration } from "@/components/empty-states/EmptyStateIllustration";
+import { MarketplaceToolbar } from "@/components/marketplace";
 import { InfiniteProductList } from "@/components/products/InfiniteProductList";
 import { ListingAnalytics } from "@/components/products/ListingAnalytics";
 import { ListingFilterBar } from "@/components/products/ListingFilterBar";
@@ -216,15 +217,20 @@ async function ProductListingInner({
           })
         ) : (
           <>
-            <div data-theme-filter-control-section>
-              <ListingFilterBar
-                filtersData={filtersResponse}
-                activeFilters={state.filters}
-                totalCount={totalCount}
-                searchQuery={state.query}
-                filterStyle={filterStyle}
-              />
-            </div>
+            <MarketplaceToolbar
+              data-theme-filter-control-section
+              className="mb-1 shadow-none"
+            >
+              <div className="min-w-0 flex-1">
+                <ListingFilterBar
+                  filtersData={filtersResponse}
+                  activeFilters={state.filters}
+                  totalCount={totalCount}
+                  searchQuery={state.query}
+                  filterStyle={filterStyle}
+                />
+              </div>
+            </MarketplaceToolbar>
             {sidebarBlocks?.length ? (
               <div
                 data-theme-collection-sidebar-blocks

@@ -7,6 +7,7 @@ export const LAB_STORE_API_URLS = [
   "http://127.0.0.1:3021",
   "http://127.0.0.1:3031",
   "http://127.0.0.1:3036",
+  "http://127.0.0.1:3121",
 ] as const;
 
 export function requireLabStoreApiUrl(): (typeof LAB_STORE_API_URLS)[number] {
@@ -31,13 +32,16 @@ export async function storefrontGoto(
   // Lab buyer matrices must not inherit CI=`load` — a stuck compile then burns
   // the whole 5-minute test budget across goto retries.
   const { waitUntil: _ignoredWaitUntil, ...rest } = options ?? {};
+  const certification =
+    process.env.ENTERPRISE_A11Y_E2E === "1" || process.env.E2E_PREVIEW === "1";
   const gotoOptions = {
     ...rest,
-    waitUntil: "domcontentloaded" as const,
-    timeout: rest.timeout ?? 90_000,
+    waitUntil: (certification ? "load" : "domcontentloaded") as const,
+    timeout: rest.timeout ?? (certification ? 120_000 : 90_000),
   };
   let lastError: unknown;
-  for (let attempt = 0; attempt < 2; attempt += 1) {
+  const maxAttempts = certification ? 3 : 2;
+  for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
     try {
       return await page.goto(path, gotoOptions);
     } catch (error) {

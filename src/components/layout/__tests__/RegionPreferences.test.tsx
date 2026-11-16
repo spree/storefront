@@ -25,6 +25,10 @@ vi.mock("@/contexts/StoreContext", () => ({
   useStore: vi.fn(),
 }));
 
+vi.mock("@/contexts/AuthContext", () => ({
+  useAuth: () => ({ isAuthenticated: false, loading: false }),
+}));
+
 vi.mock("@/hooks/useCountrySwitch", () => ({
   useCountrySwitch: vi.fn(),
 }));
@@ -86,7 +90,7 @@ describe("RegionPreferences", () => {
     expect(flag?.parentElement).toHaveClass("inline-block");
 
     await user.click(
-      screen.getByRole("button", { name: "Region and language" }),
+      screen.getByRole("button", { name: /region and language/i }),
     );
 
     expect(
@@ -114,7 +118,7 @@ describe("RegionPreferences", () => {
 
     render(<RegionPreferences variant="menu" />);
     await user.click(
-      screen.getByRole("button", { name: "Region and language" }),
+      screen.getByRole("button", { name: /region and language/i }),
     );
 
     expect(
@@ -132,7 +136,7 @@ describe("RegionPreferences", () => {
 
     render(<RegionPreferences variant="header" />);
     await user.click(
-      screen.getByRole("button", { name: "Region and language" }),
+      screen.getByRole("button", { name: /region and language/i }),
     );
     await user.click(
       screen.getByRole("button", { name: "Update preferences" }),
@@ -183,7 +187,7 @@ describe("RegionPreferences", () => {
 
     render(<RegionPreferences variant="menu" />);
     await user.click(
-      screen.getByRole("button", { name: "Region and language" }),
+      screen.getByRole("button", { name: /region and language/i }),
     );
 
     const regionOptions = screen
@@ -213,7 +217,7 @@ describe("RegionPreferences", () => {
 
     render(<RegionPreferences variant="menu" />);
     expect(
-      screen.getByRole("button", { name: "Region and language" }),
+      screen.getByRole("button", { name: /region and language/i }),
     ).not.toHaveTextContent("USD");
   });
 });

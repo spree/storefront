@@ -398,6 +398,39 @@
       "cancel": "Annuler",
       "submit": "Envoyer le signalement"
     },
+    "handmade": {
+      "badge": "Fait main verifie",
+      "explanation": "Oddkeeps a examine la declaration de la personne qui fabrique, la methode de production decrite et tout partenaire de production nomme. Ce badge signifie que l'examen est approuve et toujours en vigueur.",
+      "standards": "Normes du fait main"
+    },
+    "reportAuthenticity": {
+      "trigger": "Signaler un doute d'authenticite",
+      "title": "Signaler un doute d'authenticite",
+      "description": "Dites a Oddkeeps si cette annonce ne correspond pas a la declaration. Confiance et securite examine le signalement.",
+      "reason": "Motif",
+      "reasonOptional": "Choisir un motif (facultatif)",
+      "details": "Qu'est-ce qui semble incorrect ?",
+      "email": "Votre adresse e-mail",
+      "signInToReport": "Connectez-vous pour signaler un doute d'authenticite",
+      "success": "Merci. Nous avons recu votre signalement.",
+      "error": "Impossible d'envoyer votre signalement. Veuillez reessayer.",
+      "cancel": "Annuler",
+      "submit": "Envoyer le signalement"
+    },
+    "handmadeStandards": {
+      "title": "Normes du fait main",
+      "intro": "Oddkeeps examine les personnes qui fabriquent et les annonces avant qu'un produit puisse afficher le badge fait main verifie. Une personne qui vend ne peut pas attribuer ce badge.",
+      "makerTitle": "Verification de la personne qui fabrique",
+      "makerBody": "La personne qui fabrique indique qui elle est et comment elle travaille. Oddkeeps examine cette declaration avant de certifier des produits.",
+      "productTitle": "Certification du produit",
+      "productBody": "Chaque produit certifie a son propre examen. Oddkeeps regarde la declaration, la methode de production et la description publique. Le badge n'apparait qu'apres un examen approuve, tant qu'il reste en vigueur.",
+      "partnerTitle": "Partenaires de production",
+      "partnerBody": "Certaines pieces sont concues par la personne qui fabrique et produites avec un partenaire nomme. Oddkeeps examine ce partenaire avant que ces annonces affichent le badge. La classification publique indique la participation du partenaire.",
+      "resaleTitle": "Revente interdite",
+      "resaleBody": "Le badge ne sert pas a revendre des articles que la personne qui vend n'a ni fabriques, ni concus, ni transformes de facon significative. Les produits industriels presentes comme faits main ne sont pas admissibles.",
+      "reportTitle": "Signaler un doute",
+      "reportBody": "Si une annonce ne correspond pas a la declaration, utilisez Signaler un doute d'authenticite sur la page du produit. Le signalement va a Confiance et securite. Les preuves privees et les notes d'examen restent chez Oddkeeps."
+    },
     "sellerShopLocation": "{shop} · {location}",
     "askAboutItem": "Ask about this item",
     "addFavorite": "Save to favorites",

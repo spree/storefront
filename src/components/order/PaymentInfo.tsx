@@ -49,7 +49,7 @@ export function PaymentInfo({ payment, storeCreditLabel }: PaymentInfoProps) {
         <p className="text-xs text-gray-500">
           {t("storeCreditApplied", {
             amount: payment.display_amount ?? "",
-            remaining: credit.display_amount_remaining,
+            remaining: credit.display_amount_remaining ?? "",
           })}
         </p>
       </div>

@@ -6,6 +6,7 @@ import { MarketplaceHeaderActions } from "@/components/layout/MarketplaceHeaderA
 import { ScrollUpHeader } from "@/components/layout/ScrollUpHeader";
 import { StoreBrandLogo } from "@/components/layout/StoreBrandLogo";
 import { SearchBar } from "@/components/search/SearchBar";
+import editorialStyles from "@/components/theme/editorial-storefront.module.css";
 import type {
   CmsNavigationItem,
   CmsNavigationPayload,
@@ -42,11 +43,13 @@ interface HeaderProps {
   categoryMenuSettings?: CmsNavigationPayload["settings"];
   forYouCategoryIds?: string[];
   categoryMenuKey?: string;
+  categoryNavigation?: ReactNode;
   hideCategoryRow?: boolean;
   showCountryRegionSelector?: boolean;
   showLanguageSelector?: boolean;
   transparent?: boolean;
   mobileProductLayout?: boolean;
+  editorial?: boolean;
 }
 
 interface HeaderMobileMenuProps {
@@ -120,9 +123,11 @@ export async function Header({
   categoryMenuSettings,
   forYouCategoryIds = [],
   categoryMenuKey,
+  categoryNavigation,
   hideCategoryRow = false,
   transparent = false,
   mobileProductLayout = false,
+  editorial = false,
 }: HeaderProps) {
   const backgroundColor = themeMenuColor(
     menuSettings.background_color,
@@ -207,26 +212,28 @@ export async function Header({
   const categoryRow = (
     <div
       data-theme-category-row
-      className="relative z-0 hidden border-b border-marketplace-border bg-marketplace-surface-warm py-2 md:block"
+      className="relative z-0 hidden border-b border-marketplace-border-subtle bg-marketplace-header-surface md:block"
       style={{
         backgroundColor: backgroundColor ?? undefined,
         color: textColor,
         display: categoryRowHidden ? "none" : undefined,
       }}
     >
-      <MarketplaceCategoryRow
-        basePath={basePath}
-        categories={rootCategories}
-        menuItems={categoryMenuItems}
-        menuKey={String(
-          categoryMenuKey ||
-            menuSettings.menu_key ||
-            headerSettings.menu_key ||
-            "header",
-        )}
-        menuSettings={categoryMenuSettings}
-        forYouCategoryIds={forYouCategoryIds}
-      />
+      {categoryNavigation ?? (
+        <MarketplaceCategoryRow
+          basePath={basePath}
+          categories={rootCategories}
+          menuItems={categoryMenuItems}
+          menuKey={String(
+            categoryMenuKey ||
+              menuSettings.menu_key ||
+              headerSettings.menu_key ||
+              "header",
+          )}
+          menuSettings={categoryMenuSettings}
+          forYouCategoryIds={forYouCategoryIds}
+        />
+      )}
     </div>
   );
   const menuOnTop =
@@ -256,7 +263,7 @@ export async function Header({
       data-account-position={String(headerSettings.account_position || "right")}
       data-account-row={String(headerSettings.account_row || "top")}
       data-menu-style={String(headerSettings.menu_style || "items")}
-      className={`${transparent ? "absolute inset-x-0 bg-transparent" : "relative"} top-0 z-50 ${transparent ? "" : "bg-marketplace-header-surface"} text-marketplace-foreground`}
+      className={`${transparent ? "absolute inset-x-0 bg-transparent" : "relative"} top-0 z-50 ${transparent ? "" : "bg-marketplace-header-surface"} text-marketplace-foreground ${editorial ? editorialStyles.header : ""}`}
       style={headerStyle}
     >
       {menuOnTop ? categoryRow : null}
@@ -334,6 +341,7 @@ export async function Header({
               sellLabel="Sell"
               variant="etsy"
               showAccount={customerAccount}
+              editorial={editorial}
             />
           </div>
         </div>

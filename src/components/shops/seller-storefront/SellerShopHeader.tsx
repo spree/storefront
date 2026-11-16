@@ -114,6 +114,7 @@ export async function SellerShopHeader({
   return (
     <header
       className="bg-marketplace-surface"
+      data-seller-shop-header
       data-theme-seller-banner
       data-theme-seller-identity
       style={sellerStyle}
@@ -190,7 +191,10 @@ export async function SellerShopHeader({
               />
               <div className="min-w-0">
                 <div className="flex min-w-0 items-center gap-2">
-                  <h1 className="truncate text-xl font-medium leading-tight text-[var(--marketplace-seller-accent-text,#29252d)] sm:text-2xl">
+                  <h1
+                    data-theme-seller-shop-name
+                    className="truncate font-display text-xl font-medium leading-tight text-[var(--marketplace-seller-accent-text,#29252d)] sm:text-2xl"
+                  >
                     {seller.name}
                   </h1>
                 </div>

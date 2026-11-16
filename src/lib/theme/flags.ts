@@ -1,3 +1,19 @@
+/**
+ * Minted-inspired Made & Found presentation. Toggle via `STOREFRONT_PRESENTATION=editorial`
+ * in `storefront/.env.local` (unset or `classic` restores the prior default homepage chrome).
+ */
+function normalizePresentationFlag(raw?: string): string | undefined {
+  return raw?.trim().toLowerCase() || undefined;
+}
+
+export function editorialStorefrontEnabled(): boolean {
+  const value =
+    normalizePresentationFlag(process.env.STOREFRONT_PRESENTATION) ||
+    normalizePresentationFlag(process.env.NEXT_PUBLIC_STOREFRONT_PRESENTATION);
+  if (!value || value === "classic" || value === "default") return false;
+  return value === "editorial" || value === "minted";
+}
+
 export function themeTemplateHomeEnabled(): boolean {
   const values = [
     process.env.THEME_TEMPLATE_HOME_ENABLED,

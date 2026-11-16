@@ -621,7 +621,7 @@ export function MarketplaceCategoryRow({
         data-theme-category-navigation
         data-category-menu-links
         data-theme-menu-key={menuKey}
-        className="flex h-11 items-center justify-center gap-0 overflow-hidden text-sm font-medium"
+        className="flex min-h-11 flex-wrap items-center justify-center gap-x-1 gap-y-0.5 py-0.5 text-sm font-medium"
       >
         {desktopEntries.length ? (
           desktopEntries.map((entry) => {
@@ -651,7 +651,7 @@ export function MarketplaceCategoryRow({
                   color: "var(--marketplace-foreground)",
                 }
               : idleTriggerStyle;
-            const triggerClassName = `inline-flex h-9 items-center gap-1.5 rounded-full px-3 text-marketplace-foreground transition-colors hover:bg-marketplace-accent hover:text-marketplace-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-marketplace-brand ${highlightClassName}`;
+            const triggerClassName = `inline-flex min-h-10 items-center gap-1.5 rounded-md px-2.5 text-marketplace-foreground transition-colors hover:bg-marketplace-accent hover:text-marketplace-foreground focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-marketplace-brand lg:px-3 ${highlightClassName}`;
             const content = (
               <>
                 <CmsNavigationIcon

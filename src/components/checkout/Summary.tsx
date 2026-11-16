@@ -39,7 +39,7 @@ export function Summary({ cart }: SummaryProps) {
             {group.name && (
               <h3 className="mb-2 flex items-center gap-2 text-sm font-semibold text-gray-900">
                 <Store className="h-4 w-4 text-gray-500" aria-hidden="true" />
-                <span className="text-gray-500">{tProducts("soldBy")}</span>
+                <span className="text-gray-600">{tProducts("soldBy")}</span>
                 <span className="truncate">{group.name}</span>
               </h3>
             )}
@@ -65,7 +65,7 @@ export function Summary({ cart }: SummaryProps) {
                       {item.name}
                     </p>
                     {item.options_text && (
-                      <p className="mt-0.5 text-xs text-gray-500">
+                      <p className="mt-0.5 text-xs text-gray-600">
                         {item.options_text}
                       </p>
                     )}
@@ -106,7 +106,7 @@ export function Summary({ cart }: SummaryProps) {
           {hasShipping ? (
             <span className="text-gray-900">{cart.display_delivery_total}</span>
           ) : (
-            <span className="text-xs text-gray-500">
+            <span className="text-xs text-gray-600">
               {t("enterShippingAddress")}
             </span>
           )}
@@ -115,7 +115,7 @@ export function Summary({ cart }: SummaryProps) {
         {cart.discount_total && parseFloat(cart.discount_total) !== 0 && (
           <div className="flex justify-between text-sm">
             <span className="text-gray-700">{tc("discount")}</span>
-            <span className="text-green-700">
+            <span className="text-green-800">
               {cart.display_discount_total}
             </span>
           </div>
@@ -134,7 +134,7 @@ export function Summary({ cart }: SummaryProps) {
             {tc("total")}
           </span>
           <div className="flex items-baseline gap-2">
-            <span className="text-xs text-gray-500 uppercase">
+            <span className="text-xs text-gray-600 uppercase">
               {cart.currency}
             </span>
             <span className="text-xl font-bold text-gray-900">
@@ -148,7 +148,7 @@ export function Summary({ cart }: SummaryProps) {
         {cart.gift_card && parseFloat(cart.gift_card_total ?? "0") > 0 ? (
           <div className="flex justify-between text-sm">
             <span className="text-gray-700">{tc("giftCard")}</span>
-            <span className="text-green-700">
+            <span className="text-green-800">
               -{cart.display_gift_card_total}
             </span>
           </div>
@@ -156,7 +156,7 @@ export function Summary({ cart }: SummaryProps) {
           parseFloat(cart.store_credit_total) > 0 ? (
           <div className="flex justify-between text-sm">
             <span className="text-gray-700">{tc("storeCredit")}</span>
-            <span className="text-green-700">
+            <span className="text-green-800">
               -{cart.display_store_credit_total}
             </span>
           </div>
@@ -171,7 +171,7 @@ export function Summary({ cart }: SummaryProps) {
                 {tc("amountDue")}
               </span>
               <div className="flex items-baseline gap-2">
-                <span className="text-xs text-gray-500 uppercase">
+                <span className="text-xs text-gray-600 uppercase">
                   {cart.currency}
                 </span>
                 <span className="text-xl font-bold text-gray-900">

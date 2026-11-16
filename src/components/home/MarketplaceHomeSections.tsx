@@ -73,6 +73,7 @@ async function ProductRail({
       listName={t(titleKey)}
       moreHref={`${basePath}/products`}
       variant="etsy"
+      surface={titleKey === "deals" ? "warm" : undefined}
     />
   );
 }
@@ -98,6 +99,7 @@ async function TrendingRail({
       listName="Trending"
       moreHref={`${basePath}/products`}
       variant="etsy"
+      surface="warm"
     />
   );
 }

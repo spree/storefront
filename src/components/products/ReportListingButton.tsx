@@ -22,8 +22,22 @@ import {
 } from "@/lib/data/abuse-reports";
 import { buildAccountLoginHref } from "@/lib/utils/account-redirect";
 
-export function ReportListingButton({ productId }: { productId: string }) {
-  const t = useTranslations("products.reportListing");
+export function ReportAuthenticityButton({ productId }: { productId: string }) {
+  return <ReportListingButton productId={productId} concern="authenticity" />;
+}
+
+export function ReportListingButton({
+  productId,
+  concern = "listing",
+}: {
+  productId: string;
+  concern?: "listing" | "authenticity";
+}) {
+  const t = useTranslations(
+    concern === "authenticity"
+      ? "products.reportAuthenticity"
+      : "products.reportListing",
+  );
   const { isAuthenticated, loading: authLoading } = useAuth();
   const pathname = usePathname();
   const id = useId();
@@ -67,7 +81,10 @@ export function ReportListingButton({ productId }: { productId: string }) {
       try {
         await reportListing({
           productId,
-          body: body.trim(),
+          body:
+            concern === "authenticity"
+              ? `Authenticity concern\n\n${body.trim()}`
+              : body.trim(),
           reasonId: reasonId || undefined,
         });
         setSuccess(true);

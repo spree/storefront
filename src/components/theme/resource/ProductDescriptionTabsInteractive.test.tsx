@@ -1,9 +1,11 @@
-import { fireEvent, render, screen } from "@testing-library/react";
+import { render, screen } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { describe, expect, it } from "vitest";
 import { ProductDescriptionTabsInteractive } from "./ProductDescriptionTabsInteractive";
 
 describe("product description tabs", () => {
-  it("switches between the configured description, details, and reviews panels", () => {
+  it("switches between the configured description, details, and reviews panels", async () => {
+    const user = userEvent.setup();
     render(
       <ProductDescriptionTabsInteractive
         descriptionLabel="About this product"
@@ -18,12 +20,12 @@ describe("product description tabs", () => {
     expect(
       screen.getByRole("tabpanel", { name: "About this product" }),
     ).toBeVisible();
-    fireEvent.click(screen.getByRole("tab", { name: "Specifications" }));
+    await user.click(screen.getByRole("tab", { name: "Specifications" }));
     expect(
       screen.getByRole("tabpanel", { name: "Specifications" }),
     ).toBeVisible();
     expect(screen.getByText("SKU: MUG-1")).toBeVisible();
-    fireEvent.click(screen.getByRole("tab", { name: "Customer reviews (3)" }));
+    await user.click(screen.getByRole("tab", { name: "Customer reviews (3)" }));
     expect(
       screen.getByRole("tabpanel", { name: "Customer reviews (3)" }),
     ).toBeVisible();

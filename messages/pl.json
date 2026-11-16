@@ -398,6 +398,39 @@
       "cancel": "Anuluj",
       "submit": "Wyślij zgłoszenie"
     },
+    "handmade": {
+      "badge": "Zweryfikowane reczne wykonanie",
+      "explanation": "Oddkeeps sprawdzil oswiadczenie osoby tworzacej, opisany sposob wykonania i wymienionego partnera produkcji. Ta odznaka oznacza, ze sprawdzenie jest zatwierdzone i nadal obowiazuje.",
+      "standards": "Standardy recznego wykonania"
+    },
+    "reportAuthenticity": {
+      "trigger": "Zglos watpliwosc co do autentycznosci",
+      "title": "Zglos watpliwosc co do autentycznosci",
+      "description": "Powiadom Oddkeeps, jesli ta oferta nie zgadza sie z oswiadczeniem. Dzial zaufania i bezpieczenstwa sprawdzi zgloszenie.",
+      "reason": "Powod",
+      "reasonOptional": "Wybierz powod (opcjonalnie)",
+      "details": "Co wyglada nieprawidlowo?",
+      "email": "Twoj adres e-mail",
+      "signInToReport": "Zaloguj sie, aby zglosic watpliwosc co do autentycznosci",
+      "success": "Dziekujemy. Otrzymalismy Twoje zgloszenie.",
+      "error": "Nie udalo sie wyslac zgloszenia. Sprobuj ponownie.",
+      "cancel": "Anuluj",
+      "submit": "Wyslij zgloszenie"
+    },
+    "handmadeStandards": {
+      "title": "Standardy recznego wykonania",
+      "intro": "Oddkeeps sprawdza osoby tworzace i oferty, zanim produkt moze pokazac odznake zweryfikowanego recznego wykonania. Sprzedajacy nie moze nadac tej odznaki samodzielnie.",
+      "makerTitle": "Weryfikacja osoby tworzacej",
+      "makerBody": "Osoba tworzaca opisuje, kim jest i jak pracuje. Oddkeeps sprawdza to oswiadczenie, zanim mozna certyfikowac produkty.",
+      "productTitle": "Certyfikacja produktu",
+      "productBody": "Kazdy certyfikowany produkt ma wlasne sprawdzenie. Oddkeeps patrzy na oswiadczenie, metode produkcji i publiczny opis wykonania. Odznaka pojawia sie tylko po zatwierdzeniu i dopoki sprawdzenie obowiazuje.",
+      "partnerTitle": "Partnerzy produkcji",
+      "partnerBody": "Niektore przedmioty projektuje osoba tworzaca, a wytwarza je wskazany partner. Oddkeeps sprawdza tego partnera, zanim takie oferty pokaza odznake. Publiczna klasyfikacja mowi, kiedy partner bral udzial.",
+      "resaleTitle": "Zakazana odsprzedaz",
+      "resaleBody": "Odznaka nie sluzy do odsprzedazy towarow, ktorych sprzedajacy nie wykonal, nie zaprojektowal ani istotnie nie zmienil. Masowa produkcja przedstawiana jako reczna nie kwalifikuje sie.",
+      "reportTitle": "Zgloszenie watpliwosci",
+      "reportBody": "Jesli oferta nie zgadza sie z oswiadczeniem, uzyj na stronie produktu Zglos watpliwosc co do autentycznosci. Zgloszenie trafia do dzialu zaufania i bezpieczenstwa. Prywatne dowody i notatki sprawdzajacych zostaja w Oddkeeps."
+    },
     "sellerShopLocation": "{shop} · {location}",
     "askAboutItem": "Ask about this item",
     "addFavorite": "Save to favorites",

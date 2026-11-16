@@ -24,7 +24,7 @@ export async function WishlistPageContent({
 
   return (
     <div>
-      <h1 className="mb-6 text-2xl font-bold text-gray-900">
+      <h1 className="marketplace-listing-title mb-6 text-marketplace-foreground">
         {t("favorites")}
       </h1>
       {!items.length ? (

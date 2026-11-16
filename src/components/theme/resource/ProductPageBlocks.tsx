@@ -423,6 +423,7 @@ function ProductSwatches({
         optionTypes={product.option_types}
         selectedVariant={selectedVariant}
         onVariantChange={setSelectedVariant}
+        preferDropdown
         swatchSettings={swatchSettings}
       />
     </div>

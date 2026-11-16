@@ -178,7 +178,7 @@ export default async function CollectionPage({
         dismissSurface={`collection:${collection.id}`}
       />
 
-      <MarketplacePage className="py-8">
+      <MarketplacePage className="py-8" data-theme-discovery-listing>
         <ProductListing
           state={listingState}
           basePath={basePath}

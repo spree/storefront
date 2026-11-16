@@ -11,7 +11,7 @@ export function MarketplaceHomeHeroSearch({
 }: MarketplaceHomeHeroSearchProps) {
   return (
     <div
-      className="mt-5 w-full max-w-[var(--marketplace-header-search-max-width,42rem)]"
+      className="mt-5 w-full max-w-[var(--marketplace-header-search-max-width,42rem)] lg:hidden"
       data-theme-section="home-hero-search"
     >
       <SearchBar basePath={basePath} appearance="etsy" />

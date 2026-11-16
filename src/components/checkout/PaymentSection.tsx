@@ -749,6 +749,9 @@ export function PaymentSection({
           const pmGatewayId = pm.session_required
             ? resolveGatewayId(pm.type)
             : null;
+          const paymentMethodLabelId = `payment-method-${pm.id}-label`;
+          const paymentMethodName =
+            pm.name?.trim() || pm.type || t("paymentMethod");
 
           return (
             <div key={pm.id}>
@@ -759,8 +762,15 @@ export function PaymentSection({
                     isSelected ? "bg-blue-50" : "bg-white hover:bg-gray-50"
                   } ${index > 0 ? "border-t" : ""}`}
                 >
-                  <RadioGroupItem value={pm.id} />
-                  <span className="text-sm font-medium text-gray-900">
+                  <RadioGroupItem
+                    value={pm.id}
+                    label={paymentMethodName}
+                    aria-labelledby={paymentMethodLabelId}
+                  />
+                  <span
+                    id={paymentMethodLabelId}
+                    className="text-sm font-medium text-gray-900"
+                  >
                     {pm.name}
                   </span>
                 </label>
@@ -768,14 +778,18 @@ export function PaymentSection({
 
               {/* Single method header (no radio, like current behavior) */}
               {!hasMultipleMethods && (
-                <div className="flex items-center justify-between px-4 py-3.5 bg-blue-50">
-                  <div className="flex items-center gap-3">
-                    <RadioGroupItem value={pm.id} />
+                <>
+                  <RadioGroupItem
+                    value={pm.id}
+                    label={paymentMethodName}
+                    className="sr-only"
+                  />
+                  <div className="flex items-center justify-between px-4 py-3.5 bg-blue-50">
                     <span className="text-sm font-medium text-gray-900">
                       {pm.name}
                     </span>
                   </div>
-                </div>
+                </>
               )}
 
               {/* Sub-form for the selected method */}
@@ -819,6 +833,10 @@ export function PaymentSection({
                                         card.gateway_payment_profile_id ??
                                         card.id
                                       }
+                                      aria-label={t("savedCardLabel", {
+                                        brand: getCardLabel(card.brand),
+                                        digits: card.last4,
+                                      })}
                                     />
                                     <PaymentIcon
                                       type={getCardIconType(card.brand)}
@@ -856,7 +874,10 @@ export function PaymentSection({
                                       : "bg-white hover:bg-gray-50"
                                   }`}
                                 >
-                                  <RadioGroupItem value="__new__" />
+                                  <RadioGroupItem
+                                    value="__new__"
+                                    aria-label={t("addNewPaymentMethod")}
+                                  />
                                   <CreditCard
                                     className="w-5 h-5 text-gray-400"
                                     strokeWidth={1.5}

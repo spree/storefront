@@ -1,11 +1,19 @@
-import type { Seller } from "@spree/sdk";
+import type { Product, Seller } from "@spree/sdk";
 import { ArrowUpRight, MapPin, Star } from "lucide-react";
 import Link from "next/link";
 import { getTranslations } from "next-intl/server";
+import type { ComponentProps } from "react";
 import { MarketplacePage, MarketplaceSection } from "@/components/marketplace";
+import { FeaturedShopFavoriteButton } from "@/components/shops/FeaturedShopFavoriteButton";
+import {
+  type ShopEditorialImage,
+  ShopEditorialMedia,
+} from "@/components/shops/ShopEditorialMedia";
 import { StarSellerAvatar } from "@/components/shops/StarSellerAvatar";
+import { CollectionTileCarousel } from "@/components/theme/CollectionTileCarousel";
 import { buttonVariants } from "@/components/ui/button";
-import { ProductImage } from "@/components/ui/product-image";
+import { getSellerProducts } from "@/lib/data/sellers";
+import { productDetailPathSegment } from "@/lib/discovery-context";
 import { cn } from "@/lib/utils";
 
 interface FeaturedShopsShowcaseProps {
@@ -16,68 +24,93 @@ interface FeaturedShopsShowcaseProps {
   title?: string;
   ctaHref?: string;
   ctaLabel?: string;
+  carousel?: Omit<ComponentProps<typeof CollectionTileCarousel>, "items">;
 }
 
-function MakerCard({
+function ShopEditorialCard({
   seller,
   basePath,
   locale,
+  featuredProduct,
 }: {
   seller: Seller;
   basePath: string;
   locale: string;
+  featuredProduct?: Product;
 }) {
   const shopHref = `${basePath}/sellers/${seller.slug}`;
   const rating = seller.average_rating;
+  const price = featuredProduct?.price;
+  const amount = price?.amount ? Number(price.amount) : NaN;
+  const priceLabel =
+    price?.currency && Number.isFinite(amount)
+      ? new Intl.NumberFormat(locale, {
+          style: "currency",
+          currency: price.currency,
+        }).format(amount)
+      : price?.display_amount;
   const hasReviews = rating != null && (seller.reviews_count ?? 0) > 0;
+  const images: ShopEditorialImage[] = [];
+  if (featuredProduct?.thumbnail_url) {
+    images.push({
+      src: featuredProduct.thumbnail_url,
+      kind: "product",
+      href: `${basePath}/products/${productDetailPathSegment(featuredProduct)}`,
+      label: featuredProduct.name,
+      price: priceLabel || undefined,
+    });
+  }
+  for (const [src, kind] of [
+    [seller.cover_photo_url, "cover"],
+    [seller.square_logo_url, "logo"],
+    [seller.logo_url, "logo"],
+  ] as const) {
+    if (src && !images.some((image) => image.src === src)) {
+      images.push({ src, kind, href: shopHref, label: seller.name });
+    }
+  }
 
   return (
-    <article className="group relative min-w-0 snap-start overflow-hidden rounded-2xl border border-[#e7e0da] bg-white shadow-[0_8px_24px_rgba(43,35,48,0.08)] transition-shadow duration-200 ease-[cubic-bezier(0.23,1,0.32,1)] motion-reduce:transition-none hover:shadow-[0_12px_28px_rgba(43,35,48,0.12)]">
-      <Link
-        href={shopHref}
-        aria-label={seller.name}
-        className="relative block aspect-[0.82] overflow-hidden bg-[#eee9e3] focus-visible:outline-2 focus-visible:outline-offset-[-4px] focus-visible:outline-[#3c2d42]"
-      >
-        <ProductImage
-          src={
-            seller.cover_photo_url || seller.square_logo_url || seller.logo_url
-          }
-          alt=""
-          fill
-          sizes="(min-width: 1024px) 23vw, (min-width: 640px) 30vw, 78vw"
-          className={`transition-transform duration-200 ease-[cubic-bezier(0.23,1,0.32,1)] motion-reduce:transition-none group-hover:scale-[1.02] group-focus-within:scale-[1.02] ${seller.cover_photo_url ? "object-cover" : "object-contain p-12"}`}
-          iconClassName="size-11 text-[#8d7b8b]"
-        />
-        <span className="pointer-events-none absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-black/15 to-transparent" />
-      </Link>
+    <article
+      data-shop-editorial-card
+      className="group relative h-full w-full min-w-0 snap-start overflow-hidden rounded-[var(--marketplace-radius-lg)] border border-marketplace-border-subtle bg-marketplace-surface shadow-[var(--marketplace-shadow-card)] transition-shadow motion-reduce:transition-none hover:shadow-[var(--marketplace-shadow-card-hover)]"
+    >
+      <ShopEditorialMedia
+        key={JSON.stringify(images)}
+        images={images}
+        name={seller.name}
+        shopHref={shopHref}
+      />
+      <FeaturedShopFavoriteButton sellerId={seller.id} shopPath={shopHref} />
 
-      <div className="relative min-h-[6.4rem] px-4 pb-3 pt-3.5 pr-[5.4rem]">
-        <StarSellerAvatar
-          seller={seller}
-          href={shopHref}
-          sizeClassName="absolute -top-9 right-3 size-[4.35rem] rounded-full border-[4px] border-white bg-white shadow-sm"
-          imageSizes="70px"
-        />
+      <div className="relative min-h-24 px-4 py-3.5 pe-[5.4rem]">
+        <div className="absolute -top-5 end-3">
+          <StarSellerAvatar
+            seller={seller}
+            sizeClassName="size-[4.35rem] rounded-full border-4 border-marketplace-surface bg-marketplace-surface shadow-sm"
+            imageSizes="70px"
+          />
+        </div>
         <Link
           href={shopHref}
-          className="block truncate font-display text-xl leading-tight text-[#302434] hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#3c2d42]"
+          className="block truncate font-display text-xl leading-tight text-marketplace-foreground hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-marketplace-brand"
         >
           {seller.name}
         </Link>
-        {seller.tagline?.trim() ? (
-          <p className="mt-1 line-clamp-1 text-xs leading-4 text-[#6b626b]">
-            {seller.tagline.trim()}
+        {seller.tagline ? (
+          <p className="mt-1 line-clamp-1 text-xs leading-4 text-marketplace-muted-foreground">
+            {seller.tagline}
           </p>
         ) : null}
-        <div className="mt-1.5 flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1 text-[11px] leading-4 text-[#625b63]">
+        <div className="mt-1.5 flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1 text-xs leading-4 text-marketplace-muted-foreground">
           {hasReviews ? (
-            <span className="inline-flex items-center gap-1 font-medium text-[#39313d]">
+            <span className="inline-flex items-center gap-1 font-medium text-marketplace-foreground">
               <Star
                 aria-hidden
                 className="size-3.5 fill-[#d49132] text-[#d49132]"
               />
               {rating!.toFixed(1)}
-              <span className="font-normal text-[#756d75]">
+              <span className="font-normal text-marketplace-muted-foreground">
                 (
                 {new Intl.NumberFormat(locale, { notation: "compact" }).format(
                   seller.reviews_count ?? 0,
@@ -88,7 +121,7 @@ function MakerCard({
           ) : null}
           {seller.ships_from ? (
             <span className="inline-flex min-w-0 items-center gap-1 truncate">
-              <MapPin aria-hidden className="size-3 shrink-0 text-[#97754d]" />
+              <MapPin aria-hidden className="size-3 shrink-0" />
               <span className="truncate">{seller.ships_from}</span>
             </span>
           ) : null}
@@ -106,13 +139,30 @@ export async function FeaturedShopsShowcase({
   title,
   ctaHref = `${basePath}/shops`,
   ctaLabel,
+  carousel,
 }: FeaturedShopsShowcaseProps) {
   const t = await getTranslations({
     locale: locale as Locale,
     namespace: "home",
   });
-  const displaySellers = sellers.slice(0, 3);
+  const displaySellers = carousel ? sellers : sellers.slice(0, 3);
   if (displaySellers.length === 0) return null;
+  const productResults = await Promise.all(
+    displaySellers.map(async (seller) => {
+      try {
+        const response = await getSellerProducts(seller.slug, {
+          sellerId: seller.id,
+          limit: 8,
+          projection: "shop-card",
+        });
+        return response.data?.find(
+          (product) => product.purchasable && product.thumbnail_url,
+        );
+      } catch {
+        return undefined;
+      }
+    }),
+  );
 
   const heading =
     title ??
@@ -120,52 +170,57 @@ export async function FeaturedShopsShowcase({
       ? t("exploreShopsInCountry", { country: countryLabel })
       : t("exploreShops"));
 
-  return (
-    <MarketplaceSection
-      surface="warm"
-      className="overflow-hidden bg-marketplace-canvas"
+  const cards = displaySellers.map((seller, index) => (
+    <ShopEditorialCard
+      key={seller.id}
+      seller={seller}
+      basePath={basePath}
+      locale={locale}
+      featuredProduct={productResults[index]}
+    />
+  ));
+  const content = (
+    <div
+      className="grid min-w-0 gap-6 lg:grid-cols-[minmax(15rem,1fr)_minmax(0,3fr)] lg:items-end lg:gap-8"
       data-theme-section="featured_shops"
     >
-      <MarketplacePage>
-        <div className="grid min-w-0 gap-7 lg:grid-cols-[minmax(13rem,0.82fr)_minmax(0,2.8fr)] lg:items-end lg:gap-8 xl:gap-10">
-          <header className="flex min-w-0 flex-col items-start lg:pb-3">
-            <p className="mb-3 inline-flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.16em] text-[#987243]">
-              <span aria-hidden="true" className="h-px w-7 bg-[#c58b4e]" />
-              {t("featuredShops")}
-            </p>
-            <h2 className="max-w-[17ch] font-display text-4xl font-medium leading-[0.98] tracking-[-0.035em] text-[#302434] sm:text-5xl lg:text-[clamp(2.6rem,3.4vw,4.3rem)]">
-              {heading}
-            </h2>
-            <p className="mt-4 max-w-sm text-sm leading-6 text-[#6d646c]">
-              {t("shopsYoullLoveDescription")}
-            </p>
-            <Link
-              href={ctaHref}
-              className={cn(
-                buttonVariants({ variant: "outline", size: "default" }),
-                "mt-5 min-h-11 rounded-full border-[#3c2d42] bg-transparent px-5 text-sm font-semibold text-[#3c2d42] hover:bg-[#3c2d42] hover:text-white",
-              )}
-            >
-              {ctaLabel ?? t("viewTopFinds")}
-              <ArrowUpRight aria-hidden className="ml-1 size-4" />
-            </Link>
-          </header>
+      <header className="flex min-w-0 flex-col items-start lg:pb-2">
+        <h2
+          data-theme-section-heading
+          className="max-w-[16ch] text-balance font-display text-[length:var(--marketplace-heading-size)] font-medium leading-[1.08] tracking-tight text-marketplace-foreground"
+        >
+          {heading}
+        </h2>
+        <Link
+          href={ctaHref}
+          className={cn(
+            buttonVariants({ variant: "outline", size: "default" }),
+            "mt-4 min-h-11 rounded-full border-marketplace-brand bg-transparent px-5 text-sm font-semibold text-marketplace-foreground hover:bg-marketplace-accent",
+          )}
+        >
+          {ctaLabel ?? t("viewTopFinds")}
+          <ArrowUpRight aria-hidden className="ml-1 size-4" />
+        </Link>
+      </header>
 
-          <section
-            className="-mx-4 grid min-w-0 snap-x snap-mandatory grid-flow-col auto-cols-[minmax(15rem,78vw)] gap-3 overflow-x-auto overscroll-x-contain px-4 pb-3 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:mx-0 sm:grid-flow-row sm:auto-cols-auto sm:grid-cols-3 sm:gap-4 sm:overflow-visible sm:px-0 sm:pb-3"
-            aria-label={t("featuredShops")}
-          >
-            {displaySellers.map((seller) => (
-              <MakerCard
-                key={seller.id}
-                seller={seller}
-                basePath={basePath}
-                locale={locale}
-              />
-            ))}
-          </section>
-        </div>
-      </MarketplacePage>
+      {carousel ? (
+        <CollectionTileCarousel {...carousel} items={cards} />
+      ) : (
+        <section
+          className="grid min-w-0 snap-x snap-mandatory grid-flow-col auto-cols-[minmax(14rem,76%)] gap-3 overflow-x-auto overscroll-x-contain pb-3 sm:grid-flow-row sm:auto-cols-auto sm:grid-cols-3 sm:gap-4 sm:overflow-visible"
+          aria-label={t("featuredShops")}
+        >
+          {cards}
+        </section>
+      )}
+    </div>
+  );
+
+  return carousel ? (
+    content
+  ) : (
+    <MarketplaceSection surface="warm">
+      <MarketplacePage>{content}</MarketplacePage>
     </MarketplaceSection>
   );
 }

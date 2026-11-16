@@ -17,7 +17,12 @@ export function FeaturedShopFavoriteButton({
       onClick={(event) => event.stopPropagation()}
       onKeyDown={(event) => event.stopPropagation()}
     >
-      <FollowShopButton sellerId={sellerId} returnTo={shopPath} iconOnly />
+      <FollowShopButton
+        sellerId={sellerId}
+        returnTo={shopPath}
+        iconOnly
+        className="size-11"
+      />
     </div>
   );
 }

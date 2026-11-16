@@ -5,6 +5,7 @@ import type {
   StoreMerchandisingPlacement,
 } from "@spree/sdk";
 import { cacheLife, cacheTag } from "next/cache";
+import { connection } from "next/server";
 import { getClient, getLocaleOptions } from "@/lib/spree";
 import { marketplaceFor } from "@/lib/spree/marketplace";
 
@@ -31,6 +32,22 @@ export async function getMerchandisingPlacements(
   try {
     const options = await getLocaleOptions();
     const response = await cachedListMerchandising(params, options);
+    return response.data ?? [];
+  } catch {
+    return [];
+  }
+}
+
+export async function getMerchandisingPlacementsForPreview(
+  params: MerchandisingListParams = { surface: "homepage" },
+): Promise<StoreMerchandisingPlacement[]> {
+  await connection();
+  try {
+    const options = await getLocaleOptions();
+    const response = await marketplaceFor(getClient()).merchandising.list(
+      params,
+      options,
+    );
     return response.data ?? [];
   } catch {
     return [];

@@ -26,6 +26,7 @@ export async function HomeTrustSection({
         <MarketplaceSectionHeader
           title={t("trustTitle")}
           description={t("trustDescription")}
+          density="home"
         />
         <ul className="grid gap-4 sm:grid-cols-3">
           <li className="rounded-[var(--marketplace-radius-md)] border border-marketplace-border-subtle bg-marketplace-surface-elevated p-5">

@@ -43,9 +43,13 @@ import {
 } from "@/components/products/ProductOrderMinimumDeal";
 import { ProductPersonalizationForm } from "@/components/products/ProductPersonalizationForm";
 import { ProductShippingCost } from "@/components/products/ProductShippingCost";
-import { ReportListingButton } from "@/components/products/ReportListingButton";
+import {
+  ReportAuthenticityButton,
+  ReportListingButton,
+} from "@/components/products/ReportListingButton";
 import { useProductStickyPurchaseBar } from "@/components/products/useProductStickyPurchaseBar";
 import { VariantPicker } from "@/components/products/VariantPicker";
+import { VerifiedHandmadeBadge } from "@/components/products/VerifiedHandmadeBadge";
 import { StarRatingDisplay } from "@/components/reviews/StarRating";
 import { StarSellerAvatar } from "@/components/shops/StarSellerAvatar";
 import { ProductPageBlocksProvider } from "@/components/theme/resource/ProductPageBlocks";
@@ -66,6 +70,7 @@ import {
   type PersonalizationFieldError,
   validatePersonalizationAnswers,
 } from "@/lib/personalization";
+import { editorialStorefrontEnabled } from "@/lib/theme/flags";
 import { themeSettingEnabled } from "@/lib/theme/setting-value";
 import { sellerDisplayName } from "@/lib/utils/seller-display";
 
@@ -465,9 +470,15 @@ export function ProductDetails({
   const baseUnitAmount =
     currentAmountCents != null ? currentAmountCents / 100 : null;
 
+  const editorialPresentation = editorialStorefrontEnabled();
+
   return (
     <div
       data-theme-product-sticky-cart={stickyCart ? "true" : "false"}
+      data-storefront-presentation={
+        editorialPresentation ? "editorial" : undefined
+      }
+      data-theme-product-page
       className={`mx-auto w-full px-4 ${hasFollowingDiscovery ? "pb-0" : "pb-28"} pt-0 sm:px-6 sm:pt-8 md:pb-12 lg:px-10 lg:pb-16 ${appearance.layout === "wide" ? "max-w-none" : "max-w-[1400px]"}`}
     >
       {themeSettingEnabled(appearance.product_navigation) &&
@@ -598,8 +609,11 @@ export function ProductDetails({
                 collageLayout={isClassicLayout}
               />
             </div>
-            <div className="hidden justify-end px-0 md:flex md:px-0">
-              <ReportListingButton productId={product.id} />
+            <div className="flex justify-end px-0">
+              <div className="flex flex-col items-end">
+                <ReportListingButton productId={product.id} />
+                <ReportAuthenticityButton productId={product.id} />
+              </div>
             </div>
           </div>
         )}
@@ -798,9 +812,16 @@ export function ProductDetails({
                 </div>
 
                 <div className="order-2 md:order-1">
-                  <h1 className="min-w-0 text-base font-medium leading-snug text-[#222] md:font-display md:text-[1.65rem] md:font-normal md:leading-[1.2] md:tracking-tight lg:text-[1.85rem]">
+                  <h1
+                    data-theme-product-title
+                    className="min-w-0 text-base font-medium leading-snug text-marketplace-foreground md:font-display md:text-[1.65rem] md:font-normal md:leading-[1.2] md:tracking-tight lg:text-[1.85rem]"
+                  >
                     {product.name}
                   </h1>
+                  <VerifiedHandmadeBadge
+                    product={product}
+                    standardsHref={`${basePath}/handmade-standards`}
+                  />
                   <div className="mt-1.5 hidden md:block">
                     <MerchandisingBadges
                       signals={pdpMerchandising.title}
@@ -1122,7 +1143,7 @@ export function ProductDetails({
                         t("outOfStock")
                       )}
                     </Button>
-                    <div className="hidden flex-col gap-2 md:flex">
+                    <div className="flex flex-col gap-2">
                       <MakeOfferButton
                         variantId={
                           selectedVariant?.id || product.default_variant_id

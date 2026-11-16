@@ -12,6 +12,7 @@ import { FooterContactForm } from "@/components/layout/FooterContactForm";
 import { FooterEmailSignup } from "@/components/layout/FooterEmailSignup";
 import { GlobalSocialLinks } from "@/components/layout/GlobalSocialLinks";
 import { RegionPreferences } from "@/components/layout/RegionPreferences";
+import editorialStyles from "@/components/theme/editorial-storefront.module.css";
 import {
   type CmsNavigationItemWire,
   cmsNavigationHref,
@@ -36,6 +37,7 @@ const storeName = getStoreName();
 const storeDescription = getStoreDescription();
 
 interface FooterProps {
+  editorial?: boolean;
   basePath: string;
   locale: Locale;
   categoryLinks: ReactNode;
@@ -138,6 +140,7 @@ export async function Footer({
   locale,
   categoryLinks,
   section,
+  editorial = false,
 }: FooterProps) {
   const t = await getTranslations({ locale, namespace: "footer" });
   const tp = await getTranslations({ locale, namespace: "policies" });
@@ -180,14 +183,19 @@ export async function Footer({
     themeSettingEnabled(settings.footer_blocks_initialized) ||
     customBlocks.length > 0;
   const footerSchemes: Record<string, { background: string; text: string }> = {
-    "scheme-1": { background: "#ffffff", text: "#242027" },
+    "scheme-1": { background: "#fffcf8", text: "#241f26" },
     "scheme-2": { background: "#f6f1e8", text: "#6c315d" },
     "scheme-3": { background: "#e8f4ef", text: "#173b32" },
     "scheme-4": { background: "#f0f3fa", text: "#24365f" },
     "scheme-5": { background: "#fff5e8", text: "#804a19" },
   };
   const footerScheme =
-    footerSchemes[String(settings.color_scheme || "scheme-1")] ||
+    (editorial && !section
+      ? {
+          background: "var(--marketplace-surface-subtle)",
+          text: "var(--oddkeeps-ink, #222a25)",
+        }
+      : footerSchemes[String(settings.color_scheme || "scheme-1")]) ||
     footerSchemes["scheme-1"];
   const background =
     typeof settings.background_color === "string" &&
@@ -202,19 +210,19 @@ export async function Footer({
   const spotlightEnabled = settings.footer_spotlight_enabled !== false;
   const spotlightBackground = footerColor(
     settings.footer_spotlight_background_color,
-    "#c2522b",
+    editorial ? "var(--marketplace-promo)" : "#c2522b",
   );
   const spotlightText = footerColor(
     settings.footer_spotlight_text_color,
-    "#fffaf6",
+    editorial ? "var(--marketplace-promo-foreground)" : "#fffaf6",
   );
   const spotlightButtonBackground = footerColor(
     settings.footer_spotlight_button_background_color,
-    "#251e24",
+    editorial ? "var(--marketplace-promo-foreground)" : "#251e24",
   );
   const spotlightButtonText = footerColor(
     settings.footer_spotlight_button_text_color,
-    "#ffffff",
+    editorial ? "var(--marketplace-promo)" : "#ffffff",
   );
   const sectionId = `theme-footer-${section?.section_id.replace(/[^a-zA-Z0-9_-]/g, "") ?? "default"}`;
   const cssInput =
@@ -235,7 +243,7 @@ export async function Footer({
   const maxWidth =
     settings.section_width === "full"
       ? "none"
-      : "var(--marketplace-page-width, 1200px)";
+      : "var(--marketplace-container, 1440px)";
   const gap = Math.max(0, Math.min(80, Number(settings.gap ?? 24)));
   const paddingTop = Math.max(
     0,
@@ -266,7 +274,7 @@ export async function Footer({
       id={sectionId}
       data-theme-footer
       data-theme-base-path={basePath}
-      className="mt-auto border-t border-marketplace-border-subtle bg-marketplace-background text-marketplace-foreground"
+      className={`mt-auto border-t border-marketplace-border-subtle bg-marketplace-background text-marketplace-foreground ${editorial ? editorialStyles.footer : ""}`}
       style={footerStyle}
     >
       {customCss && <style>{customCss}</style>}
@@ -276,7 +284,7 @@ export async function Footer({
           style={{ backgroundColor: spotlightBackground, color: spotlightText }}
         >
           <div
-            className="mx-auto flex flex-col items-start justify-between gap-4 px-4 py-5 sm:gap-5 sm:px-6 sm:py-6 md:flex-row md:items-center lg:px-8"
+            className="mx-auto flex flex-col items-start justify-between gap-4 px-[var(--marketplace-gutter)] py-7 sm:gap-5 md:flex-row md:items-center md:py-9"
             style={{ maxWidth }}
           >
             <h2
@@ -310,7 +318,7 @@ export async function Footer({
       )}
       <div
         data-theme-footer-content
-        className="mx-auto max-w-[1440px] px-4 pt-[min(var(--footer-content-padding-top),2rem)] sm:px-6 md:pt-[var(--footer-content-padding-top)] lg:px-8"
+        className="mx-auto px-[var(--marketplace-gutter)] pt-[min(var(--footer-content-padding-top),2rem)] md:pt-[var(--footer-content-padding-top)]"
         style={{
           maxWidth,
           ["--footer-content-padding-top" as string]: `${paddingTop}px`,
@@ -320,8 +328,8 @@ export async function Footer({
           data-theme-footer-layout
           className={
             customMode
-              ? "grid grid-cols-2 gap-x-[var(--footer-gap)] gap-y-8 md:grid-cols-[repeat(4,minmax(0,1fr))_220px] md:gap-y-[var(--footer-gap)]"
-              : "grid grid-cols-2 gap-x-8 gap-y-8 md:grid-cols-[repeat(4,minmax(0,1fr))_220px] lg:gap-x-12"
+              ? "grid grid-cols-2 gap-x-[var(--footer-gap)] gap-y-8 md:grid-cols-3 lg:grid-cols-[repeat(4,minmax(0,1fr))_minmax(0,220px)] lg:gap-y-[var(--footer-gap)]"
+              : "grid grid-cols-2 gap-x-6 gap-y-8 md:grid-cols-3 lg:grid-cols-[repeat(4,minmax(0,1fr))_minmax(0,220px)] lg:gap-x-10"
           }
           style={
             customMode

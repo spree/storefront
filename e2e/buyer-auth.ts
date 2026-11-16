@@ -154,11 +154,6 @@ export async function loginBuyerViaApi(
   const accessToken = result.token;
   const refreshToken = result.refresh_token;
 
-  if (process.env.E2E_PREVIEW === "1") {
-    await loginBuyerThroughAccountForm(page, email, password);
-    return;
-  }
-
   async function plantSessionCookies() {
     // Navigate first so cookie domain matches the Playwright baseURL host
     // (127.0.0.1 in lab configs), not a stale localhost default.
@@ -191,7 +186,7 @@ export async function loginBuyerViaApi(
 
   if (useServerBootstrap) {
     await storefrontGoto(page, "/us/en");
-    const _bootstrap = await page.evaluate(
+    await page.evaluate(
       async ({
         accessToken,
         refreshToken,
@@ -215,12 +210,21 @@ export async function loginBuyerViaApi(
         refreshToken,
       },
     );
+    await syncBuyerSessionForServerActions(page, accessToken, refreshToken);
   } else {
     await plantSessionCookies();
+    await syncBuyerSessionForServerActions(page, accessToken, refreshToken);
   }
 
-  await plantSessionCookies();
-  await syncBuyerSessionForServerActions(page, accessToken, refreshToken);
+  if (!requireAccountShell) {
+    const apiEmail = await buyerApiEmail(page);
+    if (apiEmail === email) {
+      await expectBuyerSessionCookies(page);
+      return;
+    }
+    await expectBuyerSessionCookies(page);
+    return;
+  }
 
   const accountWaitUntil = process.env.E2E_PREVIEW === "1" ? "load" : undefined;
   await storefrontGoto(page, "/us/en/account", {

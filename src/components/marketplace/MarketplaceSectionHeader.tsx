@@ -6,7 +6,7 @@ interface MarketplaceSectionHeaderProps {
   description?: ReactNode;
   action?: ReactNode;
   className?: string;
-  density?: "default" | "compact" | "etsy" | "home";
+  density?: "default" | "compact" | "etsy" | "home" | "listing";
   headingLevel?: "h1" | "h2";
 }
 
@@ -27,7 +27,7 @@ export function MarketplaceSectionHeader({
           ? "mb-4 flex items-center justify-between gap-4 text-marketplace-foreground"
           : density === "compact"
             ? "mb-3 flex items-end justify-between gap-4 text-marketplace-foreground"
-            : "mb-6 flex items-end justify-between gap-4 text-marketplace-foreground lg:mb-8",
+            : "mb-6 flex flex-wrap items-end justify-between gap-x-4 gap-y-2 text-marketplace-foreground lg:mb-8",
         className,
       )}
     >
@@ -36,13 +36,15 @@ export function MarketplaceSectionHeader({
           data-theme-section-heading
           className={cn(
             "tracking-tight",
-            density === "home"
-              ? "text-xl font-bold leading-tight md:text-2xl"
-              : density === "etsy"
-                ? "font-display text-xl font-semibold leading-snug"
-                : density === "compact"
-                  ? "text-base font-semibold sm:text-lg"
-                  : "text-2xl font-semibold lg:text-3xl",
+            density === "listing"
+              ? "marketplace-listing-title text-balance"
+              : density === "home"
+                ? "font-display text-[1.65rem] font-medium leading-tight tracking-tight md:text-[2rem]"
+                : density === "etsy"
+                  ? "font-display text-xl font-semibold leading-snug"
+                  : density === "compact"
+                    ? "text-base font-semibold sm:text-lg"
+                    : "font-display text-[length:var(--marketplace-heading-size)] font-medium leading-tight",
           )}
         >
           {title}

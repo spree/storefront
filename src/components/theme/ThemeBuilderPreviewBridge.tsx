@@ -9,7 +9,7 @@ import type {
   ThemeTemplateDocument,
   ThemeTemplatePayload,
 } from "@spree/sdk";
-import { useEffect, useRef, useState } from "react";
+import { type RefObject, useEffect, useRef, useState } from "react";
 import {
   type CmsNavigationItemWire,
   cmsNavigationHref,
@@ -25,7 +25,6 @@ import { themeGlobalDataAttributes, themeInlineStyle } from "./theme-style";
 
 type PreviewPayload = ThemeBuilderPreviewMessage["payload"];
 type SectionEntry = ThemeTemplateDocument["sections"][string];
-const refreshedRevisions = new Set<string>();
 const appliedGlobalThemeStyles = new WeakMap<HTMLElement, Set<string>>();
 const generatedSplitHeroPreviews = new WeakSet<HTMLElement>();
 
@@ -33,10 +32,10 @@ function cssPropertyName(name: string): string {
   return name.replace(/[A-Z]/g, (letter) => `-${letter.toLowerCase()}`);
 }
 
-function previewThemeRoot(): HTMLElement | null {
+function previewThemeRoot(scope: ParentNode = document): HTMLElement | null {
   const roots = Array.from(
-    document.querySelectorAll<HTMLElement>("[data-theme-id]"),
-  );
+    scope.querySelectorAll<HTMLElement>("[data-theme-id]"),
+  ).filter((candidate) => !candidate.closest("[hidden]"));
   return (
     roots.find((candidate) =>
       candidate.querySelector(
@@ -187,7 +186,8 @@ function renderSplitHeroPreview(node: HTMLElement, entry: SectionEntry): void {
       .replace(/\s+/g, " ")
       .trim();
   const heading = orderedBlocks.find((block) => block.type === "heading");
-  const button = orderedBlocks.find((block) => block.type === "button");
+  const buttonBlocks = orderedBlocks.filter((block) => block.type === "button");
+  const button = buttonBlocks.at(-1);
   const copy = orderedBlocks.find((block) => block.type === "text");
   const headingText =
     text(heading?.settings?.text) ||
@@ -202,8 +202,8 @@ function renderSplitHeroPreview(node: HTMLElement, entry: SectionEntry): void {
     safePreviewUrl(settings.button_link) ||
     "/products";
   const promoText =
-    text(copy?.settings?.text) ||
     text(settings.subheading) ||
+    text(copy?.settings?.text) ||
     "Trick-or-treat bags with personality";
   const promoHref = safePreviewUrl(settings.promo_link) || "/products";
   const color =
@@ -2998,7 +2998,10 @@ function applySectionSettings(node: HTMLElement, entry: SectionEntry) {
     const headingBlock = orderedBlocks.find(
       (block) => block.type === "heading",
     );
-    const buttonBlock = orderedBlocks.find((block) => block.type === "button");
+    const buttonBlocks = orderedBlocks.filter(
+      (block) => block.type === "button",
+    );
+    const buttonBlock = buttonBlocks.at(-1);
     const textBlock = orderedBlocks.find((block) => block.type === "text");
     const headlineNode = node.querySelector<HTMLElement>(
       "[data-theme-hero-headline]",
@@ -3034,7 +3037,9 @@ function applySectionSettings(node: HTMLElement, entry: SectionEntry) {
         promoCardNode.href;
     }
     const promo =
-      plain(textBlock?.settings?.text) || plain(settings.subheading);
+      heroVariant === "split"
+        ? plain(settings.subheading) || plain(textBlock?.settings?.text)
+        : plain(textBlock?.settings?.text) || plain(settings.subheading);
     if (promoNode && promo) promoNode.textContent = promo;
     if (splitLayout) {
       const split = node.querySelector<HTMLElement>("[data-theme-hero-split]");
@@ -3799,6 +3804,7 @@ export function sendThemeBuilderSelection(
   editorOrigin: string,
   sectionId: string,
   blockId?: string,
+  sessionId?: string,
 ) {
   const payload = blockId
     ? { entity: "block" as const, id: blockId, sectionId, blockId }
@@ -3806,7 +3812,7 @@ export function sendThemeBuilderSelection(
   window.parent.postMessage(
     {
       type: "THEME_BUILDER_SELECT",
-      payload,
+      payload: { ...payload, ...(sessionId ? { sessionId } : {}) },
     } satisfies ThemeBuilderSelectMessage,
     editorOrigin,
   );
@@ -3817,6 +3823,7 @@ function sectionToolbar(
   editorOrigin: string,
   hidden: boolean,
   removable = true,
+  sessionId?: string,
 ): HTMLElement {
   const toolbar = document.createElement("div");
   toolbar.dataset.themeBuilderToolbar = "true";
@@ -3853,7 +3860,7 @@ function sectionToolbar(
       window.parent.postMessage(
         {
           type: "THEME_BUILDER_ACTION",
-          payload: { action, sectionId },
+          payload: { action, sectionId, sessionId },
         } satisfies ThemeBuilderActionMessage,
         editorOrigin,
       );
@@ -3870,6 +3877,7 @@ export function ThemeBuilderPreviewBridge({
   templateKey,
   baseTheme,
   baseTemplate,
+  previewRoot,
 }: {
   editorOrigin: string | null;
   themeId: string;
@@ -3877,34 +3885,48 @@ export function ThemeBuilderPreviewBridge({
   templateKey: string;
   baseTheme: CmsTheme;
   baseTemplate: ThemeTemplatePayload;
+  previewRoot?: RefObject<HTMLElement | null>;
 }) {
   const nodes = useRef<Map<string, HTMLElement>>(new Map());
   const latest = useRef<PreviewPayload | null>(null);
-  const needsRender = useRef(false);
-  const lastPersisted = useRef(0);
-  const [rootReady, setRootReady] = useState(false);
+  const [activeRoot, setActiveRoot] = useState<HTMLElement | null>(null);
   const editorOrigin = resolveEditorOrigin(editorOriginProp);
 
   useEffect(() => {
-    if (document.querySelector("[data-theme-id]")) {
-      setRootReady(true);
-      return;
-    }
-    const observer = new MutationObserver(() => {
-      if (document.querySelector("[data-theme-id]")) {
-        setRootReady(true);
-        observer.disconnect();
+    let current: HTMLElement | null = null;
+    const resolveRoot = () => {
+      const scope = previewRoot?.current || document;
+      if (
+        current?.isConnected &&
+        scope.contains(current) &&
+        !current.closest("[hidden]")
+      )
+        return;
+      const next = previewThemeRoot(scope);
+      if (next !== current) {
+        current = next;
+        setActiveRoot(next);
       }
+    };
+    const observer = new MutationObserver(resolveRoot);
+    observer.observe(document.body, {
+      childList: true,
+      subtree: true,
+      attributes: true,
+      attributeFilter: ["hidden"],
     });
-    observer.observe(document.body, { childList: true, subtree: true });
+    resolveRoot();
     return () => observer.disconnect();
-  }, []);
+  }, [previewRoot]);
 
   useEffect(() => {
-    if (!rootReady || !editorOrigin || window.parent === window) return;
-    const root = previewThemeRoot();
+    if (!activeRoot || !editorOrigin || window.parent === window) return;
+    const root = activeRoot;
     if (!root) return;
     root.dataset.themeBuilderBridge = "listening";
+    const sessionId = crypto.randomUUID();
+    root.dataset.themeBuilderSession = sessionId;
+    let appliedSequence = 0;
     nodes.current = initializePreviewSections(root);
 
     const select = (id: string | null) => {
@@ -3932,6 +3954,7 @@ export function ThemeBuilderPreviewBridge({
           editorOrigin,
           node.style.display === "none",
           node.dataset.themeSectionType !== "theme_header",
+          sessionId,
         ),
       );
     };
@@ -3966,27 +3989,9 @@ export function ThemeBuilderPreviewBridge({
         themeGlobalDataAttributes(visual.theme),
       ))
         root.setAttribute(attribute, value);
-      needsRender.current =
-        applyPreviewDocument(
-          root,
-          "body",
-          visual.template.data,
-          nodes.current,
-        ) || needsRender.current;
-      needsRender.current =
-        applyPreviewDocument(
-          root,
-          "header",
-          visual.groups.header,
-          nodes.current,
-        ) || needsRender.current;
-      needsRender.current =
-        applyPreviewDocument(
-          root,
-          "footer",
-          visual.groups.footer,
-          nodes.current,
-        ) || needsRender.current;
+      applyPreviewDocument(root, "body", visual.template.data, nodes.current);
+      applyPreviewDocument(root, "header", visual.groups.header, nodes.current);
+      applyPreviewDocument(root, "footer", visual.groups.footer, nodes.current);
       select(
         payload.mode === "select"
           ? payload.selection?.sectionId ||
@@ -3995,35 +4000,9 @@ export function ThemeBuilderPreviewBridge({
                 : null)
           : null,
       );
-      const refreshKey = `${themeId}:${templateType}:${templateKey}:${payload.persistedRevision}`;
-      const refreshStorageKey = `spree:theme-preview-refreshed:${refreshKey}`;
-      let alreadyRefreshed = refreshedRevisions.has(refreshKey);
-      try {
-        alreadyRefreshed ||=
-          window.sessionStorage.getItem(refreshStorageKey) === "true";
-      } catch {
-        // Session storage can be unavailable in restricted browser contexts.
-      }
-      if (
-        needsRender.current &&
-        payload.persistedRevision > 0 &&
-        payload.persistedRevision > lastPersisted.current &&
-        !alreadyRefreshed &&
-        root.querySelector('[data-theme-preview-created="true"]')
-      ) {
-        needsRender.current = false;
-        refreshedRevisions.add(refreshKey);
-        try {
-          window.sessionStorage.setItem(refreshStorageKey, "true");
-        } catch {
-          // The editor can still issue a fresh preview token.
-        }
-        window.parent.postMessage(
-          { type: "THEME_BUILDER_REFRESH_PREVIEW" },
-          editorOrigin,
-        );
-      }
-      lastPersisted.current = payload.persistedRevision;
+      // Keep edits in the live iframe. If a newly-added section needs fresh
+      // server-rendered markup, the editor's explicit Refresh preview control
+      // can reload it without interrupting every autosave.
     };
 
     const onMessage = (event: MessageEvent) => {
@@ -4035,16 +4014,38 @@ export function ThemeBuilderPreviewBridge({
           themeId,
           templateType,
           templateKey,
+          sessionId,
         )
       )
         return;
+      const payload = event.data.payload;
+      if ((payload.sequence || 0) <= appliedSequence) return;
       try {
+        apply(payload);
+        appliedSequence = payload.sequence || 0;
         root.dataset.themeBuilderBridge = "updated";
         root.dataset.themeBuilderRevision = String(
           event.data.payload.persistedRevision,
         );
-        latest.current = event.data.payload;
-        apply(event.data.payload);
+        root.dataset.themeBuilderSession = sessionId;
+        root.dataset.themeBuilderSequence = String(appliedSequence);
+        latest.current = payload;
+        root.querySelector("[data-theme-builder-error]")?.remove();
+        window.parent.postMessage(
+          {
+            type: "THEME_BUILDER_APPLIED",
+            payload: {
+              themeId,
+              templateType,
+              templateKey,
+              sessionId,
+              sequence: appliedSequence,
+              revision: payload.revision,
+              persistedRevision: payload.persistedRevision,
+            },
+          },
+          editorOrigin,
+        );
       } catch {
         let alert = root.querySelector<HTMLElement>(
           "[data-theme-builder-error]",
@@ -4127,7 +4128,7 @@ export function ThemeBuilderPreviewBridge({
         window.parent.postMessage(
           {
             type: "THEME_BUILDER_ACTION",
-            payload: { action: "show", sectionId },
+            payload: { action: "show", sectionId, sessionId },
           } satisfies ThemeBuilderActionMessage,
           editorOrigin,
         );
@@ -4148,6 +4149,7 @@ export function ThemeBuilderPreviewBridge({
         editorOrigin,
         target.dataset.themeSectionId,
         block?.dataset.themeBlockId,
+        sessionId,
       );
     };
     window.addEventListener("message", onMessage);
@@ -4161,23 +4163,40 @@ export function ThemeBuilderPreviewBridge({
     root.addEventListener("mouseover", onMouseOver, true);
     root.addEventListener("mouseout", onMouseOut, true);
     root.addEventListener("click", onClick, true);
+    const onPageHide = () => {
+      window.parent.postMessage(
+        {
+          type: "THEME_BUILDER_LEAVING",
+          payload: { themeId, templateType, templateKey, sessionId },
+        },
+        editorOrigin,
+      );
+    };
+    window.addEventListener("pagehide", onPageHide);
     window.parent.postMessage(
       {
         type: "THEME_BUILDER_READY",
-        payload: { themeId, templateType, templateKey },
+        payload: { themeId, templateType, templateKey, sessionId },
       } satisfies ThemeBuilderReadyMessage,
       editorOrigin,
     );
-    if (latest.current) apply(latest.current);
+    latest.current = null;
     return () => {
       window.removeEventListener("message", onMessage);
+      window.removeEventListener("pagehide", onPageHide);
       streamedSections.disconnect();
       root.removeEventListener("mouseover", onMouseOver, true);
       root.removeEventListener("mouseout", onMouseOut, true);
       root.removeEventListener("click", onClick, true);
+      if (root.dataset.themeBuilderSession === sessionId) {
+        delete root.dataset.themeBuilderBridge;
+        delete root.dataset.themeBuilderSession;
+        delete root.dataset.themeBuilderSequence;
+      }
+      onPageHide();
     };
   }, [
-    rootReady,
+    activeRoot,
     editorOrigin,
     themeId,
     templateType,

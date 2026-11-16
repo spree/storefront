@@ -155,7 +155,7 @@ describe("resource theme sections", () => {
       kind: "product",
       product: {
         id: "prod_1",
-        seller: { name: "Maker" },
+        seller_name: "Maker",
         price: { currency: "USD" },
       } as never,
       basePath: "/us/en",

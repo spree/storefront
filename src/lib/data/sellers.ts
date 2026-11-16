@@ -110,6 +110,7 @@ export async function getSellerProducts(
     page?: number;
     limit?: number;
     section?: string;
+    projection?: "shop-card";
     q?: Record<
       string,
       string | number | boolean | (string | number)[] | undefined
@@ -122,7 +123,20 @@ export async function getSellerProducts(
     ...(await getLocaleOptions()),
     ...(token ? { token, cache: "no-store" as const } : {}),
   };
-  const { sellerId, page = 1, limit = 24, section, q, sort } = params;
+  const {
+    sellerId,
+    page = 1,
+    limit = 24,
+    section,
+    q,
+    sort,
+    projection,
+  } = params;
+  const fields =
+    projection === "shop-card"
+      ? ["id", "slug", "name", "thumbnail_url", "purchasable", "price"]
+      : PRODUCT_CARD_FIELDS;
+  const expand = projection === "shop-card" ? [] : ["seller"];
 
   const requestParams: Record<
     string,
@@ -130,8 +144,8 @@ export async function getSellerProducts(
   > = {
     page,
     limit,
-    fields: PRODUCT_CARD_FIELDS.join(","),
-    expand: "seller",
+    fields: fields.join(","),
+    expand: expand.length ? expand.join(",") : undefined,
     ...(sort ? { sort } : {}),
     ...(section ? { section } : {}),
   };
@@ -170,8 +184,8 @@ export async function getSellerProducts(
         page,
         limit,
         sort,
-        fields: PRODUCT_CARD_FIELDS,
-        expand: ["seller"],
+        fields,
+        expand,
         ...(q ?? {}),
         seller_id_eq: catalogSellerId,
       },

@@ -1,6 +1,6 @@
 "use client";
 
-import type { ReactNode } from "react";
+import type { CSSProperties, ReactNode } from "react";
 import { useCallback, useRef } from "react";
 import type Swiper from "swiper";
 import { Autoplay, Navigation, Pagination } from "swiper/modules";
@@ -46,6 +46,22 @@ export function CollectionTileCarousel(props: CollectionTileCarouselProps) {
     <div
       className="collection-theme-carousel relative min-w-0"
       data-theme-carousel
+      style={
+        {
+          "--carousel-columns-mobile": props.columnsMobile,
+          "--carousel-columns-tablet": props.columnsTablet,
+          "--carousel-columns-desktop": props.columnsDesktop,
+          "--carousel-gap-mobile": `${props.mobileGap}px`,
+          "--carousel-gap-desktop": `${props.gap}px`,
+          "--carousel-pagination-color": props.paginationColor,
+          "--carousel-pagination-mobile": props.paginationMobile
+            ? "block"
+            : "none",
+          "--carousel-pagination-desktop": props.paginationDesktop
+            ? "block"
+            : "none",
+        } as CSSProperties
+      }
     >
       <button
         ref={previous}
@@ -109,16 +125,21 @@ export function CollectionTileCarousel(props: CollectionTileCarouselProps) {
         ))}
       </SwiperComponent>
       <style>{`
-        .collection-theme-carousel .collection-theme-arrow { position:absolute; z-index:3; top:42%; display:flex; width:36px; height:36px; align-items:center; justify-content:center; border:0; border-radius:9999px; box-shadow:0 2px 8px #0002; cursor:pointer }
+        .collection-theme-carousel { --carousel-columns:var(--carousel-columns-mobile); --carousel-gap:var(--carousel-gap-mobile) }
+        .collection-theme-carousel .collection-theme-swiper:not(.swiper-initialized) .swiper-slide { width:calc((100% - (var(--carousel-columns) - 1) * var(--carousel-gap)) / var(--carousel-columns)); margin-inline-end:var(--carousel-gap) }
+        .collection-theme-carousel .collection-theme-arrow { position:absolute; z-index:3; top:42%; display:flex; width:44px; height:44px; align-items:center; justify-content:center; border:0; border-radius:9999px; box-shadow:0 2px 8px #0002; cursor:pointer }
+        .collection-theme-carousel .collection-theme-arrow:focus-visible { outline:2px solid var(--marketplace-focus); outline-offset:2px }
         .collection-theme-carousel .collection-theme-arrow-prev { left:8px }
         .collection-theme-carousel .collection-theme-arrow-next { right:8px }
         .collection-theme-carousel .collection-theme-arrow.swiper-button-disabled { visibility:hidden }
         .collection-theme-carousel .collection-theme-swiper { overflow:hidden; padding-bottom:26px }
         .collection-theme-carousel .swiper-pagination { bottom:0; line-height:8px }
-        .collection-theme-carousel .collection-theme-bullet { display:inline-block; width:7px; height:7px; margin:0 4px; border-radius:50%; background:${props.paginationColor}; opacity:.45; cursor:pointer }
+        .collection-theme-carousel .collection-theme-bullet { display:inline-block; width:7px; height:7px; margin:0 4px; border-radius:50%; background:var(--carousel-pagination-color); opacity:.45; cursor:pointer }
         .collection-theme-carousel .collection-theme-bullet-active { opacity:1 }
-        @media (max-width: 767px) { .collection-theme-carousel .collection-theme-arrow-mobile-hidden { display:none } .collection-theme-carousel .swiper-pagination { display:${props.paginationMobile ? "block" : "none"} } }
-        @media (min-width: 768px) { .collection-theme-carousel .collection-theme-arrow-desktop-hidden { display:none } .collection-theme-carousel .swiper-pagination { display:${props.paginationDesktop ? "block" : "none"} } }
+        @media (min-width: 640px) { .collection-theme-carousel { --carousel-columns:var(--carousel-columns-tablet); --carousel-gap:var(--carousel-gap-desktop) } }
+        @media (min-width: 1024px) { .collection-theme-carousel { --carousel-columns:var(--carousel-columns-desktop) } }
+        @media (max-width: 767px) { .collection-theme-carousel .collection-theme-arrow-mobile-hidden { display:none } .collection-theme-carousel .swiper-pagination { display:var(--carousel-pagination-mobile) } }
+        @media (min-width: 768px) { .collection-theme-carousel .collection-theme-arrow-desktop-hidden { display:none } .collection-theme-carousel .swiper-pagination { display:var(--carousel-pagination-desktop) } }
       `}</style>
     </div>
   );

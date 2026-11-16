@@ -178,7 +178,7 @@ export function buildShippingRateMap(
         rateMap.set(methodId, {
           id,
           displayName: rate.name,
-          amount: toCents(rate.cost, currency),
+          amount: toCents(rate.cost ?? "0", currency),
         });
         selectionMap.set(id, []);
       }

@@ -147,7 +147,7 @@ export function AccountShell({ children }: { children: React.ReactNode }) {
   };
 
   return (
-    <MarketplacePage className="max-w-[1600px] bg-transparent py-6 lg:py-10">
+    <MarketplacePage className="py-6 lg:py-10">
       <div className="mb-6 lg:hidden">
         <div className="flex items-center justify-between gap-2">
           <div className="min-w-0 flex-1">
@@ -173,7 +173,7 @@ export function AccountShell({ children }: { children: React.ReactNode }) {
 
       <div className="flex gap-8 xl:gap-12">
         <aside className="hidden w-64 shrink-0 lg:block xl:w-72">
-          <div className="sticky top-6">
+          <div className="sticky top-6 rounded-[var(--marketplace-radius-md)] border border-marketplace-border-subtle bg-marketplace-surface p-4 shadow-[var(--marketplace-shadow-card)]">
             <AccountIdentity user={user} fallback={t("myAccount")} />
             <AccountNavigation
               groups={navGroups}
@@ -195,7 +195,7 @@ export function AccountShell({ children }: { children: React.ReactNode }) {
           </div>
         </aside>
 
-        <main className="min-w-0 flex-1">
+        <div data-marketplace-account-body className="min-w-0 flex-1">
           {isCommunicationPath(pathname, basePath) ? (
             <CommunicationNavigation
               pathname={pathname}
@@ -209,7 +209,7 @@ export function AccountShell({ children }: { children: React.ReactNode }) {
             />
           ) : null}
           {children}
-        </main>
+        </div>
       </div>
     </MarketplacePage>
   );

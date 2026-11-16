@@ -214,6 +214,7 @@ export async function ProductReviewsSection({
       />
       <section
         id="reviews"
+        data-theme-reviews-section
         className={
           embedded
             ? hasSummary || reviewsPage.data.length > 0

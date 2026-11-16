@@ -26,6 +26,9 @@ describe("ThemeSlideshow", () => {
         .getByText("Second slide content")
         .closest("[aria-roledescription='slide']"),
     ).toHaveAttribute("aria-hidden", "true");
+    expect(
+      screen.getByText("Second slide content").closest("fieldset"),
+    ).toHaveAttribute("inert");
 
     fireEvent.click(screen.getByRole("button", { name: "Next slide" }));
     expect(

@@ -325,6 +325,7 @@ export function CartEditItemSheet({
                   optionTypes={optionTypes}
                   selectedVariant={selectedVariant}
                   onVariantChange={setSelectedVariant}
+                  preferDropdown
                 />
               ) : null}
 

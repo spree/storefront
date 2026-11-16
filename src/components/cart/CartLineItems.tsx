@@ -264,6 +264,7 @@ export function CartLineItems({
                     <div className="flex gap-4 sm:gap-5">
                       <Link
                         href={`${basePath}/products/${item.slug}`}
+                        aria-label={item.name}
                         className="relative size-[6.75rem] shrink-0 overflow-hidden rounded-lg bg-marketplace-surface-warm sm:size-[7.5rem]"
                         onClick={onClose}
                       >
@@ -380,7 +381,7 @@ export function CartLineItems({
                     {t("shippingEstimateLoading")}
                   </span>
                 ) : shippingFree ? (
-                  <span className="font-bold text-emerald-600">
+                  <span className="font-bold text-emerald-800">
                     {t("shippingFree")}
                   </span>
                 ) : shippingAmount ? (
@@ -478,6 +479,7 @@ function CompactCartLineItems({
               <div className="flex gap-3">
                 <Link
                   href={`${basePath}/products/${item.slug}`}
+                  aria-label={item.name}
                   className="relative size-[5.5rem] shrink-0 overflow-hidden rounded-xl bg-marketplace-surface-warm"
                   onClick={onClose}
                 >

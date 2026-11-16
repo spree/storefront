@@ -44,7 +44,10 @@ export async function AuthenticatedAccountLayoutContent({
   if (!accessToken && !refreshToken) redirect(loginHref);
 
   return (
-    <AuthenticatedAccountShell loginHref={loginHref}>
+    <AuthenticatedAccountShell
+      loginHref={loginHref}
+      hasServerSession={Boolean(accessToken || refreshToken)}
+    >
       {children}
     </AuthenticatedAccountShell>
   );

@@ -146,6 +146,7 @@ export function VariantPicker({
         const colorStyle = String(swatchSettings.color_style || "color");
         const useDropdown =
           preferDropdown || swatchSettings.other_style === "dropdown";
+        const showColorSwatches = isColor && !useDropdown;
         const swatchSize =
           swatchSettings.size === "small"
             ? "h-7 w-7"
@@ -181,7 +182,7 @@ export function VariantPicker({
               ) : null}
             </div>
 
-            {isColor ? (
+            {showColorSwatches ? (
               <div className="flex flex-wrap gap-2">
                 {values.map((value) => {
                   const optionValue = getOptionValueDetails(

@@ -398,6 +398,39 @@
       "cancel": "Cancelar",
       "submit": "Enviar denuncia"
     },
+    "handmade": {
+      "badge": "Hecho a mano verificado",
+      "explanation": "Oddkeeps reviso la declaracion de quien lo hace, el metodo de produccion descrito y cualquier socio de produccion nombrado. Esta insignia significa que la revision esta aprobada y sigue vigente.",
+      "standards": "Normas de lo hecho a mano"
+    },
+    "reportAuthenticity": {
+      "trigger": "Informar una duda de autenticidad",
+      "title": "Informar una duda de autenticidad",
+      "description": "Dile a Oddkeeps si este anuncio no coincide con lo declarado. Confianza y seguridad revisa el informe.",
+      "reason": "Motivo",
+      "reasonOptional": "Elige un motivo (opcional)",
+      "details": "Que parece incorrecto?",
+      "email": "Tu correo electronico",
+      "signInToReport": "Inicia sesion para informar una duda de autenticidad",
+      "success": "Gracias. Hemos recibido tu informe.",
+      "error": "No pudimos enviar tu informe. Intentalo de nuevo.",
+      "cancel": "Cancelar",
+      "submit": "Enviar informe"
+    },
+    "handmadeStandards": {
+      "title": "Normas de lo hecho a mano",
+      "intro": "Oddkeeps revisa a quienes hacen y a los anuncios antes de que un producto pueda mostrar la insignia de hecho a mano verificado. Quien vende no puede conceder esa insignia.",
+      "makerTitle": "Verificacion de quien hace",
+      "makerBody": "Quien hace cuenta a Oddkeeps quien es y como trabaja. Oddkeeps revisa esa declaracion antes de certificar productos.",
+      "productTitle": "Certificacion del producto",
+      "productBody": "Cada producto certificado tiene su propia revision. Oddkeeps mira la declaracion, el metodo de produccion y la descripcion publica. La insignia aparece solo cuando la revision esta aprobada y sigue vigente.",
+      "partnerTitle": "Socios de produccion",
+      "partnerBody": "Algunas piezas las disena quien hace y las produce un socio nombrado. Oddkeeps revisa a ese socio antes de que esos anuncios muestren la insignia. La clasificacion publica indica cuando participo un socio.",
+      "resaleTitle": "Reventa prohibida",
+      "resaleBody": "La insignia no es para revender articulos que quien vende no hizo, diseno o transformo de forma significativa. Los productos industriales presentados como hechos a mano no pueden llevarla.",
+      "reportTitle": "Informar una duda",
+      "reportBody": "Si un anuncio no coincide con lo declarado, usa Informar una duda de autenticidad en la pagina del producto. El informe llega a Confianza y seguridad. Las pruebas privadas y las notas de revision se quedan en Oddkeeps."
+    },
     "sellerShopLocation": "{shop} · {location}",
     "askAboutItem": "Ask about this item",
     "addFavorite": "Save to favorites",

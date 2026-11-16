@@ -102,6 +102,7 @@
     ]
   },
   "devDependencies": {
+    "@axe-core/playwright": "4.10.2",
     "@biomejs/biome": "^2.3.14",
     "@playwright/test": "^1.60.0",
     "@spree/cli": "^3.1.0",

@@ -1,18 +1,28 @@
 import type { CmsTheme, ThemeTemplatePayload } from "@spree/sdk";
+import { cacheLife, cacheTag } from "next/cache";
 import { cache } from "react";
 import { getClient, getLocaleOptions } from "@/lib/spree";
+import { PUBLISHED_THEME_CACHE_TAG } from "@/lib/theme/published-cache";
+
+async function readPublishedTheme(country?: string, locale?: string) {
+  "use cache: remote";
+  cacheLife({ stale: 0, revalidate: 30, expire: 60 });
+  cacheTag(PUBLISHED_THEME_CACHE_TAG);
+
+  const response = await getClient().request<{ data: CmsTheme }>(
+    "GET",
+    "/theme",
+    { country, locale },
+  );
+  return response.data;
+}
 
 async function loadPublishedTheme(): Promise<CmsTheme | null> {
-  const options = await getLocaleOptions();
+  const { country, locale } = await getLocaleOptions();
   let lastError: unknown;
   for (let attempt = 0; attempt < 2; attempt += 1) {
     try {
-      const response = await getClient().request<{ data: CmsTheme }>(
-        "GET",
-        "/theme",
-        options,
-      );
-      return response.data;
+      return await readPublishedTheme(country, locale);
     } catch (error) {
       lastError = error;
     }
@@ -25,6 +35,19 @@ async function loadPublishedTheme(): Promise<CmsTheme | null> {
 
 export const getActiveTheme = cache(loadPublishedTheme);
 
+async function readPublishedHomeTemplate(country?: string, locale?: string) {
+  "use cache: remote";
+  cacheLife({ stale: 0, revalidate: 30, expire: 60 });
+  cacheTag(PUBLISHED_THEME_CACHE_TAG);
+
+  const response = await getClient().request<{ data: ThemeTemplatePayload }>(
+    "GET",
+    "/theme/templates/home/default",
+    { country, locale },
+  );
+  return response.data;
+}
+
 const getResolvedTemplateCached = cache(
   async (
     templateType: string,
@@ -35,6 +58,17 @@ const getResolvedTemplateCached = cache(
     const options = await getLocaleOptions();
     for (let attempt = 0; attempt < 2; attempt += 1) {
       try {
+        if (
+          templateType === "home" &&
+          templateKey === "default" &&
+          !resourceType &&
+          !resourceId
+        ) {
+          return await readPublishedHomeTemplate(
+            options.country,
+            options.locale,
+          );
+        }
         const requestOptions = {
           ...options,
           resource_type: resourceType || undefined,

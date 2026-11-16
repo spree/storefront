@@ -68,7 +68,7 @@ export async function OrderDetail({
               date: formatDateTime(order.completed_at, locale),
             })}
           </p>
-          <h1 className="font-display text-2xl font-semibold text-marketplace-brand">
+          <h1 className="marketplace-listing-title text-marketplace-foreground">
             {t("orderTitle", { number: order.number })}
           </h1>
           <div className="mt-3 flex flex-wrap gap-2">

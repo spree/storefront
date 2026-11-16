@@ -88,14 +88,14 @@ export function ProductOrderMinimumDeal({
 
   return (
     <div className="order-5 space-y-1" data-testid="order-minimum-deal">
-      <p className="flex items-start gap-2 text-sm font-medium text-[#258635]">
+      <p className="flex items-start gap-2 text-sm font-medium text-[#1e6b2b]">
         <Tag className="mt-0.5 size-4 shrink-0" aria-hidden />
         <span>{message}</span>
       </p>
       {shopHref ? (
         <Link
           href={shopHref}
-          className="ml-6 inline-block text-sm font-medium text-[#258635] underline underline-offset-2 hover:text-[#1e6b2b]"
+          className="ml-6 inline-block text-sm font-medium text-[#1e6b2b] underline underline-offset-2 hover:text-[#184f22]"
         >
           {t("orderMinimumDealShopTheDeal")}
         </Link>

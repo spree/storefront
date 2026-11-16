@@ -102,44 +102,61 @@ export function AddressSelector({
           onValueChange={handleSelectAddress}
           className="rounded-sm border overflow-hidden gap-0"
         >
-          {savedAddresses.map((address, index) => (
-            <label
-              key={address.id}
-              className={`flex items-start gap-3 px-4 py-3.5 cursor-pointer transition-colors ${
-                selectedAddressId === address.id
-                  ? "bg-blue-50"
-                  : "bg-white hover:bg-gray-50"
-              } ${index > 0 ? "border-t" : ""}`}
-            >
-              <RadioGroupItem value={address.id} className="mt-0.5 shrink-0" />
-              <div className="flex-1 min-w-0">
-                <span className="text-sm text-gray-900">
-                  {address.full_name}
-                  {address.company && (
-                    <span className="text-gray-500">, {address.company}</span>
-                  )}
-                </span>
-                <p className="text-sm text-gray-500">
-                  {address.address1}
-                  {address.address2 && `, ${address.address2}`}, {address.city},{" "}
-                  {address.state_text || address.state_name}{" "}
-                  {address.postal_code}, {address.country_name}
-                </p>
-              </div>
-              {onEditAddress && (
-                <button
-                  type="button"
-                  onClick={(e) => {
-                    e.preventDefault();
-                    onEditAddress(address);
-                  }}
-                  className="text-xs text-gray-500 underline underline-offset-2 hover:text-gray-900 flex-shrink-0"
-                >
-                  {tc("edit")}
-                </button>
-              )}
-            </label>
-          ))}
+          {savedAddresses.map((address, index) => {
+            const addressLabelId = `shipping-address-${address.id}-label`;
+            const addressLabel = [
+              address.full_name,
+              address.company,
+              address.address1,
+              address.city,
+              address.postal_code,
+            ]
+              .filter(Boolean)
+              .join(", ");
+            return (
+              <label
+                key={address.id}
+                className={`flex items-start gap-3 px-4 py-3.5 cursor-pointer transition-colors ${
+                  selectedAddressId === address.id
+                    ? "bg-blue-50"
+                    : "bg-white hover:bg-gray-50"
+                } ${index > 0 ? "border-t" : ""}`}
+              >
+                <RadioGroupItem
+                  value={address.id}
+                  className="mt-0.5 shrink-0"
+                  aria-label={addressLabel}
+                  aria-labelledby={addressLabelId}
+                />
+                <div id={addressLabelId} className="flex-1 min-w-0">
+                  <span className="text-sm text-gray-900">
+                    {address.full_name}
+                    {address.company && (
+                      <span className="text-gray-500">, {address.company}</span>
+                    )}
+                  </span>
+                  <p className="text-sm text-gray-500">
+                    {address.address1}
+                    {address.address2 && `, ${address.address2}`},{" "}
+                    {address.city}, {address.state_text || address.state_name}{" "}
+                    {address.postal_code}, {address.country_name}
+                  </p>
+                </div>
+                {onEditAddress && (
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      onEditAddress(address);
+                    }}
+                    className="text-xs text-gray-500 underline underline-offset-2 hover:text-gray-900 flex-shrink-0"
+                  >
+                    {tc("edit")}
+                  </button>
+                )}
+              </label>
+            );
+          })}
 
           {/* Use a different address option */}
           <label
@@ -149,9 +166,16 @@ export function AddressSelector({
                 : "bg-white hover:bg-gray-50"
             }`}
           >
-            <RadioGroupItem value="new" />
+            <RadioGroupItem
+              value="new"
+              aria-label={t("useDifferentAddress")}
+              aria-labelledby="shipping-address-new-label"
+            />
             <MapPin className="w-5 h-5 text-gray-400" strokeWidth={1.5} />
-            <span className="text-sm text-gray-900">
+            <span
+              id="shipping-address-new-label"
+              className="text-sm text-gray-900"
+            >
               {t("useDifferentAddress")}
             </span>
           </label>

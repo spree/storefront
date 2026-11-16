@@ -37,6 +37,7 @@ import { getMarkets } from "@/lib/data/markets";
 import { generateStoreMetadata } from "@/lib/metadata/store";
 import { buildOrganizationJsonLd } from "@/lib/seo";
 import { getDefaultCountry, getDefaultLocale } from "@/lib/store";
+import { editorialStorefrontEnabled } from "@/lib/theme/flags";
 import { getActiveTheme } from "@/lib/theme/resolver";
 
 interface CountryLocaleLayoutProps {
@@ -114,20 +115,23 @@ export async function CountryLocaleLayoutContent({
   // unsupported pair (for example /pl/pl when Poland's Market supports de).
   const marketLookupLocale =
     resolveSupportedLocale(getDefaultLocale()) ?? DEFAULT_LOCALE;
-  const markets = await getMarkets({
+  const marketRequest = getMarkets({
     country: getDefaultCountry(),
     locale: marketLookupLocale,
   })
     .then((res) => res.data)
     .catch(() => null);
+  // Global theme settings apply even when section-group rendering is disabled.
+  const themeRequest = getActiveTheme().catch(() => null);
+  const markets = await marketRequest;
 
   const renderStorefront = async (
     availableMarkets: NonNullable<typeof markets>,
   ) => {
-    const messages = await loadMessages(requestedLocale);
-    // Global theme settings (cart, typography, colors, checkout, etc.) apply
-    // independently of whether section-group header/footer rendering is enabled.
-    const theme = await getActiveTheme().catch(() => null);
+    const [messages, theme] = await Promise.all([
+      loadMessages(requestedLocale),
+      themeRequest,
+    ]);
 
     return (
       <>
@@ -216,7 +220,10 @@ function CountryLocaleProviders({
       >
         <AuthProvider>
           <CartProvider>
-            <ThemeSettingsProvider settings={themeSettings}>
+            <ThemeSettingsProvider
+              settings={themeSettings}
+              editorial={editorialStorefrontEnabled()}
+            >
               <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-x-clip">
                 <TrafficSessionCookie />
                 <JsonLd data={buildOrganizationJsonLd()} />

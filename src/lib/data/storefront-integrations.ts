@@ -1,3 +1,4 @@
+import { connection } from "next/server";
 import { getClient } from "@/lib/spree/config";
 
 export type StorefrontIntegrationsConfig = {
@@ -18,6 +19,7 @@ export type StorefrontIntegrationsConfig = {
 };
 
 export async function getStorefrontIntegrations(): Promise<StorefrontIntegrationsConfig> {
+  await connection();
   try {
     const client = getClient();
     const response = await client.storefrontIntegrations.show();

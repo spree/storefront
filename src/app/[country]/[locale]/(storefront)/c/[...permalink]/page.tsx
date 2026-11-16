@@ -172,7 +172,10 @@ export default async function CategoryPage({
         ) : null,
       )}
 
-      <div className="mx-auto max-w-[var(--marketplace-container)] px-4 pt-6 sm:px-6 lg:px-8">
+      <div
+        className="mx-auto max-w-[var(--marketplace-container)] px-4 pt-6 sm:px-6 lg:px-8"
+        data-theme-discovery-listing
+      >
         <ProductListing
           state={listingState}
           basePath={basePath}

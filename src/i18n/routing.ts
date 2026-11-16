@@ -10,6 +10,12 @@ interface LocalizedRedirectParams {
 
 const LOCALIZED_PREFIX = /^\/[a-z]{2}\/[a-z]{2,3}(?:-[a-z0-9]{2,8})*(?=\/|$)/i;
 
+export function isLocalizedHomepage(pathname: string | null): boolean {
+  if (!pathname) return false;
+  const prefix = pathname.match(LOCALIZED_PREFIX)?.[0];
+  return Boolean(prefix && (pathname === prefix || pathname === `${prefix}/`));
+}
+
 /** Replace only the country/locale prefix while retaining the requested page. */
 export function buildLocalizedRedirectPath({
   country,

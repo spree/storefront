@@ -4,6 +4,6 @@ export function sellerDisplayName(name: string): string {
 
 export function sellerMonogram(name: string): string {
   const cleaned = sellerDisplayName(name);
-  const match = cleaned.match(/[A-Za-z0-9]/);
+  const match = cleaned.match(/[\p{L}\p{N}]/u);
   return match ? match[0].toUpperCase() : "?";
 }

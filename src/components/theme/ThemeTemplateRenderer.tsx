@@ -1,5 +1,5 @@
 import type { CmsTheme, ThemeTemplateDocument } from "@spree/sdk";
-import type { CSSProperties, ReactNode } from "react";
+import { type CSSProperties, type ReactNode, Suspense } from "react";
 import {
   isMarketplaceSectionType,
   renderMarketplaceSection,
@@ -14,9 +14,11 @@ import {
 } from "@/components/theme/ThemeSlideshow";
 import { themeSettingEnabled } from "@/lib/theme/setting-value";
 import type {
+  HomeMerchandisingContext,
   ThemeRenderContext,
   ThemeSectionInstance,
 } from "@/lib/theme/types";
+import styles from "./editorial-storefront.module.css";
 
 function toWire(section: ThemeSectionInstance, heroBlocks?: ReactNode) {
   return {
@@ -35,11 +37,15 @@ export async function ThemeTemplateRenderer({
   context,
   theme,
   editorMode = false,
+  livePreview = false,
+  homeMerchandising,
 }: {
   data: ThemeTemplateDocument;
   context: ThemeRenderContext;
   theme?: CmsTheme | null;
   editorMode?: boolean;
+  livePreview?: boolean;
+  homeMerchandising?: () => Promise<HomeMerchandisingContext>;
 }) {
   const sections = data.sections || {};
   const order = data.order || [];
@@ -132,11 +138,43 @@ export async function ThemeTemplateRenderer({
     ),
   };
 
-  const rendered = await Promise.all(
-    order.map(async (sectionId) => {
+  const firstSection = order.findIndex(
+    (id) => sections[id] && !themeSettingEnabled(sections[id].disabled),
+  );
+  const firstSectionId = order[firstSection];
+  const lead = sections[firstSectionId];
+  const leadBlocks = lead?.blocks as ThemeSectionInstance["blocks"] | undefined;
+  // A campaign with copy, images and links can render while catalog requests
+  // are in flight. Preserve the normal context for data-driven hero blocks.
+  const streamHome =
+    homeMerchandising &&
+    context.kind === "home" &&
+    !editorMode &&
+    !livePreview &&
+    lead?.type === "hero" &&
+    (lead.block_order ?? []).every((id) =>
+      ["heading", "text", "button", "image"].includes(
+        leadBlocks?.[id]?.type || "",
+      ),
+    ) &&
+    firstSection < order.length - 1;
+  const renderSections = (sectionIds: string[]) =>
+    sectionIds.map(async (sectionId) => {
       const raw = sections[sectionId];
       if (!raw || (themeSettingEnabled(raw.disabled) && !editorMode))
         return null;
+      if (livePreview && themeSettingEnabled(raw.disabled)) {
+        return (
+          <button
+            key={sectionId}
+            type="button"
+            data-theme-hidden-section-id={sectionId}
+            className="hidden w-full border border-dashed px-4 py-2 text-sm [[data-preview-inspect=true]_&]:block"
+          >
+            Show {raw.type.replaceAll("_", " ")}
+          </button>
+        );
+      }
       if (
         !editorMode &&
         context.kind === "product" &&
@@ -182,6 +220,12 @@ export async function ThemeTemplateRenderer({
       };
 
       try {
+        const sectionContext =
+          homeMerchandising &&
+          context.kind === "home" &&
+          !(streamHome && sectionId === firstSectionId)
+            ? { ...context, ...(await homeMerchandising()) }
+            : context;
         const chromeSection =
           section.section_type === "theme_header" ||
           section.section_type === "theme_footer" ||
@@ -264,7 +308,7 @@ export async function ThemeTemplateRenderer({
               ) : (
                 <ThemeBlockRenderer
                   block={block}
-                  context={context}
+                  context={sectionContext}
                   sectionType={section.section_type}
                   blockId={blockId}
                 >
@@ -421,7 +465,7 @@ export async function ThemeTemplateRenderer({
           });
         const resource = await renderResourceSection(
           section,
-          context,
+          sectionContext,
           theme,
           configuredResourceSections,
           section.section_type === "collection_main" ? blocks : undefined,
@@ -480,7 +524,7 @@ export async function ThemeTemplateRenderer({
 
         const body = await renderMarketplaceSection(
           toWire(section, blocks.length ? blocks : undefined),
-          context,
+          sectionContext,
         );
         if (!body && blocks.length === 0 && !editorMode) return null;
 
@@ -509,6 +553,16 @@ export async function ThemeTemplateRenderer({
               /[^a-zA-Z0-9_-]/g,
               "",
             )}
+            className={
+              themeSettingEnabled(section.settings.editorial_presentation)
+                ? styles.section
+                : undefined
+            }
+            data-editorial-section={
+              themeSettingEnabled(section.settings.editorial_presentation)
+                ? section.section_type
+                : undefined
+            }
             data-theme-section-width={
               section.settings.width === "full" ||
               section.settings.section_width === "full"
@@ -544,15 +598,35 @@ export async function ThemeTemplateRenderer({
         console.error(`[theme] section ${sectionId} failed`, error);
         return null;
       }
-    }),
+    });
+  const initial = await Promise.all(
+    renderSections(streamHome ? order.slice(0, firstSection + 1) : order),
   );
 
   return (
     <>
       <style>{`@media (max-width: 767px) { [data-theme-section-visibility-mobile="false"] { display: none !important; } } @media (min-width: 768px) and (max-width: 1023px) { [data-theme-section-visibility-tablet="false"] { display: none !important; } } @media (min-width: 1024px) { [data-theme-section-visibility-desktop="false"] { display: none !important; } }`}</style>
-      {rendered}
+      {initial}
+      {streamHome ? (
+        <Suspense fallback={<div className="min-h-svh" aria-hidden="true" />}>
+          <RemainingHomeSections
+            order={order.slice(firstSection + 1)}
+            renderSections={renderSections}
+          />
+        </Suspense>
+      ) : null}
     </>
   );
+}
+
+async function RemainingHomeSections({
+  order,
+  renderSections,
+}: {
+  order: string[];
+  renderSections: (ids: string[]) => Promise<ReactNode>[];
+}) {
+  return <>{await Promise.all(renderSections(order))}</>;
 }
 
 function isConditionalProductBlock(type: string) {

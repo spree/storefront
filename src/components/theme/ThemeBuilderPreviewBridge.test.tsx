@@ -4,12 +4,14 @@ import type {
   ThemeTemplateDocument,
   ThemeTemplatePayload,
 } from "@spree/sdk";
+import { act, render } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import {
   applyGlobalThemeStyles,
   applyPreviewDocument,
   initializePreviewSections,
   sendThemeBuilderSelection,
+  ThemeBuilderPreviewBridge,
 } from "./ThemeBuilderPreviewBridge";
 import {
   isTrustedThemeBuilderMessage,
@@ -52,6 +54,105 @@ const payload: ThemeBuilderPreviewMessage["payload"] = {
 };
 
 describe("Theme Builder preview bridge", () => {
+  it("acknowledges applied updates only for the current frame session and rejects older sequences", async () => {
+    const iframe = document.createElement("iframe");
+    document.body.append(iframe);
+    const parent = iframe.contentWindow!;
+    const postMessage = vi
+      .spyOn(parent, "postMessage")
+      .mockImplementation(() => {});
+    vi.stubGlobal("parent", parent);
+    const origin = "https://editor.example";
+    const staging = document.createElement("div");
+    staging.hidden = true;
+    staging.innerHTML =
+      '<div data-theme-id="theme_1"><div data-theme-template="home.default"></div></div>';
+    document.body.prepend(staging);
+    const { container, unmount } = render(
+      <>
+        <div data-theme-id="theme_1">
+          <div data-theme-template="home.default">
+            <section
+              data-theme-section-id="hero"
+              data-theme-section-type="hero"
+            >
+              <h1>Before</h1>
+            </section>
+          </div>
+        </div>
+        <ThemeBuilderPreviewBridge
+          editorOrigin={origin}
+          themeId="theme_1"
+          templateType="home"
+          templateKey="default"
+          baseTheme={theme}
+          baseTemplate={template}
+        />
+      </>,
+    );
+    try {
+      const ready = postMessage.mock.calls.filter(
+        ([message]) => message.type === "THEME_BUILDER_READY",
+      );
+      expect(ready).toHaveLength(1);
+      const sessionId = ready[0][0].payload.sessionId;
+      const send = async (
+        sequence: number,
+        text: string,
+        session = sessionId,
+      ) =>
+        act(async () => {
+          window.dispatchEvent(
+            new MessageEvent("message", {
+              source: parent,
+              origin,
+              data: {
+                type: "THEME_BUILDER_PREVIEW",
+                payload: {
+                  ...payload,
+                  sessionId: session,
+                  sequence,
+                  template: {
+                    ...payload.template,
+                    sections: {
+                      hero: { type: "hero", settings: { heading: text } },
+                    },
+                  },
+                },
+              },
+            }),
+          );
+        });
+      const root = container.querySelector<HTMLElement>("[data-theme-id]")!;
+      expect(root.dataset.themeBuilderBridge).toBe("listening");
+      expect(staging.querySelector("[data-theme-builder-bridge]")).toBeNull();
+      await send(1, "Wrong session", "old-session");
+      expect(root.dataset.themeBuilderBridge).toBe("listening");
+      await send(2, "Newest heading");
+      expect(root.dataset.themeBuilderBridge).toBe("updated");
+      expect(root.dataset.themeBuilderSequence).toBe("2");
+      expect(
+        root.querySelector('[data-theme-preview-managed="true"] h1')
+          ?.textContent,
+      ).toBe("Newest heading");
+      await send(1, "Stale heading");
+      expect(
+        root.querySelector('[data-theme-preview-managed="true"] h1')
+          ?.textContent,
+      ).toBe("Newest heading");
+      expect(
+        postMessage.mock.calls.filter(
+          ([message]) => message.type === "THEME_BUILDER_APPLIED",
+        ),
+      ).toHaveLength(1);
+    } finally {
+      unmount();
+      postMessage.mockRestore();
+      vi.unstubAllGlobals();
+      iframe.remove();
+      staging.remove();
+    }
+  });
   it("updates the product media width before the saved storefront render", () => {
     const root = document.createElement("div");
     root.innerHTML =

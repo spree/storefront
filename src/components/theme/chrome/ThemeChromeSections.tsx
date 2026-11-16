@@ -1,8 +1,9 @@
 import type { Category } from "@spree/sdk";
 import Link from "next/link";
-import { Suspense } from "react";
+import { cache, Suspense } from "react";
 import { Footer, FooterCategoryLinks } from "@/components/layout/Footer";
 import { Header, HeaderMobileMenu } from "@/components/layout/Header";
+import { MarketplaceCategoryRow } from "@/components/layout/MarketplaceCategoryRow";
 import { ThemeAnnouncementRotator } from "@/components/theme/chrome/ThemeAnnouncementRotator";
 import { ThemeBlockRenderer } from "@/components/theme/ThemeBlockRenderer";
 import { getCategoryNavigationTree } from "@/lib/data/categories";
@@ -40,15 +41,84 @@ function FooterCategoryLinksFallback() {
   );
 }
 
-async function loadRootCategories(
-  country: string,
-  locale: string,
-): Promise<Category[]> {
-  try {
-    return await getCategoryNavigationTree({ country, locale });
-  } catch {
-    return [];
+const loadRootCategories = cache(
+  async (country: string, locale: string): Promise<Category[]> => {
+    try {
+      return await getCategoryNavigationTree({ country, locale });
+    } catch {
+      return [];
+    }
+  },
+);
+
+const loadHeaderNavigation = cache(
+  async (country: string, locale: string, menuKey: string) => {
+    const [categories, menu] = await Promise.all([
+      loadRootCategories(country, locale),
+      getPublishedNavigation(menuKey),
+    ]);
+    const interests = menu?.settings?.show_for_you
+      ? await getPersonalizationInterestSummary()
+      : null;
+    return {
+      categories,
+      menu,
+      forYouCategoryIds: interests?.top_category_ids || [],
+    };
+  },
+);
+
+async function ThemeHeaderNavigation({
+  context,
+  menuSettings,
+  menuKey,
+  mobile = false,
+}: {
+  context: ThemeRenderContext;
+  menuSettings: Record<string, unknown>;
+  menuKey: string;
+  mobile?: boolean;
+}) {
+  const { categories, menu, forYouCategoryIds } = await loadHeaderNavigation(
+    context.country,
+    context.locale,
+    menuKey,
+  );
+  if (mobile) {
+    return (
+      <HeaderMobileMenu
+        rootCategories={categories}
+        basePath={context.basePath}
+        menuSettings={menuSettings}
+        cmsNavigation={menu}
+        forYouCategoryIds={forYouCategoryIds}
+      />
+    );
   }
+  return (
+    <MarketplaceCategoryRow
+      basePath={context.basePath}
+      categories={categories}
+      menuItems={menu?.items}
+      menuKey={menuKey}
+      menuSettings={menu?.settings}
+      forYouCategoryIds={forYouCategoryIds}
+    />
+  );
+}
+
+async function ThemeFooterCategoryLinks({
+  context,
+}: {
+  context: ThemeRenderContext;
+}) {
+  const categories = await loadRootCategories(context.country, context.locale);
+  return (
+    <FooterCategoryLinks
+      rootCategories={categories}
+      basePath={context.basePath}
+    />
+  );
 }
 
 export function ThemeAnnouncementSection({
@@ -174,7 +244,7 @@ export function ThemeAnnouncementSection({
   );
 }
 
-export async function ThemeHeaderSection({
+export function ThemeHeaderSection({
   section,
   context,
 }: {
@@ -213,13 +283,6 @@ export async function ThemeHeaderSection({
   const menuKey = String(
     menuSettings.menu_key || settings.menu_key || "header",
   );
-  const [rootCategories, categoryMenu] = await Promise.all([
-    loadRootCategories(context.country, context.locale),
-    getPublishedNavigation(menuKey),
-  ]);
-  const interests = categoryMenu?.settings?.show_for_you
-    ? await getPersonalizationInterestSummary()
-    : null;
   const transparent =
     context.kind === "home"
       ? boolSetting(settings, "transparent_home", false)
@@ -260,12 +323,18 @@ export async function ThemeHeaderSection({
               : undefined
           }
           menuSettings={menuSettings}
-          categoryMenuItems={categoryMenu?.items}
-          categoryMenuSettings={categoryMenu?.settings}
-          forYouCategoryIds={interests?.top_category_ids || []}
-          categoryMenuKey={menuKey}
+          categoryNavigation={
+            <Suspense
+              fallback={<div className="min-h-11" aria-hidden="true" />}
+            >
+              <ThemeHeaderNavigation
+                context={context}
+                menuSettings={menuSettings}
+                menuKey={menuKey}
+              />
+            </Suspense>
+          }
           headerSettings={settings}
-          rootCategories={rootCategories}
           transparent={transparent}
           showCountryRegionSelector={boolSetting(
             settings,
@@ -279,12 +348,11 @@ export async function ThemeHeaderSection({
           )}
           mobileNavigation={
             <Suspense fallback={<MobileNavigationFallback />}>
-              <HeaderMobileMenu
-                rootCategories={rootCategories}
-                basePath={context.basePath}
+              <ThemeHeaderNavigation
+                context={context}
                 menuSettings={menuSettings}
-                cmsNavigation={categoryMenu}
-                forYouCategoryIds={interests?.top_category_ids || []}
+                menuKey={menuKey}
+                mobile
               />
             </Suspense>
           }
@@ -294,18 +362,13 @@ export async function ThemeHeaderSection({
   );
 }
 
-export async function ThemeFooterSection({
+export function ThemeFooterSection({
   section,
   context,
 }: {
   section: ThemeSectionInstance;
   context: ThemeRenderContext;
 }) {
-  const rootCategories = await loadRootCategories(
-    context.country,
-    context.locale,
-  );
-
   return (
     <div data-theme-section-type="theme_footer">
       <Footer
@@ -314,10 +377,7 @@ export async function ThemeFooterSection({
         section={section}
         categoryLinks={
           <Suspense fallback={<FooterCategoryLinksFallback />}>
-            <FooterCategoryLinks
-              rootCategories={rootCategories}
-              basePath={context.basePath}
-            />
+            <ThemeFooterCategoryLinks context={context} />
           </Suspense>
         }
       />

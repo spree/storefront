@@ -1,0 +1,384 @@
+/* Oddkeeps defaults. Scoped once on the document so CMS variables can override them. */
+.presentation {
+  --marketplace-background: #faf8f4;
+  --oddkeeps-ink: #222a25;
+  --marketplace-canvas: var(--marketplace-background);
+  --marketplace-foreground: var(--oddkeeps-ink);
+  --marketplace-muted-foreground: #454f48;
+  --marketplace-brand: #253c31;
+  --marketplace-brand-foreground: #fffdfa;
+  --marketplace-brand-accent: #824931;
+  --marketplace-brand-accent-hover: #663521;
+  --marketplace-border: #d9d8ce;
+  --marketplace-border-subtle: #e8e5db;
+  --marketplace-control-border: #8a9288;
+  --marketplace-surface: #fffdfa;
+  --marketplace-surface-elevated: var(--marketplace-surface);
+  --marketplace-surface-subtle: #f0ebe1;
+  --marketplace-surface-warm: #e8ede5;
+  --marketplace-accent: #e1e9df;
+  --marketplace-promo: #253c31;
+  --marketplace-promo-foreground: #fffdfa;
+  --marketplace-header-surface: var(--marketplace-surface);
+  --marketplace-header-border: var(--marketplace-border-subtle);
+  --marketplace-search-surface: #f7f6f1;
+  --marketplace-search-radius: var(--marketplace-radius-md);
+  --marketplace-product-card-radius: var(--marketplace-radius-sm);
+  --marketplace-product-image-ratio: 4 / 5;
+  --marketplace-product-shadow: none;
+  --marketplace-container: var(--marketplace-page-width, 1440px);
+  --marketplace-button-radius: var(--marketplace-radius-md);
+  --background: var(--marketplace-surface);
+  --foreground: var(--marketplace-foreground);
+  --input: var(--marketplace-control-border);
+  --border: var(--marketplace-border);
+  --ring: var(--marketplace-focus);
+  --muted-foreground: var(--marketplace-muted-foreground);
+  --checkout-main: var(--marketplace-background);
+  --checkout-summary: var(--marketplace-surface-subtle);
+  --checkout-text: var(--marketplace-foreground);
+  background: var(--marketplace-background);
+  color: var(--marketplace-foreground);
+}
+
+.home {
+  position: relative;
+}
+
+.presentation :global([data-theme-product-card] [data-theme-product-title]) {
+  font-family: var(--marketplace-body-font, var(--font-sans)), sans-serif;
+  font-size: 0.9375rem;
+  font-weight: 500;
+  letter-spacing: -0.01em;
+  line-height: 1.35;
+}
+
+.presentation :global([data-theme-category-row] a) {
+  font-size: 0.8125rem;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+}
+
+.presentation :global([data-theme-section-frame]) :global([data-theme-product-card]) {
+  background: transparent;
+}
+
+.section {
+  --editorial-display: var(--marketplace-heading-font, var(--font-display));
+}
+
+.section :global([data-theme-section-content]),
+.section :global([data-list-id]) > div {
+  background-color: transparent;
+}
+
+.section :global([data-theme-section-header]) {
+  margin-block-end: 0;
+}
+
+.section :global([data-theme-section-heading]) {
+  font-family: var(--editorial-display);
+  font-size: var(--marketplace-heading2-size, clamp(1.75rem, 3.25vw, 3rem));
+  font-weight: var(--marketplace-heading2-weight, 400);
+  line-height: 1.12;
+}
+
+.section :global([data-collection-tile-title]) {
+  line-height: 1.3;
+}
+
+.feature {
+  display: grid;
+  background: var(--marketplace-surface-warm, #e4e8dd);
+  color: inherit;
+}
+
+.feature[data-editorial-campaign] {
+  overflow: hidden;
+  border-radius: var(--marketplace-radius-lg);
+}
+
+.featureImage {
+  position: relative;
+  aspect-ratio: 5 / 4;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.featureImage img {
+  object-fit: cover;
+  object-position: 74% center;
+}
+
+.featureCopy {
+  align-self: center;
+  padding: clamp(1.5rem, 4.3vw, 4.5rem);
+}
+
+.eyebrow {
+  margin-block-end: 1rem;
+  font-size: 0.67rem;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.featureCopy [data-editorial-heading] {
+  font-family: var(--editorial-display);
+  font-size: var(--marketplace-heading2-size, clamp(2.15rem, 4.4vw, 4.25rem));
+  font-weight: var(--marketplace-heading2-weight, 400);
+  letter-spacing: -0.042em;
+  line-height: 1.04;
+  text-wrap: balance;
+}
+
+.feature[data-editorial-campaign] .featureCopy [data-editorial-heading] {
+  font-size: var(--marketplace-heading1-size, clamp(2.4rem, 4.6vw, 4.5rem));
+  font-weight: var(--marketplace-heading1-weight, 400);
+}
+
+.featureBody {
+  max-width: 31ch;
+  margin-block-start: 1rem;
+  color: color-mix(in srgb, currentColor 84%, transparent);
+  line-height: 1.6;
+}
+
+.featureLink {
+  display: inline-flex;
+  min-height: 44px;
+  align-items: center;
+  gap: 1rem;
+  margin-block-start: 1.5rem;
+  padding: 0.65rem 1.12rem;
+  border: 1px solid var(--marketplace-button-primary-border, var(--marketplace-brand));
+  border-radius: var(--marketplace-button-radius);
+  background: var(--marketplace-button-primary-bg, var(--marketplace-brand));
+  color: var(--marketplace-button-primary-text, var(--marketplace-brand-foreground));
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+.featureLink:hover {
+  text-decoration: underline;
+  text-underline-offset: 0.2em;
+}
+
+.presentation :global([data-theme-brand-logo]) {
+  font-weight: 500;
+  letter-spacing: -0.055em;
+}
+
+.presentation :global([data-theme-header-actions]) :global([data-header-hover-trigger]) {
+  min-width: 44px;
+  min-height: 44px;
+}
+
+.navigation {
+  border-color: var(--marketplace-header-border);
+  background: var(--marketplace-header-surface);
+  padding-block: 0.12rem;
+}
+
+.footer :global([data-theme-footer-brand-title]),
+.footer :global([data-theme-footer-spotlight-title]) {
+  font-family: var(--font-display);
+  font-weight: 500;
+}
+
+/* —— Collection detail —— */
+.presentation :global([data-theme-collection-page] [data-theme-collection-banner] h1) {
+  font-family: var(--font-playfair), serif;
+  font-weight: 400;
+  letter-spacing: -0.03em;
+}
+
+.presentation :global([data-theme-collection-page] [data-theme-collection-banner]) {
+  border-color: var(--marketplace-border-subtle);
+}
+
+/* —— Discovery (category, collection, search) —— */
+.presentation :global(.marketplace-listing-title) {
+  font-family: var(--marketplace-heading-font, var(--font-display)), serif;
+  font-size: var(--marketplace-heading1-size, var(--marketplace-title-size));
+  font-weight: 400;
+  letter-spacing: -0.03em;
+}
+
+.presentation :global([data-marketplace-account-body] h1) {
+  font-family: var(--marketplace-heading-font, var(--font-display)), serif;
+  font-size: var(--marketplace-heading1-size, var(--marketplace-title-size));
+  font-weight: var(--marketplace-heading1-weight, 400);
+  line-height: 1.12;
+}
+
+.presentation :global([data-theme-listing-toolbar]) {
+  margin-bottom: 1.25rem;
+}
+
+.presentation :global([data-theme-filter-control-section]) :global([data-slot="input-group"]) {
+  border-radius: 0;
+  border-color: var(--marketplace-border-subtle);
+}
+
+/* —— Product detail —— */
+.presentation :global([data-theme-product-page] [data-theme-product-title]) {
+  font-family: var(--font-playfair), serif;
+  font-weight: 400;
+  letter-spacing: -0.025em;
+}
+
+.presentation :global([data-theme-product-page] [data-theme-product-purchase] button[type="submit"]) {
+  border-radius: 0;
+  background: var(--marketplace-brand);
+  font-weight: 500;
+  letter-spacing: 0.02em;
+}
+
+.presentation :global([data-theme-product-page] .pdp-reference-select) {
+  border-radius: 0;
+  border-color: var(--marketplace-border);
+  background-color: var(--marketplace-surface);
+}
+
+.presentation :global([data-theme-product-page] [data-pdp-discovery]) {
+  border-color: var(--marketplace-border-subtle);
+}
+
+/* —— Reviews —— */
+.presentation :global([data-theme-reviews-section]) {
+  border-top: 1px solid var(--marketplace-border-subtle);
+  background: var(--marketplace-background) !important;
+}
+
+.presentation :global([data-theme-reviews-section] .rounded-2xl) {
+  border-radius: 0;
+  border-color: var(--marketplace-border-subtle);
+  background: var(--marketplace-surface-warm);
+}
+
+/* —— Cart —— */
+.presentation :global([data-theme-cart-page]) {
+  --checkout-summary: var(--marketplace-surface-subtle);
+}
+
+.presentation :global([data-theme-cart-summary]) {
+  border-radius: 0;
+  border-color: var(--marketplace-border-subtle);
+  box-shadow: none;
+}
+
+.presentation :global([data-theme-cart-page] .sticky) {
+  border-radius: 0;
+  border-color: var(--marketplace-border-subtle);
+  box-shadow: none;
+}
+
+/* —— Checkout route (standalone layout) —— */
+.presentation :global([data-marketplace-checkout] header) {
+  border-color: var(--marketplace-border-subtle);
+}
+
+/* —— Seller shop —— */
+.presentation :global([data-seller-shop-header]) h1,
+.presentation :global([data-theme-seller-shop-name]) {
+  font-family: var(--font-playfair), serif;
+  font-weight: 400;
+  letter-spacing: -0.02em;
+}
+
+/* —— Homepage polish —— */
+.presentation :global([data-editorial-section] [data-theme-section-frame] article[data-theme-product-card]) {
+  border: none;
+  border-radius: 0;
+  background: transparent;
+  padding-inline: 0;
+  padding-block: 0.5rem;
+}
+
+.presentation :global([data-editorial-section] [data-theme-section-frame] article[data-theme-product-card] h3) {
+  font-family: var(--font-playfair), serif;
+  font-size: 1.125rem;
+  font-weight: 500;
+}
+
+.presentation :global([data-marketplace-search] [data-slot="input-group"]) {
+  font-family: var(--marketplace-body-font, var(--font-sans)), sans-serif;
+}
+
+.presentation :global([data-theme-product-card] [data-theme-product-price-pill]) {
+  border-radius: 0;
+  box-shadow: none;
+  background: color-mix(in srgb, var(--marketplace-surface) 92%, transparent);
+}
+
+@media (min-width: 768px) {
+  .feature[data-editorial-has-image] {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  }
+
+  .feature[data-editorial-campaign][data-editorial-has-image] {
+    grid-template-columns: minmax(0, 43fr) minmax(0, 57fr);
+  }
+
+  .feature:not([data-editorial-image-left]) .featureImage {
+    grid-column: 2;
+    grid-row: 1;
+  }
+
+  .feature:not([data-editorial-image-left]) .featureCopy {
+    grid-column: 1;
+    grid-row: 1;
+  }
+
+  .featureImage {
+    aspect-ratio: auto;
+    min-height: clamp(19rem, 32vw, 29rem);
+  }
+
+  .header :global([data-theme-header-main]) > div {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+    min-height: 78px;
+    padding-inline: var(--marketplace-gutter);
+  }
+
+  .header :global([data-theme-header-search]) {
+    grid-area: 1 / 1;
+    max-width: 22rem;
+  }
+
+  .header :global([data-theme-header-logo]) {
+    grid-area: 1 / 2;
+  }
+
+  .header :global([data-theme-header-actions]) {
+    grid-area: 1 / 3;
+  }
+}
+
+@media (768px <= width < 1200px) {
+  .splitHeroCopy {
+    container-type: inline-size;
+  }
+
+  .splitHeroCopy[data-theme-hero-content] h1 {
+    font-size: min(var(--marketplace-heading1-size, 3.75rem), clamp(1.75rem, 11cqi, 3.75rem));
+    overflow-wrap: anywhere;
+    text-wrap: balance;
+  }
+}
+
+@media (max-width: 767px) {
+  .section[data-editorial-section="hero"] > :global([data-theme-section-frame]) > :global([data-theme-section-content]) {
+    padding-top: 0 !important;
+  }
+
+  .feature[data-editorial-campaign] .featureImage {
+    aspect-ratio: 8 / 5;
+  }
+
+  .feature[data-editorial-campaign] .featureCopy {
+    padding: 1.5rem;
+  }
+}

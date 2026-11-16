@@ -34,6 +34,11 @@ export type HomeThemeContext = BaseThemeContext & {
   compositionVersion?: string;
 };
 
+export type HomeMerchandisingContext = Pick<
+  HomeThemeContext,
+  "currency" | "placements"
+>;
+
 export type ProductThemeContext = BaseThemeContext & {
   kind: "product";
   product: Product;

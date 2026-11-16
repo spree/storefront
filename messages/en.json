@@ -162,7 +162,7 @@
     "shopsYoullLove": "Shops you'll love",
     "shopsYoullLoveDescription": "Meet makers and small shops selling unique, personalized goods.",
     "viewAllShops": "View all shops",
-    "exploreShops": "Explore small shops",
+    "exploreShops": "Explore original items from local shops",
     "exploreShopsInCountry": "Explore small shops in {country}",
     "viewTopFinds": "View top finds",
     "visualSearchShop": "Browse this shop",
@@ -438,6 +438,39 @@
       "error": "We couldn't submit your report. Please try again.",
       "cancel": "Cancel",
       "submit": "Submit report"
+    },
+    "handmade": {
+      "badge": "Verified handmade",
+      "explanation": "Oddkeeps reviewed the maker declaration, the described production method, and any named production partner. This badge means that review is approved and still in effect.",
+      "standards": "Handmade standards"
+    },
+    "reportAuthenticity": {
+      "trigger": "Report an authenticity concern",
+      "title": "Report an authenticity concern",
+      "description": "Tell Oddkeeps if this listing does not match what the maker declared. Trust and Safety reviews the report.",
+      "reason": "Reason",
+      "reasonOptional": "Choose a reason (optional)",
+      "details": "What looks wrong?",
+      "email": "Your email",
+      "signInToReport": "Sign in to report an authenticity concern",
+      "success": "Thank you. We received your report.",
+      "error": "We couldn't submit your report. Please try again.",
+      "cancel": "Cancel",
+      "submit": "Submit report"
+    },
+    "handmadeStandards": {
+      "title": "Handmade standards",
+      "intro": "Oddkeeps reviews makers and listings before a product can show the verified handmade badge. Sellers cannot add that badge themselves.",
+      "makerTitle": "Maker verification",
+      "makerBody": "A maker tells Oddkeeps who they are and how they work. Oddkeeps reviews that declaration before the maker can certify products.",
+      "productTitle": "Product certification",
+      "productBody": "Each certified product has its own review. Oddkeeps looks at the maker declaration, the production method, and the public description of how the item was made. The badge appears only after that review is approved and remains in effect.",
+      "partnerTitle": "Production partners",
+      "partnerBody": "Some items are designed by the maker and produced with a named partner. Oddkeeps reviews that partner before those listings can show the badge. The public classification says when a partner took part.",
+      "resaleTitle": "Prohibited resale",
+      "resaleBody": "The verified handmade badge is not for reselling goods the seller did not make, design, or meaningfully alter. Mass-produced goods presented as handmade are not eligible.",
+      "reportTitle": "Reporting a concern",
+      "reportBody": "If a listing does not match what the maker declared, use Report an authenticity concern on the product page. The report goes to Trust and Safety. Private evidence and reviewer notes stay with Oddkeeps."
     },
     "sellerShopLocation": "{shop} · {location}",
     "askAboutItem": "Ask about this item",

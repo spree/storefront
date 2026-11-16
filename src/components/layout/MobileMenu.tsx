@@ -288,7 +288,7 @@ export function MobileMenu({
       <SheetContent
         data-theme-mobile-menu
         side="left"
-        className="flex flex-col !gap-0 !rounded-none overflow-hidden max-md:!top-16 max-md:!h-[calc(100%-4rem)] max-md:!w-full max-md:!max-w-none max-md:!border-r-0"
+        className="flex flex-col !gap-0 !rounded-none overflow-hidden max-md:!top-16 max-md:!h-[calc(100%-4rem)] max-md:!w-full max-md:!max-w-none max-md:!border-r-0 motion-reduce:animate-none!"
         showCloseButton={false}
         overlayClassName="max-md:!top-16 max-md:!bg-transparent"
         style={{ backgroundColor: menuBackgroundColor, color: menuTextColor }}
@@ -339,7 +339,7 @@ export function MobileMenu({
         <div className="relative flex-1 overflow-hidden">
           {/* Main menu panel */}
           <div
-            className={`absolute inset-0 flex flex-col bg-marketplace-surface transition-transform duration-300 ease-in-out ${
+            className={`absolute inset-0 flex flex-col bg-marketplace-surface transition-transform duration-300 ease-in-out motion-reduce:transition-none ${
               animatedIndex === 0 && currentPanel.kind === "main"
                 ? "translate-x-0"
                 : "-translate-x-full"

@@ -1,6 +1,7 @@
 import type { Seller } from "@spree/sdk";
 import Link from "next/link";
 import { ProductImage } from "@/components/ui/product-image";
+import { sellerMonogram } from "@/lib/utils/seller-display";
 
 type StarSellerAvatarProps = {
   seller: Pick<
@@ -51,7 +52,7 @@ export function StarSellerAvatar({
             className="flex size-full items-center justify-center text-base font-semibold text-[#39343c]"
             aria-hidden="true"
           >
-            {seller.name.trim().charAt(0).toUpperCase()}
+            {sellerMonogram(seller.name)}
           </span>
         )}
       </span>

@@ -1,17 +1,14 @@
 import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { defineConfig, devices } from "@playwright/test";
-import { BETA_ISOLATED_BUYER_SPECS } from "./e2e/beta-isolated-buyer.manifest";
+import {
+  BETA_BUYER_DESKTOP_SPECS,
+  BETA_BUYER_MOBILE_SPECS,
+  BETA_ISOLATED_BUYER_SPECS,
+} from "./e2e/beta-isolated-buyer.manifest";
 
 const repoRoot = process.cwd();
 const envFile = join(repoRoot, ".env.local");
-
-const buyerSpecs =
-  process.env.BETA_BUYER_INCLUDE_CHECKOUT === "1"
-    ? BETA_ISOLATED_BUYER_SPECS
-    : BETA_ISOLATED_BUYER_SPECS.filter(
-        (file) => file !== "multi-seller-checkout.spec.ts",
-      );
 
 function loadEnvLocal() {
   const env = { ...process.env };
@@ -62,6 +59,15 @@ const port = new URL(siteUrl).port || process.env.STOREFRONT_E2E_PORT || "3305";
 const baseURL = siteUrl.replace(/\/$/, "");
 const desktopOnly = process.env.BETA_BUYER_DESKTOP === "1";
 const mobileOnly = process.env.BETA_BUYER_MOBILE === "1";
+const buyerSpecs = mobileOnly
+  ? BETA_BUYER_MOBILE_SPECS
+  : desktopOnly
+    ? BETA_BUYER_DESKTOP_SPECS
+    : process.env.BETA_BUYER_INCLUDE_CHECKOUT === "1"
+      ? BETA_ISOLATED_BUYER_SPECS
+      : BETA_ISOLATED_BUYER_SPECS.filter(
+          (file) => file !== "multi-seller-checkout.spec.ts",
+        );
 const preview = process.env.E2E_PREVIEW === "1";
 
 process.env.STOREFRONT_E2E_PORT = port;

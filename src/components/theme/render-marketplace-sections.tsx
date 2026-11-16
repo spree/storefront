@@ -10,17 +10,18 @@ import Link from "next/link";
 import { getTranslations } from "next-intl/server";
 import {
   type CSSProperties,
+  cache,
   cloneElement,
   isValidElement,
   type ReactNode,
 } from "react";
 import { SponsoredDiscoveryRailSection } from "@/components/ads/SponsoredDiscoveryRailSection";
+import { FeaturedShopsShowcase } from "@/components/home/FeaturedShopsShowcase";
 import { type IconName, iconNames, SpreeIcon } from "@/components/icons";
 import { FooterContactForm } from "@/components/layout/FooterContactForm";
 import { FooterEmailSignup } from "@/components/layout/FooterEmailSignup";
 import {
   MarketplacePage,
-  MarketplaceRail,
   MarketplaceSection,
   MarketplaceSectionHeader,
 } from "@/components/marketplace";
@@ -28,9 +29,10 @@ import { FeaturedCollectionNavigation } from "@/components/products/FeaturedColl
 import { FeaturedCollectionProductCard } from "@/components/products/FeaturedCollectionProductCard";
 import { ProductCarousel } from "@/components/products/ProductCarousel";
 import { ProductGrid } from "@/components/products/ProductGrid";
-import { ShopCard } from "@/components/shops/ShopCard";
 import { CollectionTileCarousel } from "@/components/theme/CollectionTileCarousel";
 import { CountdownTimer } from "@/components/theme/CountdownTimer";
+import { EditorialFeature } from "@/components/theme/EditorialFeature";
+import styles from "@/components/theme/editorial-storefront.module.css";
 import { ImageComparison } from "@/components/theme/ImageComparison";
 import { ProductsTabs, type ProductTab } from "@/components/theme/ProductsTabs";
 import { SandboxedThemeCode } from "@/components/theme/SandboxedThemeCode";
@@ -66,6 +68,17 @@ export type MarketplaceSectionWire = {
   blockOrder?: string[];
   visibility?: { desktop?: boolean; tablet?: boolean; mobile?: boolean };
 };
+
+const listThemeRootCategories = cache(async () =>
+  getClient().categories.list(
+    { depth_eq: 0, limit: 24, expand: ["children"] },
+    await getLocaleOptions(),
+  ),
+);
+
+const listThemeCollections = cache(async () =>
+  getClient().collections.list({ limit: 24 }, await getLocaleOptions()),
+);
 
 const marketplaceSectionTypes = new Set([
   "hero",
@@ -131,6 +144,7 @@ const marketplaceSectionTypes = new Set([
   "map",
   "newsletter",
   "store_locator",
+  "handmade_standards",
 ]);
 
 export function isMarketplaceSectionType(type: string): boolean {
@@ -463,6 +477,8 @@ async function renderMarketplaceSectionContent(
       return renderRichText(section);
     case "trust":
       return renderTrust(section);
+    case "handmade_standards":
+      return renderHandmadeStandards(section, context);
     default:
       return renderAvoneSection(section, context);
   }
@@ -557,7 +573,7 @@ async function renderAvoneSection(
   if (type === "shoppable_videos")
     return renderShoppableVideos(section, context);
   if (["video_popup", "video_background"].includes(type))
-    return renderVideoSection(section);
+    return renderVideoSection(section, context.locale);
 
   if (type === "countdown_timer") return renderCountdown(section);
   if (type === "text")
@@ -601,7 +617,7 @@ async function renderAvoneSection(
       },
       context,
     );
-  if (type === "video") return renderVideoSection(section);
+  if (type === "video") return renderVideoSection(section, context.locale);
   if (["offer_bar", "offer_bar_columns", "scrolling_content"].includes(type))
     return renderMessageSection(section);
   if (type === "faqs") return renderFaqs(section);
@@ -1036,7 +1052,7 @@ async function renderShoppableVideos(
   context: ThemeRenderContext,
 ) {
   const products = await selectedProducts(section);
-  const video = renderVideoSection(section);
+  const video = renderVideoSection(section, context.locale);
   return (
     <>
       {video}
@@ -1306,7 +1322,7 @@ function renderStandaloneImage(
   );
 }
 
-function renderVideoSection(section: MarketplaceSectionWire) {
+function renderVideoSection(section: MarketplaceSectionWire, locale: string) {
   const source = safeMediaSource(string(section.settings, "video_url"));
   const poster = safeMediaSource(string(section.settings, "image_url"));
   if (!source) return null;
@@ -1324,6 +1340,11 @@ function renderVideoSection(section: MarketplaceSectionWire) {
           src={source}
           poster={poster || undefined}
           title={string(section.settings, "heading")}
+          captionsUrl={
+            safeMediaSource(string(section.settings, "video_captions_url")) ||
+            undefined
+          }
+          language={locale}
         />
         {safeLink(string(section.settings, "button_link")) &&
         string(section.settings, "button_text") ? (
@@ -1883,6 +1904,24 @@ async function renderHero(
   const image = safeMediaSource(
     string(settings, "media_1_image_url") || string(settings, "image_url"),
   );
+  if (themeSettingEnabled(settings.editorial_presentation)) {
+    return sectionFrame(
+      section,
+      <EditorialFeature
+        campaign
+        image={image}
+        imageAlt={string(settings, "image_alt")}
+        imageOnLeft={settings.image_position === "left"}
+        eyebrow={string(settings, "eyebrow")}
+        heading={string(settings, "heading")}
+        body={string(settings, "subheading")}
+        href={safeLink(string(settings, "button_link"))}
+        linkLabel={string(settings, "button_text")}
+        newTab={themeSettingEnabled(settings.open_link_in_new_tab)}
+        content={section.heroBlocks}
+      />,
+    );
+  }
   const secondImage = safeMediaSource(string(settings, "media_2_image_url"));
   const video1 = safeMediaSource(
     string(settings, "media_1_video_url") || string(settings, "video_source"),
@@ -2041,7 +2080,18 @@ async function renderHero(
           playsInline
         />
       ) : (
-        <img src={source} alt="" className={mediaClass} />
+        <Image
+          src={source}
+          alt=""
+          fill
+          sizes="(max-width: 767px) 100vw, 50vw"
+          unoptimized={!source.startsWith("/")}
+          fetchPriority={
+            key === "media-1" && context.kind === "home" ? "high" : undefined
+          }
+          loading={context.kind === "home" ? "eager" : undefined}
+          className={mediaClass}
+        />
       )
     ) : null;
     return (
@@ -2146,7 +2196,7 @@ async function renderHero(
   const heroContent = hasContent ? (
     <div
       data-theme-hero-content="true"
-      className={`relative z-20 flex flex-col ${textAlign} ${contentPosition} px-6 py-8 md:px-12`}
+      className={`relative z-20 flex min-w-0 flex-col ${textAlign} ${contentPosition} px-6 py-8 lg:px-12 ${direction === "horizontal" && (image || secondImage || video1 || video2) ? styles.splitHeroCopy : ""}`}
       style={{ gap, minHeight: contentMinHeight }}
     >
       <div className="w-full" style={{ color: themeTextColor }}>
@@ -2481,6 +2531,11 @@ function renderCollectionTile(
           <img
             src={item.image}
             alt=""
+            loading={
+              themeSettingEnabled(settings.editorial_presentation)
+                ? "lazy"
+                : undefined
+            }
             className={`${aspectRatio ? "absolute inset-0 h-full w-full object-cover" : "relative h-auto w-full object-contain"} transition-transform duration-300 ${settings.image_zoom_on_hover === true ? "group-hover:scale-105" : ""}`}
           />
         ) : (
@@ -2687,12 +2742,7 @@ async function renderTiles(
       ? placementCollections
       : source === "all"
         ? kind === "category"
-          ? (
-              await client.categories.list(
-                { depth_eq: 0, limit: 24, expand: ["children"] },
-                localeOptions,
-              )
-            ).data.map((item) => ({
+          ? (await listThemeRootCategories()).data.map((item) => ({
               id: item.id,
               name: item.name,
               permalink: item.permalink,
@@ -2700,10 +2750,7 @@ async function renderTiles(
                 typeof item.image_url === "string" ? item.image_url : null,
               children_count: item.children_count,
             }))
-          : toTiles(
-              (await client.collections.list({ limit: 24 }, localeOptions))
-                .data,
-            )
+          : toTiles((await listThemeCollections()).data)
         : [];
   const selectedItems: Tile[] =
     selected.length && source !== "all"
@@ -3019,6 +3066,7 @@ async function renderProductRail(
     namespace: "home",
   });
   const isCarousel = string(settings, "layout") !== "grid";
+  const editorial = themeSettingEnabled(settings.editorial_presentation);
   const heading = (
     <MarketplaceSectionHeader
       density={isCarousel ? "etsy" : "compact"}
@@ -3026,10 +3074,14 @@ async function renderProductRail(
       title={headingText}
       description={reasonSubtitle}
       action={
-        isCarousel ? (
+        isCarousel || editorial ? (
           <Link
             href={viewAllHref}
-            className={marketplaceEtsyOutlineButtonClass}
+            className={
+              editorial
+                ? "text-sm underline underline-offset-4"
+                : marketplaceEtsyOutlineButtonClass
+            }
           >
             {tHome("viewAll")}
           </Link>
@@ -3628,48 +3680,59 @@ async function renderShopRail(
   }
   sellers = sellers.slice(0, limit(section));
   if (!sellers.length) return null;
-  return (
-    <MarketplaceSection
-      className="py-[var(--cms-section-spacing)]"
-      data-list-id={listId(context, section, "shop-rail")}
-    >
-      <MarketplacePage>
-        <MarketplaceSectionHeader title={string(settings, "heading")} />
-        <CollectionTileCarousel
-          items={sellers.map((seller) => (
-            <ShopCard
-              key={seller.id}
-              seller={seller}
-              basePath={context.basePath}
-              locale={context.locale}
-              className="h-full w-full"
-            />
-          ))}
-          columnsDesktop={boundedSetting(settings.columns_desktop, 4, 1, 6)}
-          columnsTablet={boundedSetting(settings.columns_tablet, 2, 1, 6)}
-          columnsMobile={boundedSetting(settings.columns_mobile, 1, 1, 6)}
-          gap={boundedSetting(settings.grid_gap, 24, 0, 80)}
-          mobileGap={boundedSetting(settings.grid_gap_mobile, 16, 0, 80)}
-          loop={settings.infinite_loop === true}
-          autoRotate={settings.auto_rotate === true}
-          speed={Number(settings.autoplay_speed) || 5}
-          arrowsDesktop={settings.show_arrows_desktop !== false}
-          arrowsMobile={settings.show_arrows_mobile === true}
-          paginationDesktop={settings.show_pagination_desktop === true}
-          paginationMobile={settings.show_pagination_mobile === true}
-          arrowColor={safeColor(string(settings, "arrow_color"), "#ffffff")}
-          arrowBackground={safeColor(
-            string(settings, "arrow_background"),
-            "#222222",
-          )}
-          paginationColor={safeColor(
-            string(settings, "pagination_color"),
-            "#222222",
-          )}
-          itemLabel="shops"
-        />
-      </MarketplacePage>
-    </MarketplaceSection>
+  const cta = safeLink(string(settings, "cta_url"));
+  const ctaHref =
+    cta?.startsWith("/") &&
+    cta !== context.basePath &&
+    !cta.startsWith(`${context.basePath}/`)
+      ? `${context.basePath}${cta}`
+      : cta || `${context.basePath}/shops`;
+
+  return sectionFrame(
+    section,
+    <div data-list-id={listId(context, section, "shop-rail")}>
+      {
+        await FeaturedShopsShowcase({
+          sellers,
+          basePath: context.basePath,
+          locale: context.locale,
+          title: string(settings, "heading") || undefined,
+          ctaHref,
+          ctaLabel: string(settings, "cta_label") || undefined,
+          carousel: {
+            columnsDesktop: boundedSetting(settings.columns_desktop, 3, 1, 6),
+            columnsTablet: boundedSetting(settings.columns_tablet, 2, 1, 6),
+            columnsMobile: boundedSetting(settings.columns_mobile, 1, 1, 6),
+            gap: boundedSetting(settings.grid_gap, 18, 0, 80),
+            mobileGap: boundedSetting(settings.grid_gap_mobile, 12, 0, 80),
+            loop: themeSettingEnabled(settings.infinite_loop),
+            autoRotate: themeSettingEnabled(settings.auto_rotate),
+            speed: boundedSetting(settings.autoplay_speed, 5, 3, 30),
+            arrowsDesktop: themeSettingEnabled(
+              settings.show_arrows_desktop,
+              true,
+            ),
+            arrowsMobile: themeSettingEnabled(settings.show_arrows_mobile),
+            paginationDesktop: themeSettingEnabled(
+              settings.show_pagination_desktop,
+            ),
+            paginationMobile: themeSettingEnabled(
+              settings.show_pagination_mobile,
+            ),
+            arrowColor: safeColor(string(settings, "arrow_color"), "#ffffff"),
+            arrowBackground: safeColor(
+              string(settings, "arrow_background"),
+              "#253c31",
+            ),
+            paginationColor: safeColor(
+              string(settings, "pagination_color"),
+              "#253c31",
+            ),
+            itemLabel: "shops",
+          },
+        })
+      }
+    </div>,
   );
 }
 
@@ -3685,6 +3748,22 @@ async function renderEditorial(section: MarketplaceSectionWire) {
     settings.alignment === "center" || settings.alignment === "right"
       ? settings.alignment
       : "left";
+  if (themeSettingEnabled(settings.editorial_presentation)) {
+    return sectionFrame(
+      section,
+      <EditorialFeature
+        image={image || secondaryImage}
+        imageAlt={string(settings, "image_alt")}
+        imageOnLeft={settings.image_position === "left"}
+        eyebrow={string(settings, "eyebrow")}
+        heading={string(settings, "heading")}
+        body={string(settings, "body")}
+        href={link}
+        linkLabel={string(settings, "button_text")}
+        alignment={alignment}
+      />,
+    );
+  }
   if (section.type === "hero_banner" || section.type === "featured_banner") {
     const hero = section.type === "hero_banner";
     return sectionFrame(
@@ -3828,6 +3907,34 @@ async function renderRichText(section: MarketplaceSectionWire) {
             );
           })}
         </div>
+      </MarketplacePage>
+    </MarketplaceSection>
+  );
+}
+
+async function renderHandmadeStandards(
+  section: MarketplaceSectionWire,
+  context: ThemeRenderContext,
+) {
+  const heading = string(section.settings, "heading") || "Verified handmade";
+  const body =
+    string(section.settings, "body") ||
+    "Oddkeeps reviews maker declarations before a product can show the verified handmade badge. A theme section cannot grant that badge.";
+  return (
+    <MarketplaceSection className="py-[var(--cms-section-spacing)]">
+      <MarketplacePage>
+        <h2 className="font-display text-2xl font-semibold text-marketplace-foreground">
+          {heading}
+        </h2>
+        <p className="mt-3 max-w-2xl text-marketplace-muted-foreground">
+          {body}
+        </p>
+        <Link
+          href={`${context.basePath}/handmade-standards`}
+          className="mt-4 inline-flex text-sm font-medium text-marketplace-brand underline underline-offset-4"
+        >
+          Read the handmade standards
+        </Link>
       </MarketplacePage>
     </MarketplaceSection>
   );

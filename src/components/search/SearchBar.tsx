@@ -4,7 +4,7 @@ import { MagnifyingGlass } from "@phosphor-icons/react/dist/csr/MagnifyingGlass"
 import type { Collection, Product } from "@spree/sdk";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useId, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import {
   InputGroup,
@@ -74,6 +74,7 @@ export function SearchBar({
   const [isOpen, setIsOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [selectedIndex, setSelectedIndex] = useState(-1);
+  const suggestionsId = useId();
   const initialSuggestionsLoaded = useRef(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const rootRef = useRef<HTMLDivElement>(null);
@@ -275,6 +276,11 @@ export function SearchBar({
 
   // Handle keyboard navigation
   const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === "Escape" && isOpen) {
+      setIsOpen(false);
+      setSelectedIndex(-1);
+      return;
+    }
     if (!isOpen || suggestions.length === 0) return;
 
     switch (e.key) {
@@ -289,13 +295,10 @@ export function SearchBar({
         setSelectedIndex((prev) => (prev > 0 ? prev - 1 : -1));
         break;
       case "Enter":
-        if (selectedIndex >= 0) {
+        if (selectedIndex >= 0 && suggestions[selectedIndex]) {
           e.preventDefault();
           handleSuggestionClick(suggestions[selectedIndex], selectedIndex);
         }
-        break;
-      case "Escape":
-        setIsOpen(false);
         break;
     }
   };
@@ -346,17 +349,19 @@ export function SearchBar({
   }, [appearance, showSuggestions, syncDropdownBox]);
 
   return (
-    <div ref={rootRef} className="relative">
+    <div ref={rootRef} className="relative w-full" data-marketplace-search>
       <form onSubmit={handleSubmit}>
         <InputGroup
           style={{
-            backgroundColor: "var(--theme-search-background, white)",
+            backgroundColor:
+              "var(--theme-search-background, var(--marketplace-search-surface))",
             color: "var(--theme-search-text, inherit)",
-            borderColor: "var(--theme-search-border, currentColor)",
+            borderColor:
+              "var(--theme-search-border, var(--marketplace-control-border))",
           }}
           className={
             appearance === "etsy"
-              ? "h-12 overflow-hidden rounded-[var(--marketplace-search-radius)] border-2 border-marketplace-border bg-[var(--marketplace-search-surface)] shadow-none has-[[data-slot=input-group-control]:focus-visible]:border-marketplace-brand has-[[data-slot=input-group-control]:focus-visible]:ring-2 has-[[data-slot=input-group-control]:focus-visible]:ring-marketplace-brand/15 md:h-12"
+              ? "h-12 rounded-[var(--marketplace-search-radius)] border bg-[var(--marketplace-search-surface)] shadow-none has-[[data-slot=input-group-control]:focus-visible]:border-marketplace-brand has-[[data-slot=input-group-control]:focus-visible]:ring-2 has-[[data-slot=input-group-control]:focus-visible]:ring-marketplace-brand/25"
               : appearance === "marketplace"
                 ? "h-11 overflow-hidden rounded-lg border border-marketplace-border bg-[var(--marketplace-search-surface)] shadow-none has-[[data-slot=input-group-control]:focus-visible]:border-marketplace-brand md:h-12"
                 : undefined
@@ -383,9 +388,11 @@ export function SearchBar({
             autoFocus={autoFocus}
             role="combobox"
             aria-expanded={showSuggestions}
-            aria-controls="search-suggestions"
+            aria-controls={showSuggestions ? suggestionsId : undefined}
             aria-activedescendant={
-              selectedIndex >= 0 ? `search-option-${selectedIndex}` : undefined
+              showSuggestions && suggestions[selectedIndex]
+                ? `${suggestionsId}-option-${selectedIndex}`
+                : undefined
             }
             aria-autocomplete="list"
             aria-label={
@@ -395,23 +402,20 @@ export function SearchBar({
             }
             className={
               appearance === "etsy"
-                ? "rounded-none border-0 bg-transparent px-4 text-base shadow-none placeholder:text-[#6b626a]"
+                ? "rounded-none border-0 bg-transparent px-4 text-base shadow-none placeholder:text-marketplace-muted-foreground"
                 : appearance === "marketplace"
                   ? "rounded-none border-0 bg-transparent px-4 text-base shadow-none placeholder:text-marketplace-muted-foreground"
                   : undefined
             }
           />
-          <InputGroupAddon
-            align="inline-end"
-            className={
-              appearance === "etsy"
-                ? "m-1 size-10 rounded-full bg-marketplace-brand-accent p-0 text-white transition-colors hover:bg-marketplace-brand-accent-hover [&_svg]:size-6"
-                : appearance === "marketplace"
-                  ? "m-1 rounded-md bg-marketplace-brand px-3 text-marketplace-brand-foreground [&_svg]:size-5"
-                  : undefined
-            }
-          >
-            <MagnifyingGlass className="size-6" weight="bold" aria-hidden />
+          <InputGroupAddon align="inline-end" className="pe-0.5">
+            <button
+              type="submit"
+              aria-label={tProducts("search")}
+              className="grid size-11 place-items-center rounded-[calc(var(--marketplace-search-radius)-2px)] bg-marketplace-brand text-marketplace-brand-foreground transition-colors hover:bg-marketplace-brand/90 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-marketplace-brand"
+            >
+              <MagnifyingGlass className="size-5" weight="bold" aria-hidden />
+            </button>
           </InputGroupAddon>
         </InputGroup>
       </form>
@@ -420,7 +424,7 @@ export function SearchBar({
       {showSuggestions && appearance === "etsy" && dropdownBox
         ? createPortal(
             <div
-              id="search-suggestions"
+              id={suggestionsId}
               data-theme-search-suggestions
               role="listbox"
               className="fixed z-[60] max-h-[min(70vh,28rem)] overflow-y-auto rounded-[var(--marketplace-radius-lg)] border border-marketplace-border-subtle bg-marketplace-surface py-1.5 shadow-[var(--marketplace-shadow-overlay)]"
@@ -448,7 +452,7 @@ export function SearchBar({
                   {suggestions.map((product, index) => (
                     <li
                       key={product.id}
-                      id={`search-option-${index}`}
+                      id={`${suggestionsId}-option-${index}`}
                       role="option"
                       aria-selected={index === selectedIndex}
                       tabIndex={-1}
@@ -612,7 +616,7 @@ export function SearchBar({
                 {tProducts("searching")}
               </div>
             ) : suggestions.length > 0 || collectionSuggestions.length > 0 ? (
-              <ul id="search-suggestions" role="listbox">
+              <ul id={suggestionsId} role="listbox">
                 {collectionSuggestions.map((collection) => (
                   <li key={`collection-${collection.id}`}>
                     <button
@@ -637,7 +641,7 @@ export function SearchBar({
                 {suggestions.map((product, index) => (
                   <li
                     key={product.id}
-                    id={`search-option-${index}`}
+                    id={`${suggestionsId}-option-${index}`}
                     role="option"
                     aria-selected={index === selectedIndex}
                     tabIndex={-1}

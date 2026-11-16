@@ -8,7 +8,7 @@ export function MarketplaceGrid({
   return (
     <div
       className={cn(
-        "grid grid-cols-2 gap-x-4 gap-y-8 sm:gap-x-6 lg:grid-cols-4 lg:gap-y-10",
+        "grid grid-cols-2 gap-x-[var(--marketplace-grid-gap)] gap-y-8 md:grid-cols-3 lg:grid-cols-4 lg:gap-y-10",
         className,
       )}
       {...props}

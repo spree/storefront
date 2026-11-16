@@ -4,8 +4,11 @@ import { connection } from "next/server";
 import { cache, Suspense } from "react";
 import { Footer, FooterCategoryLinks } from "@/components/layout/Footer";
 import { Header, HeaderMobileMenu } from "@/components/layout/Header";
+import { MarketplaceBottomNav } from "@/components/layout/MarketplaceBottomNav";
 import { MarketplaceCategoryRow } from "@/components/layout/MarketplaceCategoryRow";
+import { StorefrontBottomNavGate } from "@/components/layout/StorefrontBottomNavGate";
 import { StorefrontFooterGate } from "@/components/layout/StorefrontFooterGate";
+import editorialStyles from "@/components/theme/editorial-storefront.module.css";
 import {
   buildChromeContext,
   StorefrontThemeFooter,
@@ -16,7 +19,10 @@ import { REQUEST_PATHNAME_HEADER, REQUEST_SEARCH_HEADER } from "@/i18n/routing";
 import { getCategoryNavigationTree } from "@/lib/data/categories";
 import { getPublishedNavigation } from "@/lib/data/cms-navigation";
 import { getPersonalizationInterestSummary } from "@/lib/data/storefront-personalization";
-import { themeSectionGroupsEnabled } from "@/lib/theme/flags";
+import {
+  editorialStorefrontEnabled,
+  themeSectionGroupsEnabled,
+} from "@/lib/theme/flags";
 import { getActiveTheme } from "@/lib/theme/resolver";
 
 interface StorefrontLayoutProps {
@@ -137,7 +143,7 @@ export default function StorefrontLayout(props: StorefrontLayoutProps) {
   );
 }
 
-export async function StorefrontLayoutContent({
+async function StorefrontLayoutContent({
   children,
   params,
 }: StorefrontLayoutProps) {
@@ -157,9 +163,13 @@ export async function StorefrontLayoutContent({
   const chromeContext = buildChromeContext({ basePath, country, locale });
   const useThemeHeader = Boolean(theme && chrome.header);
   const useThemeFooter = Boolean(theme && chrome.footer);
+  const editorial = editorialStorefrontEnabled();
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col overflow-x-clip">
+    <div
+      className={`flex min-h-0 flex-1 flex-col overflow-x-clip${editorial ? ` ${editorialStyles.presentation}` : ""}`}
+      data-storefront-presentation={editorial ? "editorial" : undefined}
+    >
       {useThemeHeader && theme ? (
         <StorefrontThemeHeader theme={theme} context={chromeContext} />
       ) : (
@@ -170,6 +180,7 @@ export async function StorefrontLayoutContent({
             pathname?.startsWith(`${basePath}/products/`),
           )}
           hideCategoryRow
+          editorial={editorial || undefined}
           mobileNavigation={
             <Suspense fallback={<MobileNavigationFallback />}>
               <StorefrontMobileNavigation
@@ -183,7 +194,9 @@ export async function StorefrontLayoutContent({
       )}
       {!useThemeHeader && (
         <Suspense fallback={null}>
-          <div className="hidden border-b border-[#e1e3df] bg-white py-2 md:block">
+          <div
+            className={`hidden border-b py-2 md:block ${editorial ? `${editorialStyles.navigation} border-marketplace-border-subtle` : "border-[#e1e3df] bg-white"}`}
+          >
             <StorefrontCategoryNavigation
               basePath={basePath}
               country={country}
@@ -192,26 +205,36 @@ export async function StorefrontLayoutContent({
           </div>
         </Suspense>
       )}
-      <main className="flex-1 bg-marketplace-background">{children}</main>
-      <StorefrontFooterGate>
-        {useThemeFooter && theme ? (
-          <StorefrontThemeFooter theme={theme} context={chromeContext} />
-        ) : (
-          <Footer
-            basePath={basePath}
-            locale={locale as Locale}
-            categoryLinks={
-              <Suspense fallback={<FooterCategoryLinksFallback />}>
-                <StorefrontFooterCategoryLinks
-                  basePath={basePath}
-                  country={country}
-                  locale={locale}
-                />
-              </Suspense>
-            }
-          />
-        )}
-      </StorefrontFooterGate>
+      <main className="flex-1 bg-marketplace-background pb-16 text-marketplace-foreground md:pb-0">
+        {children}
+      </main>
+      <div className="mb-[calc(4rem+1px+env(safe-area-inset-bottom))] md:mb-0">
+        <StorefrontFooterGate>
+          {useThemeFooter && theme ? (
+            <Suspense fallback={null}>
+              <StorefrontThemeFooter theme={theme} context={chromeContext} />
+            </Suspense>
+          ) : (
+            <Footer
+              basePath={basePath}
+              locale={locale as Locale}
+              editorial={editorial || undefined}
+              categoryLinks={
+                <Suspense fallback={<FooterCategoryLinksFallback />}>
+                  <StorefrontFooterCategoryLinks
+                    basePath={basePath}
+                    country={country}
+                    locale={locale}
+                  />
+                </Suspense>
+              }
+            />
+          )}
+        </StorefrontFooterGate>
+      </div>
+      <StorefrontBottomNavGate>
+        <MarketplaceBottomNav basePath={basePath} />
+      </StorefrontBottomNavGate>
     </div>
   );
 }

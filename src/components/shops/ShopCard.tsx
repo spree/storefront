@@ -110,25 +110,34 @@ export async function ShopCard({
         className,
       )}
     >
-      {cover ? (
-        <div className="relative aspect-[5/2] w-full overflow-hidden bg-marketplace-surface-warm">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
+      <div className="relative aspect-[5/2] w-full overflow-hidden bg-marketplace-surface-warm">
+        {cover ? (
+          // eslint-disable-next-line @next/next/no-img-element
           <img
             src={cover}
             alt=""
             className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.02]"
           />
-          {showFollow ? (
-            <div className="absolute right-2 top-2 z-20">
-              <FollowShopButton
-                sellerId={seller.id}
-                returnTo={shopHref}
-                iconOnly
-              />
-            </div>
-          ) : null}
-        </div>
-      ) : null}
+        ) : (
+          <div
+            className="flex h-full items-end bg-[linear-gradient(145deg,var(--marketplace-curator),var(--marketplace-surface-warm)_55%,var(--marketplace-blush))] p-4"
+            aria-hidden
+          >
+            <span className="font-display text-3xl text-marketplace-brand/80">
+              {seller.name.slice(0, 1)}
+            </span>
+          </div>
+        )}
+        {showFollow ? (
+          <div className="absolute right-2 top-2 z-20">
+            <FollowShopButton
+              sellerId={seller.id}
+              returnTo={shopHref}
+              iconOnly
+            />
+          </div>
+        ) : null}
+      </div>
 
       <div className="flex flex-1 flex-col gap-3 p-4">
         <div className="flex items-start gap-3">
@@ -179,8 +188,8 @@ export async function ShopCard({
           <Link
             href={shopHref}
             className={cn(
-              buttonVariants({ variant: "outline", size: "sm" }),
-              "w-full border-marketplace-border",
+              buttonVariants({ variant: "default", size: "sm" }),
+              "w-full",
             )}
           >
             {tHome("visitShop")}

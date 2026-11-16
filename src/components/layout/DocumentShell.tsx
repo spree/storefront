@@ -3,7 +3,9 @@ import { SpeedInsights } from "@vercel/speed-insights/next";
 import localFont from "next/font/local";
 import { Suspense } from "react";
 import { StorefrontAnalyticsConsent } from "@/components/layout/StorefrontAnalyticsConsent";
+import editorialStyles from "@/components/theme/editorial-storefront.module.css";
 import { localeDirection } from "@/i18n/locales";
+import { editorialStorefrontEnabled } from "@/lib/theme/flags";
 
 const spreeApiOrigin = (() => {
   try {
@@ -38,6 +40,7 @@ interface DocumentShellProps {
 
 /** Shared document markup for each root layout. */
 export function DocumentShell({ children, locale }: DocumentShellProps) {
+  const editorial = editorialStorefrontEnabled();
   return (
     <html lang={locale} dir={localeDirection(locale)} suppressHydrationWarning>
       {/* biome-ignore lint/style/noHeadElement: this shell is used only by Next.js root layouts */}
@@ -50,13 +53,17 @@ export function DocumentShell({ children, locale }: DocumentShellProps) {
         )}
       </head>
       <body
-        className={`${geist.variable} ${playfair.variable} antialiased min-h-screen flex flex-col bg-white text-foreground`}
+        className={`${geist.variable} ${playfair.variable} antialiased min-h-screen flex flex-col bg-marketplace-background text-marketplace-foreground ${editorial ? editorialStyles.presentation : ""}`}
         suppressHydrationWarning
       >
         <StorefrontAnalyticsConsent />
         <Suspense fallback={null}>{children}</Suspense>
-        <Analytics />
-        <SpeedInsights />
+        {process.env.VERCEL === "1" && (
+          <>
+            <Analytics />
+            <SpeedInsights />
+          </>
+        )}
       </body>
     </html>
   );

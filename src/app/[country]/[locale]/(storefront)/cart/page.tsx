@@ -330,7 +330,7 @@ export default function CartPage() {
                   </div>
                   {cart.discount_total &&
                     parseFloat(cart.discount_total) < 0 && (
-                      <div className="flex items-baseline justify-between gap-4 text-emerald-600">
+                      <div className="flex items-baseline justify-between gap-4 text-emerald-700">
                         <dt>{tc("discount")}</dt>
                         <dd className="tabular-nums">
                           {cart.display_discount_total}
@@ -369,7 +369,7 @@ export default function CartPage() {
                           {t("shippingEstimateLoading")}
                         </span>
                       ) : shippingFree ? (
-                        <span className="font-bold text-emerald-600">
+                        <span className="font-bold text-emerald-800">
                           {t("shippingFree")}
                         </span>
                       ) : shippingAmount ? (
@@ -408,13 +408,13 @@ export default function CartPage() {
 
                   {cart.gift_card &&
                   parseFloat(cart.gift_card_total ?? "0") > 0 ? (
-                    <div className="flex items-baseline justify-between gap-4 text-emerald-600">
+                    <div className="flex items-baseline justify-between gap-4 text-emerald-800">
                       <dt>{t("giftCard")}</dt>
                       <dd>-{cart.display_gift_card_total}</dd>
                     </div>
                   ) : cart.store_credit_total &&
                     parseFloat(cart.store_credit_total) > 0 ? (
-                    <div className="flex items-baseline justify-between gap-4 text-emerald-600">
+                    <div className="flex items-baseline justify-between gap-4 text-emerald-800">
                       <dt>{t("storeCredit")}</dt>
                       <dd>-{cart.display_store_credit_total}</dd>
                     </div>
@@ -539,7 +539,7 @@ export default function CartPage() {
                     className="inline-flex items-center gap-2 text-sm font-bold text-marketplace-foreground hover:underline"
                   >
                     <Tag
-                      className="size-4 fill-emerald-600 text-emerald-600"
+                      className="size-4 fill-emerald-800 text-emerald-800"
                       aria-hidden
                     />
                     {t("applyCouponCode")}

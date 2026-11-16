@@ -1,6 +1,7 @@
 import type { Product } from "@spree/sdk";
 import Link from "next/link";
 import { getTranslations } from "next-intl/server";
+import type { ComponentProps } from "react";
 import {
   MarketplacePage,
   MarketplaceSection,
@@ -37,6 +38,7 @@ interface ProductRecommendationRailProps {
   personalized?: boolean;
   experiment?: string | null;
   suppressRelevanceReason?: boolean;
+  surface?: ComponentProps<typeof MarketplaceSection>["surface"];
 }
 
 export async function ProductRecommendationRail({
@@ -57,6 +59,7 @@ export async function ProductRecommendationRail({
   personalized = false,
   experiment,
   suppressRelevanceReason = false,
+  surface,
 }: ProductRecommendationRailProps) {
   const recommendationClick =
     analyticsSurface != null
@@ -73,6 +76,7 @@ export async function ProductRecommendationRail({
 
   return (
     <MarketplaceSection
+      surface={surface}
       className={variant === "etsy" ? "py-4 sm:py-5" : undefined}
       data-home-rail={homeRailKey}
     >
@@ -94,7 +98,7 @@ export async function ProductRecommendationRail({
           className={variant === "etsy" ? "mb-3" : undefined}
           action={
             moreHref ? (
-              <Button variant="link" asChild>
+              <Button variant="link" className="text-marketplace-brand" asChild>
                 <Link href={moreHref}>{moreLabel ?? `${t("viewAll")} →`}</Link>
               </Button>
             ) : null

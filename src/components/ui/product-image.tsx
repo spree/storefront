@@ -4,6 +4,7 @@ import type { LucideIcon } from "lucide-react";
 import { ImageIcon } from "lucide-react";
 import Image, { type ImageProps } from "next/image";
 import { useState } from "react";
+import { cn } from "@/lib/utils";
 
 type ProductImageProps = Omit<ImageProps, "src"> & {
   src: string | null | undefined;
@@ -27,7 +28,22 @@ export function ProductImage({
     return (
       <div
         aria-hidden={label ? undefined : true}
-        className="absolute inset-0 flex size-full items-center justify-center bg-marketplace-surface-subtle text-marketplace-brand"
+        className={cn(
+          "pointer-events-none items-center justify-center bg-marketplace-surface-subtle text-marketplace-brand",
+          rest.fill
+            ? "absolute inset-0 flex size-full"
+            : "inline-flex shrink-0",
+          rest.className,
+        )}
+        style={
+          rest.fill
+            ? rest.style
+            : {
+                width: rest.width ? Number(rest.width) : undefined,
+                height: rest.height ? Number(rest.height) : undefined,
+                ...rest.style,
+              }
+        }
       >
         {label ? <span className="sr-only">{label}</span> : null}
         <Icon className={iconClassName} aria-hidden />
