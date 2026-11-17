@@ -33,12 +33,14 @@ vi.mock("@/lib/data/credit-cards", () => ({
 }));
 
 const createCheckoutPaymentSession = vi.fn();
+const updateCheckoutPaymentSession = vi.fn();
 vi.mock("@/lib/data/payment", () => ({
   createCheckoutPaymentSession: (...args: unknown[]) =>
     createCheckoutPaymentSession(...args),
   createDirectPayment: vi.fn(),
   getCheckoutPaymentSession: vi.fn(),
-  updateCheckoutPaymentSession: vi.fn(),
+  updateCheckoutPaymentSession: (...args: unknown[]) =>
+    updateCheckoutPaymentSession(...args),
 }));
 
 import { PaymentSection } from "@/components/checkout/PaymentSection";
@@ -87,10 +89,10 @@ const savedCard = {
   gateway_payment_profile_id: "pm_saved_card",
 } as unknown as CreditCard;
 
-function renderSection() {
-  return render(
+function section(currentCart: Cart = cart) {
+  return (
     <PaymentSection
-      cart={cart}
+      cart={currentCart}
       countries={[]}
       isAuthenticated
       fetchStates={vi.fn().mockResolvedValue([])}
@@ -98,14 +100,36 @@ function renderSection() {
       onPaymentComplete={vi.fn().mockResolvedValue(true)}
       processing={false}
       setProcessing={vi.fn()}
-    />,
+    />
   );
 }
+
+function renderSection() {
+  return render(section());
+}
+
+const stripeSession = {
+  success: true,
+  session: {
+    id: "ps_stripe",
+    external_id: "pi_1",
+    external_data: { client_secret: "stripe_secret" },
+  },
+};
+const adyenSession = {
+  success: true,
+  session: {
+    id: "ps_adyen",
+    external_id: "adyen_session",
+    external_data: { session_data: "adyen_data" },
+  },
+};
 
 describe("PaymentSection", () => {
   beforeEach(() => {
     getCreditCards.mockReset();
     createCheckoutPaymentSession.mockReset();
+    updateCheckoutPaymentSession.mockReset();
   });
 
   it("keeps the Adyen session when a slow Stripe saved-card load resolves after switching to Adyen", async () => {
@@ -154,6 +178,49 @@ describe("PaymentSection", () => {
       adyenMethod.id,
       expect.any(Object),
     );
+    expect(screen.getByTestId("adyen-form")).toHaveTextContent("adyen_session");
+  });
+
+  it("keeps the Adyen session when a Stripe total update resolves after switching to Adyen", async () => {
+    getCreditCards.mockResolvedValue({ data: [] });
+    createCheckoutPaymentSession.mockImplementation(
+      async (_cartId: string, methodId: string) =>
+        methodId === adyenMethod.id ? adyenSession : stripeSession,
+    );
+    const update = deferred<typeof stripeSession>();
+    updateCheckoutPaymentSession.mockReturnValue(update.promise);
+
+    const { rerender } = renderSection();
+
+    fireEvent.click(screen.getByRole("radio", { name: "Stripe" }));
+    expect(await screen.findByTestId("stripe-form")).toHaveTextContent(
+      "stripe_secret",
+    );
+
+    // Cart total changes: the Stripe session is updated in place.
+    rerender(section({ ...cart, total: "12.00", amount_due: "12.00" } as Cart));
+    expect(updateCheckoutPaymentSession).toHaveBeenCalledWith(
+      cart.id,
+      "ps_stripe",
+      { amount: "12.00" },
+    );
+
+    // Switch to Adyen before the Stripe update resolves.
+    fireEvent.click(screen.getByRole("radio", { name: "Adyen" }));
+    expect(await screen.findByTestId("adyen-form")).toHaveTextContent(
+      "adyen_session",
+    );
+
+    await act(async () => {
+      update.resolve({
+        ...stripeSession,
+        session: {
+          ...stripeSession.session,
+          external_data: { client_secret: "stripe_secret_2" },
+        },
+      });
+    });
+
     expect(screen.getByTestId("adyen-form")).toHaveTextContent("adyen_session");
   });
 });

@@ -333,6 +333,10 @@ export function PaymentSection({
     }
 
     const method = selectedMethod;
+    // Tie this sync to the session it updates: if the shopper switches
+    // methods (or another session request starts) before it resolves, its
+    // result must not overwrite the newer session.
+    const syncRequestId = sessionRequestIdRef.current;
     const sync = async () => {
       try {
         const result = await updateCheckoutPaymentSession(
@@ -340,6 +344,7 @@ export function PaymentSection({
           paymentSessionId,
           { amount: cart.total ?? undefined },
         );
+        if (syncRequestId !== sessionRequestIdRef.current) return;
         if (!result.success || !result.session) {
           throw new Error("session update rejected");
         }
@@ -358,6 +363,7 @@ export function PaymentSection({
           setPaymentSessionId(result.session.id);
         }
       } catch {
+        if (syncRequestId !== sessionRequestIdRef.current) return;
         // Gateway doesn't support in-place updates — fall back to the
         // destructive recreate rather than paying against a stale amount.
         createSession(selectedCardRef.current, method);
