@@ -87,6 +87,10 @@ const savedCard = {
   id: "card_1",
   default: true,
   gateway_payment_profile_id: "pm_saved_card",
+  brand: "visa",
+  last_digits: "4242",
+  month: 12,
+  year: 2030,
 } as unknown as CreditCard;
 
 function section(currentCart: Cart = cart) {
@@ -222,5 +226,40 @@ describe("PaymentSection", () => {
     });
 
     expect(screen.getByTestId("adyen-form")).toHaveTextContent("adyen_session");
+  });
+
+  it("keeps the saved default card when the cart total changes while cards load", async () => {
+    const cards = deferred<{ data: CreditCard[] }>();
+    getCreditCards.mockReturnValue(cards.promise);
+    createCheckoutPaymentSession.mockResolvedValue(stripeSession);
+    updateCheckoutPaymentSession.mockResolvedValue(stripeSession);
+
+    const { rerender } = renderSection();
+    fireEvent.click(screen.getByRole("radio", { name: "Stripe" }));
+
+    // Shipping update lands while saved cards are still loading.
+    const updatedCart = {
+      ...cart,
+      total: "12.00",
+      amount_due: "12.00",
+    } as Cart;
+    rerender(section(updatedCart));
+
+    await act(async () => {
+      cards.resolve({ data: [savedCard] });
+    });
+
+    expect(createCheckoutPaymentSession).toHaveBeenCalledTimes(1);
+    expect(createCheckoutPaymentSession).toHaveBeenCalledWith(
+      cart.id,
+      stripeMethod.id,
+      expect.objectContaining({ stripe_payment_method_id: "pm_saved_card" }),
+    );
+    // The new total is synced into the session once it exists.
+    expect(updateCheckoutPaymentSession).toHaveBeenCalledWith(
+      cart.id,
+      "ps_stripe",
+      { amount: "12.00" },
+    );
   });
 });

@@ -174,6 +174,9 @@ export function PaymentSection({
     | null
   >(null);
   const initRef = useRef(false);
+  // Request ID of a saved-card init still loading cards (pending only while
+  // it matches sessionRequestIdRef; any newer session request supersedes it).
+  const pendingInitRequestIdRef = useRef<number | null>(null);
   const sessionRequestIdRef = useRef(0);
   const completionInFlightRef = useRef(false);
 
@@ -262,6 +265,7 @@ export function PaymentSection({
   const initSessionWithSavedCards = useCallback(
     async (method: PaymentMethod) => {
       const initRequestId = ++sessionRequestIdRef.current;
+      pendingInitRequestIdRef.current = initRequestId;
       // Record the total now so the total-sync effect doesn't start a
       // competing session while saved cards are still loading.
       lastTotalRef.current = cart.total;
@@ -323,6 +327,11 @@ export function PaymentSection({
   useEffect(() => {
     if (!initRef.current) return;
     if (!isSessionBased || !selectedMethod) return;
+    // Saved-card init is still loading and will create the session against
+    // the server's current total; recreating it now would supersede the init
+    // and drop the saved default card. Once the session exists this effect
+    // re-runs (paymentSessionId changes) and syncs any difference in place.
+    if (pendingInitRequestIdRef.current === sessionRequestIdRef.current) return;
     if (lastTotalRef.current === cart.total) return;
 
     lastTotalRef.current = cart.total;
