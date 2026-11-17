@@ -173,6 +173,10 @@ The storefront ships in your project — restyle with Tailwind CSS, swap compone
 
 The storefront can render and send its own order, shipment, and account emails with [react-email](https://react.email) and [Resend](https://resend.com), driven by Spree webhooks. See the [Transactional Emails guide](https://spreecommerce.org/docs/developer/storefront/nextjs/emails).
 
+## Catalog Cache Revalidation
+
+Product lists, search and product pages are cached for up to 10 minutes. To show catalog changes at once (for example, a product taken down, archived or set to draft leaving search), subscribe the webhook endpoint (`/api/webhooks/spree`, signed with `SPREE_WEBHOOK_SECRET`) to these events: `product.created`, `product.updated`, `product.deleted`, `product.activated`, `product.approved`, `product.drafted` and `product.archived`. You can use the same endpoint as for emails.
+
 ## Deployment
 
 Deploy to Vercel, Docker (a multi-stage `Dockerfile` ships at the repo root), or any Node.js host. See the [Deployment guide](https://spreecommerce.org/docs/developer/storefront/nextjs/deployment).
