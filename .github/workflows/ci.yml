@@ -121,7 +121,16 @@ jobs:
           # in other steps never see the secret.
           STRIPE_SECRET_KEY: ${{ secrets.STRIPE_SECRET_KEY }}
           STRIPE_PUBLISHABLE_KEY: ${{ vars.STRIPE_PUBLISHABLE_KEY }}
-        run: ./scripts/e2e/bootstrap-spree.sh
+        # Dependabot and fork runs still receive repository variables but not
+        # repository secrets, so they arrive with a publishable key and no
+        # secret key. Drop the lone publishable key so the bootstrap takes its
+        # "no Stripe" path (and the Stripe specs skip) instead of rejecting a
+        # half-configured pair.
+        run: |
+          if [ -z "$STRIPE_SECRET_KEY" ]; then
+            unset STRIPE_PUBLISHABLE_KEY
+          fi
+          ./scripts/e2e/bootstrap-spree.sh
       - name: Run Playwright tests
         run: pnpm run test:e2e
       - name: Dump Spree logs on failure
