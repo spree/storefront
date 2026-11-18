@@ -621,9 +621,15 @@ function CheckoutPageContentInner({
     // email.
     const accountEmail = isAuthenticated ? user?.email : undefined;
     if (accountEmail && cart.email !== accountEmail) {
-      const emailResult = await updateOrderAddresses(cart.id, {
-        email: accountEmail,
-      });
+      let emailResult: Awaited<ReturnType<typeof updateOrderAddresses>>;
+      try {
+        emailResult = await updateOrderAddresses(cart.id, {
+          email: accountEmail,
+        });
+      } catch {
+        setError(t("generalError"));
+        return;
+      }
       if (!emailResult.success) {
         setError(emailResult.error || t("generalError"));
         return;

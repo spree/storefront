@@ -100,6 +100,47 @@ describe("AddressSection email for a signed-in customer", () => {
     });
   });
 
+  it("saves the saved address the buyer picked before the account email loaded", async () => {
+    const addressA = {
+      id: "addr_a",
+      first_name: "Ada",
+      last_name: "Lovelace",
+      address1: "1 Main St",
+      city: "New York",
+      postal_code: "10001",
+      country_iso: "US",
+      is_default_shipping: true,
+    };
+    const addressB = {
+      ...addressA,
+      id: "addr_b",
+      address1: "2 Side St",
+      postal_code: "10002",
+      is_default_shipping: false,
+    };
+    const { rerenderWith, onAutoSave } = renderSection({
+      user: null,
+      selectableAddresses: [
+        addressA,
+        addressB,
+      ] as unknown as React.ComponentProps<
+        typeof AddressSection
+      >["selectableAddresses"],
+    });
+
+    // Nothing is saved while there is no email to send.
+    fireEvent.click(screen.getAllByRole("radio")[1]);
+    expect(onAutoSave).not.toHaveBeenCalled();
+
+    rerenderWith({ user });
+
+    await waitFor(() => expect(onAutoSave).toHaveBeenCalledTimes(1));
+    expect(onAutoSave.mock.calls[0][0]).toEqual({
+      email: "buyer@example.com",
+      shipping_address_id: "addr_b",
+    });
+  });
+
   it("lets a guest type their own email", () => {
     renderSection({ isAuthenticated: false });
     const input = screen.getByPlaceholderText("emailAddress");

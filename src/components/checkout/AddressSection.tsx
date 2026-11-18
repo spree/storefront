@@ -215,18 +215,23 @@ export function AddressSection({
     [onAutoSave],
   );
 
-  // Auto-save the pre-selected saved address on mount
+  // Auto-save the pre-selected saved address once an email is available. The
+  // account email can arrive after the buyer has already picked another saved
+  // address (or started typing one), so save what the form holds now rather
+  // than the initial default.
   useEffect(() => {
     if (mountAutoSaveFiredRef.current) return;
     if (!initialSavedAddress || !email.trim()) return;
 
     mountAutoSaveFiredRef.current = true;
-    tryAutoSave(
-      email,
-      addressToFormData(initialSavedAddress),
-      initialSavedAddress.id,
-    );
-  }, [initialSavedAddress, email, tryAutoSave]);
+    tryAutoSave(email, shipAddress, selectedSavedAddressId);
+  }, [
+    initialSavedAddress,
+    email,
+    shipAddress,
+    selectedSavedAddressId,
+    tryAutoSave,
+  ]);
 
   const updateShipAddress = (field: keyof AddressFormData, value: string) => {
     setShipAddress((prev) => updateAddressField(prev, field, value));
