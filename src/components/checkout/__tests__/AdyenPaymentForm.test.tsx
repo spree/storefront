@@ -8,6 +8,9 @@ const register = vi.fn();
 const mount = vi.fn();
 const unmount = vi.fn();
 const dropinOptions = vi.fn();
+const dropinSubmit = vi.fn();
+const showValidation = vi.fn();
+const dropinState = { activePaymentMethod: {} as unknown, isValid: true };
 
 vi.mock("@adyen/adyen-web", () => {
   const AdyenCheckout = Object.assign(
@@ -23,7 +26,14 @@ vi.mock("@adyen/adyen-web", () => {
     }
     mount = mount;
     unmount = unmount;
-    submit = vi.fn();
+    submit = dropinSubmit;
+    showValidation = showValidation;
+    get activePaymentMethod() {
+      return dropinState.activePaymentMethod;
+    }
+    get isValid() {
+      return dropinState.isValid;
+    }
   }
   const component = (name: string) => ({ name });
   return {
@@ -57,6 +67,7 @@ function renderForm(
       onReady={vi.fn()}
       onBeforeSubmit={vi.fn().mockResolvedValue("Ab02b4c0!PAYABLE")}
       onApproved={vi.fn()}
+      onFailed={vi.fn()}
       {...props}
     />,
   );
@@ -70,6 +81,8 @@ async function adyenOptions() {
 describe("AdyenPaymentForm", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    dropinState.activePaymentMethod = {};
+    dropinState.isValid = true;
   });
 
   it("loads Drop-in with the session's client key and environment", async () => {
@@ -163,5 +176,68 @@ describe("AdyenPaymentForm", () => {
 
     expect(onApproved).toHaveBeenCalledWith("RESULT");
     expect(unmount).not.toHaveBeenCalled();
+  });
+
+  describe("an attempt that ends without a payment", () => {
+    async function loadedForm(onFailed = vi.fn()) {
+      let handle: { confirmPayment: (url: string) => Promise<unknown> } | null =
+        null;
+      renderForm({
+        onFailed,
+        onReady: (h) => {
+          handle = h;
+        },
+      });
+      const options = await adyenOptions();
+      await waitFor(() => expect(handle).not.toBeNull());
+      return { options, handle: handle!, onFailed };
+    }
+
+    it("shows Drop-in's field errors without submitting, and reports it", async () => {
+      const { handle, onFailed } = await loadedForm();
+      dropinState.isValid = false;
+
+      await expect(
+        handle.confirmPayment("https://shop/return"),
+      ).resolves.toEqual({});
+
+      expect(showValidation).toHaveBeenCalled();
+      expect(dropinSubmit).not.toHaveBeenCalled();
+      expect(onFailed).toHaveBeenCalledTimes(1);
+    });
+
+    it("submits valid fields without reporting a failure", async () => {
+      const { handle, onFailed } = await loadedForm();
+
+      await handle.confirmPayment("https://shop/return");
+
+      expect(dropinSubmit).toHaveBeenCalled();
+      expect(onFailed).not.toHaveBeenCalled();
+    });
+
+    it("reports a refused payment, a failed one and an error", async () => {
+      const { options, onFailed } = await loadedForm();
+
+      options.onPaymentCompleted({ resultCode: "Refused" });
+      options.onPaymentFailed({ resultCode: "Error" });
+      options.onError(new Error("Wallet sheet closed"));
+
+      expect(onFailed).toHaveBeenCalledTimes(3);
+    });
+
+    it("reports Spree refusing to make the session payable", async () => {
+      const onFailed = vi.fn();
+      renderForm({
+        onFailed,
+        onBeforeSubmit: vi.fn().mockRejectedValue(new Error("Amount changed")),
+      });
+      const options = await adyenOptions();
+      const actions = { resolve: vi.fn(), reject: vi.fn() };
+
+      options.beforeSubmit({}, {}, actions);
+
+      await waitFor(() => expect(onFailed).toHaveBeenCalledTimes(1));
+      expect(actions.reject).toHaveBeenCalled();
+    });
   });
 });

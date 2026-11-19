@@ -621,6 +621,13 @@ export function PaymentSection({
     [handleGatewayApproved, replaceSessionIfUnpayable],
   );
 
+  // Pay Now waits for Drop-in, which shows its own message when an attempt
+  // ends without a payment; the button only needs releasing.
+  const handleAdyenFailed = useCallback(
+    () => setProcessing(false),
+    [setProcessing],
+  );
+
   // ── Submit ──────────────────────────────────────────────────────────
   useImperativeHandle(
     ref,
@@ -1079,6 +1086,7 @@ export function PaymentSection({
                                     onReady={handleGatewayReady}
                                     onBeforeSubmit={handleAdyenBeforeSubmit}
                                     onApproved={handleAdyenApproved}
+                                    onFailed={handleAdyenFailed}
                                   />
                                 </div>
                               ) : null;

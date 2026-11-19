@@ -13,16 +13,22 @@ vi.mock("@/components/checkout/StripePaymentForm", () => ({
   confirmWithSavedCard: vi.fn(),
 }));
 
-const adyenForm: { onBeforeSubmit?: () => Promise<string> } = {};
+const adyenForm: {
+  onBeforeSubmit?: () => Promise<string>;
+  onFailed?: () => void;
+} = {};
 vi.mock("@/components/checkout/AdyenPaymentForm", () => ({
   AdyenPaymentForm: ({
     sessionId,
     onBeforeSubmit,
+    onFailed,
   }: {
     sessionId: string;
     onBeforeSubmit: () => Promise<string>;
+    onFailed: () => void;
   }) => {
     adyenForm.onBeforeSubmit = onBeforeSubmit;
+    adyenForm.onFailed = onFailed;
     return <div data-testid="adyen-form">{sessionId}</div>;
   },
 }));
@@ -101,7 +107,7 @@ const savedCard = {
   year: 2030,
 } as unknown as CreditCard;
 
-function section(currentCart: Cart = cart) {
+function section(currentCart: Cart = cart, setProcessing = vi.fn()) {
   return (
     <PaymentSection
       cart={currentCart}
@@ -111,7 +117,7 @@ function section(currentCart: Cart = cart) {
       onUpdateBillingAddress={vi.fn().mockResolvedValue(true)}
       onPaymentComplete={vi.fn().mockResolvedValue(true)}
       processing={false}
-      setProcessing={vi.fn()}
+      setProcessing={setProcessing}
     />
   );
 }
@@ -234,6 +240,20 @@ describe("PaymentSection", () => {
     });
 
     expect(screen.getByTestId("adyen-form")).toHaveTextContent("adyen_session");
+  });
+
+  it("releases Pay Now when Drop-in ends an attempt without a payment", async () => {
+    getCreditCards.mockResolvedValue({ data: [] });
+    createCheckoutPaymentSession.mockResolvedValue(adyenSession);
+    const setProcessing = vi.fn();
+
+    render(section(cart, setProcessing));
+    fireEvent.click(screen.getByRole("radio", { name: "Adyen" }));
+    await screen.findByTestId("adyen-form");
+
+    act(() => adyenForm.onFailed?.());
+
+    expect(setProcessing).toHaveBeenLastCalledWith(false);
   });
 
   describe("an Adyen submit during an amount update", () => {

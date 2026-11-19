@@ -45,6 +45,11 @@ interface AdyenPaymentFormProps {
   onBeforeSubmit: () => Promise<string>;
   /** Called when Adyen sessions flow completes payment successfully. */
   onApproved: (sessionResult: string) => void;
+  /**
+   * Called when an attempt ends without a payment (invalid fields, a refusal,
+   * an error), since Drop-in reports these only inside the form.
+   */
+  onFailed: () => void;
 }
 
 export function AdyenPaymentForm({
@@ -56,6 +61,7 @@ export function AdyenPaymentForm({
   onReady,
   onBeforeSubmit,
   onApproved,
+  onFailed,
 }: AdyenPaymentFormProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const dropinRef = useRef<any>(null);
@@ -68,6 +74,8 @@ export function AdyenPaymentForm({
   onApprovedRef.current = onApproved;
   const onBeforeSubmitRef = useRef(onBeforeSubmit);
   onBeforeSubmitRef.current = onBeforeSubmit;
+  const onFailedRef = useRef(onFailed);
+  onFailedRef.current = onFailed;
   const latestAmountRef = useRef(amount);
   latestAmountRef.current = amount;
   // What Drop-in shows; a session starts at the amount it was created for.
@@ -86,6 +94,12 @@ export function AdyenPaymentForm({
       }
       if (!dropinRef.current) {
         return { error: "Adyen has not loaded yet" };
+      }
+      // Invalid fields get Drop-in's own messages and no callback at all.
+      if (dropinRef.current.activePaymentMethod && !dropinRef.current.isValid) {
+        dropinRef.current.showValidation();
+        onFailedRef.current();
+        return {};
       }
       try {
         dropinRef.current.submit();
@@ -171,6 +185,7 @@ export function AdyenPaymentForm({
                     : "The payment could not be started. Please try again.",
                 );
                 actions.reject();
+                onFailedRef.current();
               });
           },
           onPaymentCompleted: (result: any) => {
@@ -188,15 +203,18 @@ export function AdyenPaymentForm({
             } else {
               const msg = `Payment ${result.resultCode?.toLowerCase() || "failed"}. Please try again.`;
               setError(msg);
+              onFailedRef.current();
             }
           },
           onPaymentFailed: (result: any) => {
             const msg = `Payment ${result?.resultCode?.toLowerCase() || "failed"}. Please try again.`;
             setError(msg);
+            onFailedRef.current();
           },
           onError: (err: any) => {
             const msg = err?.message || "An error occurred during payment.";
             setError(msg);
+            onFailedRef.current();
           },
         } as any);
 
