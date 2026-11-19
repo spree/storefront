@@ -622,10 +622,15 @@ export function PaymentSection({
   );
 
   // Pay Now waits for Drop-in, which shows its own message when an attempt
-  // ends without a payment; the button only needs releasing.
+  // ends without a payment. After a refusal or error the session may be over
+  // (expired, or refused by Spree), so it is replaced when it can no longer be
+  // paid; invalid fields leave it as it is.
   const handleAdyenFailed = useCallback(
-    () => setProcessing(false),
-    [setProcessing],
+    (reason: "invalid" | "ended") => {
+      setProcessing(false);
+      if (reason === "ended") void replaceSessionIfUnpayable();
+    },
+    [setProcessing, replaceSessionIfUnpayable],
   );
 
   // ── Submit ──────────────────────────────────────────────────────────

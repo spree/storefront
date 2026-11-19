@@ -203,7 +203,7 @@ describe("AdyenPaymentForm", () => {
 
       expect(showValidation).toHaveBeenCalled();
       expect(dropinSubmit).not.toHaveBeenCalled();
-      expect(onFailed).toHaveBeenCalledTimes(1);
+      expect(onFailed).toHaveBeenCalledExactlyOnceWith("invalid");
     });
 
     it("submits valid fields without reporting a failure", async () => {
@@ -223,6 +223,7 @@ describe("AdyenPaymentForm", () => {
       options.onError(new Error("Wallet sheet closed"));
 
       expect(onFailed).toHaveBeenCalledTimes(3);
+      expect(onFailed.mock.calls).toEqual([["ended"], ["ended"], ["ended"]]);
     });
 
     it("reports Spree refusing to make the session payable", async () => {
@@ -236,7 +237,9 @@ describe("AdyenPaymentForm", () => {
 
       options.beforeSubmit({}, {}, actions);
 
-      await waitFor(() => expect(onFailed).toHaveBeenCalledTimes(1));
+      await waitFor(() =>
+        expect(onFailed).toHaveBeenCalledExactlyOnceWith("ended"),
+      );
       expect(actions.reject).toHaveBeenCalled();
     });
   });

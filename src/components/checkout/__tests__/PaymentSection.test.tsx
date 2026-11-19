@@ -15,7 +15,7 @@ vi.mock("@/components/checkout/StripePaymentForm", () => ({
 
 const adyenForm: {
   onBeforeSubmit?: () => Promise<string>;
-  onFailed?: () => void;
+  onFailed?: (reason: "invalid" | "ended") => void;
 } = {};
 vi.mock("@/components/checkout/AdyenPaymentForm", () => ({
   AdyenPaymentForm: ({
@@ -25,7 +25,7 @@ vi.mock("@/components/checkout/AdyenPaymentForm", () => ({
   }: {
     sessionId: string;
     onBeforeSubmit: () => Promise<string>;
-    onFailed: () => void;
+    onFailed: (reason: "invalid" | "ended") => void;
   }) => {
     adyenForm.onBeforeSubmit = onBeforeSubmit;
     adyenForm.onFailed = onFailed;
@@ -48,11 +48,13 @@ vi.mock("@/lib/data/credit-cards", () => ({
 
 const createCheckoutPaymentSession = vi.fn();
 const updateCheckoutPaymentSession = vi.fn();
+const getCheckoutPaymentSession = vi.fn();
 vi.mock("@/lib/data/payment", () => ({
   createCheckoutPaymentSession: (...args: unknown[]) =>
     createCheckoutPaymentSession(...args),
   createDirectPayment: vi.fn(),
-  getCheckoutPaymentSession: vi.fn(),
+  getCheckoutPaymentSession: (...args: unknown[]) =>
+    getCheckoutPaymentSession(...args),
   updateCheckoutPaymentSession: (...args: unknown[]) =>
     updateCheckoutPaymentSession(...args),
 }));
@@ -148,6 +150,7 @@ describe("PaymentSection", () => {
     getCreditCards.mockReset();
     createCheckoutPaymentSession.mockReset();
     updateCheckoutPaymentSession.mockReset();
+    getCheckoutPaymentSession.mockReset();
   });
 
   it("keeps the Adyen session when a slow Stripe saved-card load resolves after switching to Adyen", async () => {
@@ -242,18 +245,48 @@ describe("PaymentSection", () => {
     expect(screen.getByTestId("adyen-form")).toHaveTextContent("adyen_session");
   });
 
-  it("releases Pay Now when Drop-in ends an attempt without a payment", async () => {
-    getCreditCards.mockResolvedValue({ data: [] });
-    createCheckoutPaymentSession.mockResolvedValue(adyenSession);
-    const setProcessing = vi.fn();
+  describe("an Adyen attempt that ends without a payment", () => {
+    async function endAttempt(reason: "invalid" | "ended", status?: string) {
+      getCreditCards.mockResolvedValue({ data: [] });
+      createCheckoutPaymentSession.mockResolvedValue(adyenSession);
+      getCheckoutPaymentSession.mockResolvedValue({
+        success: true,
+        session: { ...adyenSession.session, status },
+      });
+      const setProcessing = vi.fn();
 
-    render(section(cart, setProcessing));
-    fireEvent.click(screen.getByRole("radio", { name: "Adyen" }));
-    await screen.findByTestId("adyen-form");
+      render(section(cart, setProcessing));
+      fireEvent.click(screen.getByRole("radio", { name: "Adyen" }));
+      await screen.findByTestId("adyen-form");
 
-    act(() => adyenForm.onFailed?.());
+      await act(async () => adyenForm.onFailed?.(reason));
+      return setProcessing;
+    }
 
-    expect(setProcessing).toHaveBeenLastCalledWith(false);
+    it("releases Pay Now after invalid fields, without reading the session", async () => {
+      const setProcessing = await endAttempt("invalid");
+
+      expect(setProcessing).toHaveBeenLastCalledWith(false);
+      expect(getCheckoutPaymentSession).not.toHaveBeenCalled();
+    });
+
+    it("opens a new session when the ended one can no longer be paid", async () => {
+      const setProcessing = await endAttempt("ended", "expired");
+
+      expect(setProcessing).toHaveBeenCalledWith(false);
+      expect(getCheckoutPaymentSession).toHaveBeenCalledWith(
+        cart.id,
+        "ps_adyen",
+      );
+      expect(createCheckoutPaymentSession).toHaveBeenCalledTimes(2);
+    });
+
+    it("keeps a session that can still be paid", async () => {
+      await endAttempt("ended", "pending");
+
+      expect(getCheckoutPaymentSession).toHaveBeenCalled();
+      expect(createCheckoutPaymentSession).toHaveBeenCalledTimes(1);
+    });
   });
 
   describe("an Adyen submit during an amount update", () => {
