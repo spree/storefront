@@ -94,11 +94,15 @@ function cardsForMethod(
   cards: SpreeCreditCard[],
   method: PaymentMethod | undefined,
 ): SpreeCreditCard[] {
-  return cards.filter(
-    (card) =>
-      card.gateway_payment_profile_id &&
-      (!card.payment_method_id || card.payment_method_id === method?.id),
-  );
+  return cards.filter((card) => {
+    // Typed here because SDK releases before the field was added omit it.
+    const methodId = (
+      card as SpreeCreditCard & { payment_method_id?: string | null }
+    ).payment_method_id;
+    return (
+      card.gateway_payment_profile_id && (!methodId || methodId === method?.id)
+    );
+  });
 }
 
 export function PaymentSection({
