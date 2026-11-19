@@ -177,6 +177,8 @@ export function PaymentSection({
 
   // ── Saved cards (session-based gateways only) ───────────────────────
   const [savedCards, setSavedCards] = useState<SpreeCreditCard[]>([]);
+  // Every saved card, once loaded; each method shows only its own.
+  const allCardsRef = useRef<SpreeCreditCard[] | null>(null);
   // null = "add new payment method", string = gateway_payment_profile_id
   const [selectedCardId, setSelectedCardId] = useState<string | null>(null);
 
@@ -301,20 +303,17 @@ export function PaymentSection({
       gatewayHandleRef.current = null;
 
       let cardId: string | null = null;
+      let methodCards: SpreeCreditCard[] = [];
 
       if (isAuthenticated) {
         try {
           const result = await getCreditCards();
-          const gatewayCards = cardsForMethod(result.data, method);
-          setSavedCards(gatewayCards);
-
-          if (initRequestId !== sessionRequestIdRef.current) return;
-
-          if (gatewayCards.length > 0) {
+          allCardsRef.current = result.data;
+          methodCards = cardsForMethod(result.data, method);
+          if (methodCards.length > 0) {
             const defaultCard =
-              gatewayCards.find((c) => c.default) || gatewayCards[0];
+              methodCards.find((c) => c.default) || methodCards[0];
             cardId = defaultCard.gateway_payment_profile_id;
-            setSelectedCardId(cardId);
           }
         } catch {
           // Cards failed to load — proceed without saved cards
@@ -324,6 +323,10 @@ export function PaymentSection({
       // Superseded by a newer method selection or session request.
       if (initRequestId !== sessionRequestIdRef.current) return;
 
+      // This method's cards only: another method's would be charged where
+      // they were never saved.
+      setSavedCards(methodCards);
+      setSelectedCardId(cardId);
       selectedCardRef.current = cardId;
       await createSession(cardId, method);
     },
@@ -440,13 +443,23 @@ export function PaymentSection({
     if (!newMethod) return;
 
     if (newMethod.session_required) {
-      // Switching to a session-based method: create session
-      // Reset saved cards state — will be re-initialized
       if (!initRef.current) {
         initRef.current = true;
         initSessionWithSavedCards(newMethod);
       } else {
-        createSession(selectedCardRef.current, newMethod);
+        // The new method's own cards from the list already loaded; another
+        // method's would be charged where they were never saved.
+        const methodCards = cardsForMethod(
+          allCardsRef.current ?? [],
+          newMethod,
+        );
+        const defaultCard =
+          methodCards.find((c) => c.default) || methodCards[0];
+        const cardId = defaultCard?.gateway_payment_profile_id ?? null;
+        setSavedCards(methodCards);
+        setSelectedCardId(cardId);
+        selectedCardRef.current = cardId;
+        createSession(cardId, newMethod);
       }
     } else {
       // Switching to a direct method: invalidate any in-flight session
@@ -536,8 +549,11 @@ export function PaymentSection({
   const replaceSessionIfUnpayable = useCallback(async () => {
     if (!paymentSessionId || !selectedMethod) return undefined;
 
+    const requestId = sessionRequestIdRef.current;
     const current = await getCheckoutPaymentSession(cart.id, paymentSessionId);
     const status = current.success ? current.session?.status : undefined;
+    // The shopper may have picked another method meanwhile; its session stands.
+    if (requestId !== sessionRequestIdRef.current) return status;
     if (status === "failed" || status === "canceled" || status === "expired") {
       createSession(selectedCardRef.current, selectedMethod);
     }
