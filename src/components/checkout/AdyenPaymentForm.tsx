@@ -68,7 +68,10 @@ export function AdyenPaymentForm({
   onApprovedRef.current = onApproved;
   const onBeforeSubmitRef = useRef(onBeforeSubmit);
   onBeforeSubmitRef.current = onBeforeSubmit;
-  const initialAmountRef = useRef(amount);
+  const latestAmountRef = useRef(amount);
+  latestAmountRef.current = amount;
+  // What Drop-in shows; a session starts at the amount it was created for.
+  const shownAmountRef = useRef(amount);
 
   const resolvedClientKey = clientKey || adyenClientKey;
   const resolvedEnvironment = resolveAdyenEnvironment(environment);
@@ -103,19 +106,29 @@ export function AdyenPaymentForm({
   const fetchUpdates = useCallback(async () => {}, []);
 
   // A new amount before the session is payable: Spree took it already, and
-  // Drop-in shows it through its own update.
+  // Drop-in shows it in place, since reinitializing remounts the components
+  // and wipes card details already typed. A change while Drop-in is still
+  // loading is shown once it has loaded.
+  const showLatestAmount = useCallback(() => {
+    const checkout = checkoutRef.current;
+    const next = latestAmountRef.current;
+    if (!checkout || next?.value == null || !next.currency) return;
+    const shown = shownAmountRef.current;
+    if (shown?.value === next.value && shown?.currency === next.currency)
+      return;
+    shownAmountRef.current = { value: next.value, currency: next.currency };
+    checkout.update?.(
+      { amount: shownAmountRef.current },
+      { shouldReinitializeCheckout: false },
+    );
+  }, []);
+
   const amountValue = amount?.value;
   const amountCurrency = amount?.currency;
+  // biome-ignore lint/correctness/useExhaustiveDependencies: the amount is what re-runs this; the callback reads it from a ref
   useEffect(() => {
-    if (!checkoutRef.current || amountValue == null || !amountCurrency) return;
-    const initial = initialAmountRef.current;
-    if (initial?.value === amountValue && initial?.currency === amountCurrency)
-      return;
-    initialAmountRef.current = { value: amountValue, currency: amountCurrency };
-    checkoutRef.current.update?.({
-      amount: { value: amountValue, currency: amountCurrency },
-    });
-  }, [amountValue, amountCurrency]);
+    showLatestAmount();
+  }, [amountValue, amountCurrency, showLatestAmount]);
 
   useEffect(() => {
     if (initializedRef.current) return;
@@ -142,9 +155,6 @@ export function AdyenPaymentForm({
             id: sessionId,
             sessionData,
           },
-          ...(initialAmountRef.current && {
-            amount: initialAmountRef.current,
-          }),
           showPayButton: false,
           // The session opens unpayable; Spree makes it payable at the amount
           // it holds, and only then may Drop-in pay it.
@@ -192,6 +202,7 @@ export function AdyenPaymentForm({
 
         if (cancelled || !containerRef.current) return;
         checkoutRef.current = checkout;
+        showLatestAmount();
 
         const dropin = new Dropin(checkout, {
           openFirstPaymentMethod: true,
@@ -239,6 +250,7 @@ export function AdyenPaymentForm({
     onReady,
     confirmPayment,
     fetchUpdates,
+    showLatestAmount,
   ]);
 
   return (
