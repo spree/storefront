@@ -59,6 +59,21 @@ export function addressToFormData(
   };
 }
 
+/**
+ * Whether a saved address is the one the form holds, field for field. Only an
+ * identical address may stand in for what the buyer typed: one that differs
+ * just in its apartment line or company is a different address.
+ */
+export function isSameAddress(
+  saved: Parameters<typeof addressToFormData>[0],
+  current: AddressFormData,
+): boolean {
+  const savedData = addressToFormData(saved);
+  return (Object.keys(savedData) as (keyof AddressFormData)[]).every(
+    (field) => savedData[field] === current[field],
+  );
+}
+
 export function formDataToAddress(data: AddressFormData): AddressCreateParams {
   return {
     first_name: data.first_name,
