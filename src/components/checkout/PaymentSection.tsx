@@ -584,10 +584,14 @@ export function PaymentSection({
   const handleAdyenBeforeSubmit = useCallback(async (): Promise<string> => {
     if (!paymentSessionId) throw new Error(t("failedToInitPayment"));
     // A submit overtaking an amount update would pay the old figure, so it
-    // waits and stops if the update failed or a newer session replaced it.
-    const amountSync = amountSyncRef.current;
-    if (amountSync && !(await amountSync)) {
-      throw new Error(t("failedToInitPayment"));
+    // waits for every update in flight, including one started meanwhile, and
+    // stops if one failed or a newer session replaced it.
+    for (
+      let amountSync = amountSyncRef.current;
+      amountSync;
+      amountSync = amountSyncRef.current
+    ) {
+      if (!(await amountSync)) throw new Error(t("failedToInitPayment"));
     }
 
     const result = await updateCheckoutPaymentSession(

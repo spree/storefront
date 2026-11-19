@@ -291,6 +291,52 @@ describe("PaymentSection", () => {
       );
     });
 
+    it("waits for an amount update started after it and refuses if that one failed", async () => {
+      getCreditCards.mockResolvedValue({ data: [] });
+      createCheckoutPaymentSession.mockResolvedValue(adyenSession);
+      const updates: Record<string, ReturnType<typeof deferred<unknown>>> = {
+        "12.00": deferred(),
+        "14.00": deferred(),
+      };
+      updateCheckoutPaymentSession.mockImplementation(
+        async (_cartId: string, _sessionId: string, params: object) =>
+          "amount" in params
+            ? updates[(params as { amount: string }).amount].promise
+            : adyenSession,
+      );
+
+      const { rerender } = renderSection();
+      fireEvent.click(screen.getByRole("radio", { name: "Adyen" }));
+      await screen.findByTestId("adyen-form");
+      rerender(
+        section({ ...cart, total: "12.00", amount_due: "12.00" } as Cart),
+      );
+      const submitted = adyenForm.onBeforeSubmit?.();
+      submitted?.catch(() => undefined);
+      rerender(
+        section({ ...cart, total: "14.00", amount_due: "14.00" } as Cart),
+      );
+
+      await act(async () => {
+        updates["12.00"].resolve(adyenSession);
+      });
+      expect(updateCheckoutPaymentSession).not.toHaveBeenCalledWith(
+        cart.id,
+        "ps_adyen",
+        { external_data: { submit: true } },
+      );
+
+      await act(async () => {
+        updates["14.00"].resolve({ success: false });
+      });
+      await expect(submitted).rejects.toThrow("failedToInitPayment");
+      expect(updateCheckoutPaymentSession).not.toHaveBeenCalledWith(
+        cart.id,
+        "ps_adyen",
+        { external_data: { submit: true } },
+      );
+    });
+
     it("refuses to pay when the amount update failed", async () => {
       await expect(submitDuringUpdate({ success: false })).rejects.toThrow(
         "failedToInitPayment",
