@@ -13,10 +13,18 @@ vi.mock("@/components/checkout/StripePaymentForm", () => ({
   confirmWithSavedCard: vi.fn(),
 }));
 
+const adyenForm: { onBeforeSubmit?: () => Promise<string> } = {};
 vi.mock("@/components/checkout/AdyenPaymentForm", () => ({
-  AdyenPaymentForm: ({ sessionId }: { sessionId: string }) => (
-    <div data-testid="adyen-form">{sessionId}</div>
-  ),
+  AdyenPaymentForm: ({
+    sessionId,
+    onBeforeSubmit,
+  }: {
+    sessionId: string;
+    onBeforeSubmit: () => Promise<string>;
+  }) => {
+    adyenForm.onBeforeSubmit = onBeforeSubmit;
+    return <div data-testid="adyen-form">{sessionId}</div>;
+  },
 }));
 
 vi.mock("@/components/checkout/PayPalPaymentForm", () => ({
@@ -226,6 +234,73 @@ describe("PaymentSection", () => {
     });
 
     expect(screen.getByTestId("adyen-form")).toHaveTextContent("adyen_session");
+  });
+
+  describe("an Adyen submit during an amount update", () => {
+    async function submitDuringUpdate(outcome: {
+      success: boolean;
+      session?: unknown;
+    }) {
+      getCreditCards.mockResolvedValue({ data: [] });
+      createCheckoutPaymentSession.mockResolvedValue(adyenSession);
+      const amountUpdate = deferred<typeof outcome>();
+      updateCheckoutPaymentSession.mockImplementation(
+        async (_cartId: string, _sessionId: string, params: object) =>
+          "amount" in params
+            ? amountUpdate.promise
+            : {
+                success: true,
+                session: {
+                  ...adyenSession.session,
+                  external_data: { session_data: "payable_data" },
+                },
+              },
+      );
+
+      const { rerender } = renderSection();
+      fireEvent.click(screen.getByRole("radio", { name: "Adyen" }));
+      await screen.findByTestId("adyen-form");
+      rerender(
+        section({ ...cart, total: "12.00", amount_due: "12.00" } as Cart),
+      );
+
+      const submitted = adyenForm.onBeforeSubmit?.();
+      submitted?.catch(() => undefined);
+      // The submit waits: nothing is made payable before the update answers.
+      await act(async () => {});
+      expect(updateCheckoutPaymentSession).not.toHaveBeenCalledWith(
+        cart.id,
+        "ps_adyen",
+        { external_data: { submit: true } },
+      );
+
+      await act(async () => {
+        amountUpdate.resolve(outcome);
+      });
+      return submitted;
+    }
+
+    it("makes the session payable once the new amount is held", async () => {
+      await expect(submitDuringUpdate(adyenSession)).resolves.toBe(
+        "payable_data",
+      );
+      expect(updateCheckoutPaymentSession).toHaveBeenCalledWith(
+        cart.id,
+        "ps_adyen",
+        { external_data: { submit: true } },
+      );
+    });
+
+    it("refuses to pay when the amount update failed", async () => {
+      await expect(submitDuringUpdate({ success: false })).rejects.toThrow(
+        "failedToInitPayment",
+      );
+      expect(updateCheckoutPaymentSession).not.toHaveBeenCalledWith(
+        cart.id,
+        "ps_adyen",
+        { external_data: { submit: true } },
+      );
+    });
   });
 
   it("keeps the saved default card when the cart total changes while cards load", async () => {

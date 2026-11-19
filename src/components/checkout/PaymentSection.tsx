@@ -282,6 +282,9 @@ export function PaymentSection({
   // Track the cart total so we can recreate the session when it changes
   const lastTotalRef = useRef<string | null>(null);
   const selectedCardRef = useRef<string | null>(null);
+  // The amount update in flight, resolving true once the current session
+  // holds the new amount; a payment submit waits for it.
+  const amountSyncRef = useRef<Promise<boolean> | null>(null);
 
   // Load saved cards (if authenticated), then create the first session for
   // `method`. Loading cards is async, so the shopper may pick another method
@@ -371,7 +374,7 @@ export function PaymentSection({
     // methods (or another session request starts) before it resolves, its
     // result must not overwrite the newer session.
     const syncRequestId = sessionRequestIdRef.current;
-    const sync = async () => {
+    const sync = async (): Promise<boolean> => {
       try {
         // What a new session defaults to: the total less store credit.
         const result = await updateCheckoutPaymentSession(
@@ -379,7 +382,7 @@ export function PaymentSection({
           paymentSessionId,
           { amount: rawAmountDue ?? undefined },
         );
-        if (syncRequestId !== sessionRequestIdRef.current) return;
+        if (syncRequestId !== sessionRequestIdRef.current) return false;
         if (!result.success || !result.session) {
           throw new Error("session update rejected");
         }
@@ -397,14 +400,19 @@ export function PaymentSection({
           );
           setPaymentSessionId(result.session.id);
         }
+        return true;
       } catch {
-        if (syncRequestId !== sessionRequestIdRef.current) return;
+        if (syncRequestId !== sessionRequestIdRef.current) return false;
         // Gateway doesn't support in-place updates — fall back to the
         // destructive recreate rather than paying against a stale amount.
         createSession(selectedCardRef.current, method);
+        return false;
       }
     };
-    sync();
+    const syncing = sync().finally(() => {
+      if (amountSyncRef.current === syncing) amountSyncRef.current = null;
+    });
+    amountSyncRef.current = syncing;
   }, [
     cart.id,
     rawAmountDue,
@@ -575,6 +583,12 @@ export function PaymentSection({
   // holds, and Drop-in pays it with the session data that comes back.
   const handleAdyenBeforeSubmit = useCallback(async (): Promise<string> => {
     if (!paymentSessionId) throw new Error(t("failedToInitPayment"));
+    // A submit overtaking an amount update would pay the old figure, so it
+    // waits and stops if the update failed or a newer session replaced it.
+    const amountSync = amountSyncRef.current;
+    if (amountSync && !(await amountSync)) {
+      throw new Error(t("failedToInitPayment"));
+    }
 
     const result = await updateCheckoutPaymentSession(
       cart.id,
