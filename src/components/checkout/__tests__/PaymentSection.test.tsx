@@ -13,10 +13,24 @@ vi.mock("@/components/checkout/StripePaymentForm", () => ({
   confirmWithSavedCard: vi.fn(),
 }));
 
+const adyenForm: {
+  onBeforeSubmit?: () => Promise<string>;
+  onFailed?: (reason: "invalid" | "ended") => void;
+} = {};
 vi.mock("@/components/checkout/AdyenPaymentForm", () => ({
-  AdyenPaymentForm: ({ sessionId }: { sessionId: string }) => (
-    <div data-testid="adyen-form">{sessionId}</div>
-  ),
+  AdyenPaymentForm: ({
+    sessionId,
+    onBeforeSubmit,
+    onFailed,
+  }: {
+    sessionId: string;
+    onBeforeSubmit: () => Promise<string>;
+    onFailed: (reason: "invalid" | "ended") => void;
+  }) => {
+    adyenForm.onBeforeSubmit = onBeforeSubmit;
+    adyenForm.onFailed = onFailed;
+    return <div data-testid="adyen-form">{sessionId}</div>;
+  },
 }));
 
 vi.mock("@/components/checkout/PayPalPaymentForm", () => ({
@@ -34,11 +48,13 @@ vi.mock("@/lib/data/credit-cards", () => ({
 
 const createCheckoutPaymentSession = vi.fn();
 const updateCheckoutPaymentSession = vi.fn();
+const getCheckoutPaymentSession = vi.fn();
 vi.mock("@/lib/data/payment", () => ({
   createCheckoutPaymentSession: (...args: unknown[]) =>
     createCheckoutPaymentSession(...args),
   createDirectPayment: vi.fn(),
-  getCheckoutPaymentSession: vi.fn(),
+  getCheckoutPaymentSession: (...args: unknown[]) =>
+    getCheckoutPaymentSession(...args),
   updateCheckoutPaymentSession: (...args: unknown[]) =>
     updateCheckoutPaymentSession(...args),
 }));
@@ -93,7 +109,7 @@ const savedCard = {
   year: 2030,
 } as unknown as CreditCard;
 
-function section(currentCart: Cart = cart) {
+function section(currentCart: Cart = cart, setProcessing = vi.fn()) {
   return (
     <PaymentSection
       cart={currentCart}
@@ -103,7 +119,7 @@ function section(currentCart: Cart = cart) {
       onUpdateBillingAddress={vi.fn().mockResolvedValue(true)}
       onPaymentComplete={vi.fn().mockResolvedValue(true)}
       processing={false}
-      setProcessing={vi.fn()}
+      setProcessing={setProcessing}
     />
   );
 }
@@ -134,6 +150,7 @@ describe("PaymentSection", () => {
     getCreditCards.mockReset();
     createCheckoutPaymentSession.mockReset();
     updateCheckoutPaymentSession.mockReset();
+    getCheckoutPaymentSession.mockReset();
   });
 
   it("keeps the Adyen session when a slow Stripe saved-card load resolves after switching to Adyen", async () => {
@@ -226,6 +243,163 @@ describe("PaymentSection", () => {
     });
 
     expect(screen.getByTestId("adyen-form")).toHaveTextContent("adyen_session");
+  });
+
+  describe("an Adyen attempt that ends without a payment", () => {
+    async function endAttempt(reason: "invalid" | "ended", status?: string) {
+      getCreditCards.mockResolvedValue({ data: [] });
+      createCheckoutPaymentSession.mockResolvedValue(adyenSession);
+      getCheckoutPaymentSession.mockResolvedValue({
+        success: true,
+        session: { ...adyenSession.session, status },
+      });
+      const setProcessing = vi.fn();
+
+      render(section(cart, setProcessing));
+      fireEvent.click(screen.getByRole("radio", { name: "Adyen" }));
+      await screen.findByTestId("adyen-form");
+
+      await act(async () => adyenForm.onFailed?.(reason));
+      return setProcessing;
+    }
+
+    it("releases Pay Now after invalid fields, without reading the session", async () => {
+      const setProcessing = await endAttempt("invalid");
+
+      expect(setProcessing).toHaveBeenLastCalledWith(false);
+      expect(getCheckoutPaymentSession).not.toHaveBeenCalled();
+    });
+
+    it("opens a new session when the ended one can no longer be paid", async () => {
+      const setProcessing = await endAttempt("ended", "expired");
+
+      expect(setProcessing).toHaveBeenCalledWith(false);
+      expect(getCheckoutPaymentSession).toHaveBeenCalledWith(
+        cart.id,
+        "ps_adyen",
+      );
+      expect(createCheckoutPaymentSession).toHaveBeenCalledTimes(2);
+    });
+
+    it("keeps a session that can still be paid", async () => {
+      await endAttempt("ended", "pending");
+
+      expect(getCheckoutPaymentSession).toHaveBeenCalled();
+      expect(createCheckoutPaymentSession).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  describe("an Adyen submit during an amount update", () => {
+    async function submitDuringUpdate(outcome: {
+      success: boolean;
+      session?: unknown;
+    }) {
+      getCreditCards.mockResolvedValue({ data: [] });
+      createCheckoutPaymentSession.mockResolvedValue(adyenSession);
+      const amountUpdate = deferred<typeof outcome>();
+      updateCheckoutPaymentSession.mockImplementation(
+        async (_cartId: string, _sessionId: string, params: object) =>
+          "amount" in params
+            ? amountUpdate.promise
+            : {
+                success: true,
+                session: {
+                  ...adyenSession.session,
+                  external_data: { session_data: "payable_data" },
+                },
+              },
+      );
+
+      const { rerender } = renderSection();
+      fireEvent.click(screen.getByRole("radio", { name: "Adyen" }));
+      await screen.findByTestId("adyen-form");
+      rerender(
+        section({ ...cart, total: "12.00", amount_due: "12.00" } as Cart),
+      );
+
+      const submitted = adyenForm.onBeforeSubmit?.();
+      submitted?.catch(() => undefined);
+      // The submit waits: nothing is made payable before the update answers.
+      await act(async () => {});
+      expect(updateCheckoutPaymentSession).not.toHaveBeenCalledWith(
+        cart.id,
+        "ps_adyen",
+        { external_data: { submit: true } },
+      );
+
+      await act(async () => {
+        amountUpdate.resolve(outcome);
+      });
+      return submitted;
+    }
+
+    it("makes the session payable once the new amount is held", async () => {
+      await expect(submitDuringUpdate(adyenSession)).resolves.toBe(
+        "payable_data",
+      );
+      expect(updateCheckoutPaymentSession).toHaveBeenCalledWith(
+        cart.id,
+        "ps_adyen",
+        { external_data: { submit: true } },
+      );
+    });
+
+    it("waits for an amount update started after it and refuses if that one failed", async () => {
+      getCreditCards.mockResolvedValue({ data: [] });
+      createCheckoutPaymentSession.mockResolvedValue(adyenSession);
+      const updates: Record<string, ReturnType<typeof deferred<unknown>>> = {
+        "12.00": deferred(),
+        "14.00": deferred(),
+      };
+      updateCheckoutPaymentSession.mockImplementation(
+        async (_cartId: string, _sessionId: string, params: object) =>
+          "amount" in params
+            ? updates[(params as { amount: string }).amount].promise
+            : adyenSession,
+      );
+
+      const { rerender } = renderSection();
+      fireEvent.click(screen.getByRole("radio", { name: "Adyen" }));
+      await screen.findByTestId("adyen-form");
+      rerender(
+        section({ ...cart, total: "12.00", amount_due: "12.00" } as Cart),
+      );
+      const submitted = adyenForm.onBeforeSubmit?.();
+      submitted?.catch(() => undefined);
+      rerender(
+        section({ ...cart, total: "14.00", amount_due: "14.00" } as Cart),
+      );
+
+      await act(async () => {
+        updates["12.00"].resolve(adyenSession);
+      });
+      expect(updateCheckoutPaymentSession).not.toHaveBeenCalledWith(
+        cart.id,
+        "ps_adyen",
+        { external_data: { submit: true } },
+      );
+
+      await act(async () => {
+        updates["14.00"].resolve({ success: false });
+      });
+      await expect(submitted).rejects.toThrow("failedToInitPayment");
+      expect(updateCheckoutPaymentSession).not.toHaveBeenCalledWith(
+        cart.id,
+        "ps_adyen",
+        { external_data: { submit: true } },
+      );
+    });
+
+    it("refuses to pay when the amount update failed", async () => {
+      await expect(submitDuringUpdate({ success: false })).rejects.toThrow(
+        "failedToInitPayment",
+      );
+      expect(updateCheckoutPaymentSession).not.toHaveBeenCalledWith(
+        cart.id,
+        "ps_adyen",
+        { external_data: { submit: true } },
+      );
+    });
   });
 
   it("keeps the saved default card when the cart total changes while cards load", async () => {

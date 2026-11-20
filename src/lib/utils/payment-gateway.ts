@@ -66,15 +66,43 @@ export function resolveGatewayId(paymentMethodType: string): GatewayId {
  */
 export const paypalClientId = process.env.NEXT_PUBLIC_PAYPAL_CLIENT_ID ?? "";
 
-/** Whether Adyen is configured (client key present in env). */
-export const isAdyenConfigured = Boolean(
-  process.env.NEXT_PUBLIC_ADYEN_CLIENT_KEY,
-);
-
-/** Adyen client key for Drop-in initialization. */
+/**
+ * Adyen client key for backends that do not send one with the payment
+ * session. The session's own client key is preferred: it belongs to the
+ * credential that created the session.
+ */
 export const adyenClientKey = process.env.NEXT_PUBLIC_ADYEN_CLIENT_KEY ?? "";
 
-/** Adyen environment: "test" or "live". */
-const rawAdyenEnv = process.env.NEXT_PUBLIC_ADYEN_ENVIRONMENT;
-export const adyenEnvironment: "test" | "live" =
-  rawAdyenEnv === "live" ? "live" : "test";
+/**
+ * The session's Adyen environment, falling back to the configured one for
+ * backends that do not send it.
+ */
+export function resolveAdyenEnvironment(value: unknown): "test" | "live" {
+  if (value === "live" || value === "test") return value;
+  return process.env.NEXT_PUBLIC_ADYEN_ENVIRONMENT === "live" ? "live" : "test";
+}
+
+// Adyen's currency table is leading over ISO 4217 for these
+// (docs.adyen.com/development-resources/currency-codes).
+const ADYEN_DECIMALS: Record<string, number> = {
+  CLP: 2,
+  ISK: 2,
+  CVE: 0,
+  IDR: 0,
+};
+
+/**
+ * An amount in the minor units Adyen counts for the currency, for Drop-in's
+ * displayed total.
+ */
+export function adyenMinorUnits(amount: string, currency: string): number {
+  const code = currency.toUpperCase();
+  const decimals =
+    ADYEN_DECIMALS[code] ??
+    new Intl.NumberFormat("en", {
+      style: "currency",
+      currency: code,
+    }).resolvedOptions().maximumFractionDigits ??
+    2;
+  return Math.round(Number(amount) * 10 ** decimals);
+}

@@ -7,6 +7,7 @@ const mockClient = {
     complete: vi.fn(),
     paymentSessions: {
       create: vi.fn(),
+      update: vi.fn(),
       get: vi.fn(),
       complete: vi.fn(),
     },
@@ -44,6 +45,7 @@ import {
   confirmPaymentAndCompleteCart,
   createCheckoutPaymentSession,
   getCheckoutPaymentSession,
+  updateCheckoutPaymentSession,
 } from "@/lib/data/payment";
 
 const mockSession = {
@@ -108,6 +110,56 @@ describe("payment server actions", () => {
         success: false,
         error: "Gateway unavailable",
       });
+    });
+  });
+
+  describe("updateCheckoutPaymentSession", () => {
+    it("patches the session with the amount due", async () => {
+      mockClient.carts.paymentSessions.update.mockResolvedValue(mockSession);
+
+      const result = await updateCheckoutPaymentSession("cart-1", "session-1", {
+        amount: "40.00",
+      });
+
+      expect(mockClient.carts.paymentSessions.update).toHaveBeenCalledWith(
+        "cart-1",
+        "session-1",
+        { amount: "40.00" },
+        { spreeToken: "order-token-123", token: undefined },
+      );
+      expect(result).toEqual({ success: true, session: mockSession });
+    });
+
+    it("submits with no amount, so the backend makes the session payable at the amount it holds", async () => {
+      const payable = {
+        ...mockSession,
+        external_data: { session_data: "Ab02b4c0!PAYABLE", payable: true },
+      };
+      mockClient.carts.paymentSessions.update.mockResolvedValue(payable);
+
+      const result = await updateCheckoutPaymentSession("cart-1", "session-1", {
+        external_data: { submit: true },
+      });
+
+      expect(mockClient.carts.paymentSessions.update).toHaveBeenCalledWith(
+        "cart-1",
+        "session-1",
+        { external_data: { submit: true } },
+        { spreeToken: "order-token-123", token: undefined },
+      );
+      expect(result).toEqual({ success: true, session: payable });
+    });
+
+    it("returns error when the backend refuses a new amount", async () => {
+      mockClient.carts.paymentSessions.update.mockRejectedValue(
+        new Error("This Adyen session can no longer change its amount."),
+      );
+
+      const result = await updateCheckoutPaymentSession("cart-1", "session-1", {
+        amount: "41.00",
+      });
+
+      expect(result).toMatchObject({ success: false });
     });
   });
 
