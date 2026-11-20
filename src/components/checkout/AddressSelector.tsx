@@ -3,11 +3,11 @@
 import type { Address, Country, State } from "@spree/sdk";
 import { MapPin } from "lucide-react";
 import { useTranslations } from "next-intl";
-import { useCallback, useMemo } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { AddressFormFields } from "@/components/checkout/AddressFormFields";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import type { User } from "@/contexts/AuthContext";
-import type { AddressFormData } from "@/lib/utils/address";
+import { type AddressFormData, isSameAddress } from "@/lib/utils/address";
 
 /**
  * A set of saved addresses under the name of the book they came from. A B2B
@@ -77,6 +77,8 @@ export function groupByBook(
 interface AddressSelectorProps {
   groups: AddressGroup[];
   currentAddress: AddressFormData;
+  /** The saved address the buyer picked, until they edit the form. */
+  selectedSavedAddressId?: string;
   countries: Country[];
   states: State[];
   loadingStates: boolean;
@@ -92,6 +94,7 @@ interface AddressSelectorProps {
 export function AddressSelector({
   groups,
   currentAddress,
+  selectedSavedAddressId,
   countries,
   states,
   loadingStates,
@@ -115,27 +118,28 @@ export function AddressSelector({
     [visibleGroups],
   );
 
-  // Derive selected address from current form data — no useEffect needed
-  const selectedAddressId = useMemo((): string => {
-    if (savedAddresses.length === 0) return "new";
-    const match = savedAddresses.find(
-      (addr) =>
-        addr.address1 === currentAddress.address1 &&
-        addr.city === currentAddress.city &&
-        addr.postal_code === currentAddress.postal_code &&
-        addr.country_code === currentAddress.country_code,
-    );
-    if (match) return match.id;
-    return "new";
-  }, [
-    savedAddresses,
-    currentAddress.address1,
-    currentAddress.city,
-    currentAddress.postal_code,
-    currentAddress.country_code,
-  ]);
+  // Once the buyer picks "Use a different address", the form stays theirs.
+  // Typing an address that resembles a saved one must not swap the form for
+  // that entry: the next keystroke may be the apartment line or company that
+  // makes it a different address.
+  const [choseNewAddress, setChoseNewAddress] = useState(false);
+
+  // Otherwise derive the selection from the form data — no useEffect needed.
+  // That covers a cart already holding one of the saved addresses. Only an
+  // identical address counts as that entry.
+  const matchedAddressId = useMemo(
+    () =>
+      savedAddresses.find((addr) => isSameAddress(addr, currentAddress))?.id,
+    [savedAddresses, currentAddress],
+  );
+
+  const selectedAddressId =
+    selectedSavedAddressId ??
+    (choseNewAddress ? undefined : matchedAddressId) ??
+    "new";
 
   const handleSelectAddress = (addressId: string) => {
+    setChoseNewAddress(addressId === "new");
     if (addressId === "new") {
       // Clear form for new address, pre-fill name from user profile
       onChange("first_name", user?.first_name || "");
