@@ -1,13 +1,20 @@
+/**
+ * Pass `timeZone: "UTC"` for a calendar date with no time (`2026-11-02`),
+ * which `Date` reads as midnight UTC: in any other zone it can show the day
+ * before.
+ */
 export function formatDate(
   dateString: string | null,
   fallback = "-",
   locale = "en-US",
+  timeZone?: string,
 ): string {
   if (!dateString) return fallback;
   return new Date(dateString).toLocaleDateString(locale, {
     year: "numeric",
     month: "short",
     day: "numeric",
+    timeZone,
   });
 }
 
