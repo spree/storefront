@@ -111,19 +111,19 @@ describe("Spree locale middleware", () => {
     expect(response.headers.get("location")).toBeNull();
   });
 
-  it.each([
-    "_spree_jwt",
-    "_spree_refresh_token",
-  ])("allows a protected account request with a %s session cookie", (cookieName) => {
-    const request = new NextRequest(
-      "https://store.example/us/en/account/orders",
-    );
-    request.cookies.set(cookieName, "session-token");
+  it.each(["_spree_jwt", "_spree_refresh_token"])(
+    "allows a protected account request with a %s session cookie",
+    (cookieName) => {
+      const request = new NextRequest(
+        "https://store.example/us/en/account/orders",
+      );
+      request.cookies.set(cookieName, "session-token");
 
-    const response = middleware(request);
+      const response = middleware(request);
 
-    expect(response.headers.get("location")).toBeNull();
-  });
+      expect(response.headers.get("location")).toBeNull();
+    },
+  );
 
   it("sets locale cookies when they are missing", () => {
     const response = middleware(

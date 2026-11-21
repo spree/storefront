@@ -169,17 +169,20 @@ describe("CountryLocaleLayout Market fallback", () => {
       "a Market without countries",
       [market({ countries: [], country_codes: [] })],
     ],
-  ])("does not redirect the default route to itself for %s", async (_, markets) => {
-    mocks.getStorefrontMarkets.mockResolvedValue({ data: markets });
+  ])(
+    "does not redirect the default route to itself for %s",
+    async (_, markets) => {
+      mocks.getStorefrontMarkets.mockResolvedValue({ data: markets });
 
-    await expect(
-      CountryLocaleLayoutContent({
-        children: <main />,
-        params: Promise.resolve({ country: "us", locale: "en" }),
-      }),
-    ).resolves.toBeDefined();
-    expect(mocks.redirect).not.toHaveBeenCalled();
-  });
+      await expect(
+        CountryLocaleLayoutContent({
+          children: <main />,
+          params: Promise.resolve({ country: "us", locale: "en" }),
+        }),
+      ).resolves.toBeDefined();
+      expect(mocks.redirect).not.toHaveBeenCalled();
+    },
+  );
 
   it("redirects a non-default route once when no Market target is available", async () => {
     mocks.getStorefrontMarkets.mockResolvedValue({ data: [] });
