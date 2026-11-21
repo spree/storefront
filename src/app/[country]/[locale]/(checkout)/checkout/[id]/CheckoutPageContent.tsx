@@ -614,6 +614,28 @@ function CheckoutPageContentInner({
     // none at all, which no requirement would catch.
     if ((await purchaseOrderRef.current?.flush()) === false) return;
 
+    // A signed-in customer's email sits in a locked field that never blurs, so
+    // it reaches the cart only alongside an address save. When nothing has
+    // been saved since checkout loaded (a reload onto a cart that already has
+    // an address), write it here so the order isn't refused for a missing
+    // email.
+    const accountEmail = isAuthenticated ? user?.email : undefined;
+    if (accountEmail && cart.email !== accountEmail) {
+      let emailResult: Awaited<ReturnType<typeof updateOrderAddresses>>;
+      try {
+        emailResult = await updateOrderAddresses(cart.id, {
+          email: accountEmail,
+        });
+      } catch {
+        setError(t("generalError"));
+        return;
+      }
+      if (!emailResult.success) {
+        setError(emailResult.error || t("generalError"));
+        return;
+      }
+    }
+
     // Refresh cart to get latest requirements
     const freshOrder = await getCheckoutOrder(cart.id);
     if (!freshOrder) {
