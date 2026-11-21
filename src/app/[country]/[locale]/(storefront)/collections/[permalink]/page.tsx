@@ -11,6 +11,7 @@ import {
 import { resolveCurrency } from "@/lib/data/markets";
 import { generateCollectionMetadata } from "@/lib/metadata/collection";
 import { parseListingSearchParams } from "@/lib/utils/listing-search-params";
+import { redirectToCurrentPermalink } from "@/lib/utils/permalink-redirect";
 
 interface CollectionPageProps {
   params: Promise<{ country: string; locale: string; permalink: string }>;
@@ -42,6 +43,12 @@ export default async function CollectionPage({
   if (!collection) notFound();
 
   const basePath = `/${country}/${locale}`;
+  redirectToCurrentPermalink(
+    permalink,
+    collection.permalink,
+    `${basePath}/collections`,
+    rawSearchParams,
+  );
   const listingState = parseListingSearchParams(rawSearchParams);
 
   // Pre-bind the collection ID so the client InfiniteProductList island gets
