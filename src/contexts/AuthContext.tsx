@@ -11,6 +11,7 @@ import {
   useRef,
   useState,
 } from "react";
+import { forgetKlaviyo, identifyKlaviyo } from "@/lib/analytics/klaviyo";
 import {
   login as loginAction,
   logout as logoutAction,
@@ -124,6 +125,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const result = await loginAction(email, password);
       if (result.success && result.user) {
         setUser(toUser(result.user));
+        identifyKlaviyo(result.user.email);
         router.refresh();
       }
       return result;
@@ -145,6 +147,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const result = await registerAction(params);
       if (result.success && result.user) {
         setUser(toUser(result.user));
+        identifyKlaviyo(result.user.email);
         router.refresh();
       }
       return result;
@@ -156,6 +159,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const logout = useCallback(async () => {
     await logoutAction();
     setUser(null);
+    // Klaviyo also holds the shopper in memory, so dropping its cookie takes a
+    // full load before the next person on this browser browses anonymously.
+    if (await forgetKlaviyo()) {
+      window.location.reload();
+      return;
+    }
     router.refresh();
   }, [router]);
 

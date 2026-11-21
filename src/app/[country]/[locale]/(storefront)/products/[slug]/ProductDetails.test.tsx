@@ -1,6 +1,10 @@
 import type { Product } from "@spree/sdk";
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
+import {
+  trackKlaviyoAddedToCart,
+  trackKlaviyoViewedProduct,
+} from "@/lib/analytics/klaviyo";
 import { PRODUCT_PAGE_EXPAND } from "@/lib/data/cached";
 import { ProductDetails } from "./ProductDetails";
 
@@ -17,8 +21,10 @@ vi.mock("@/components/products/ProductCustomFields", () => ({
   ProductCustomFields: () => null,
 }));
 
+const cart = vi.hoisted(() => ({ addItem: vi.fn() }));
+
 vi.mock("@/contexts/CartContext", () => ({
-  useCart: () => ({ addItem: vi.fn() }),
+  useCart: () => cart,
 }));
 
 const hiddenPricing = vi.hoisted(() => ({
@@ -36,6 +42,11 @@ vi.mock("@/contexts/StoreContext", () => ({
 vi.mock("@/lib/analytics/gtm", () => ({
   trackAddToCart: vi.fn(),
   trackViewItem: vi.fn(),
+}));
+
+vi.mock("@/lib/analytics/klaviyo", () => ({
+  trackKlaviyoAddedToCart: vi.fn(),
+  trackKlaviyoViewedProduct: vi.fn(),
 }));
 
 const productWithoutCustomVariants = {
@@ -73,6 +84,65 @@ const productWithoutCustomVariants = {
 } as unknown as Product;
 
 describe("ProductDetails", () => {
+  it("tracks one view per product, not per product object", () => {
+    vi.mocked(trackKlaviyoViewedProduct).mockClear();
+    const { rerender } = render(
+      <ProductDetails
+        product={productWithoutCustomVariants}
+        basePath="/us/en"
+      />,
+    );
+
+    // A cart change refreshes the page with an equal, new product object.
+    rerender(
+      <ProductDetails
+        product={{ ...productWithoutCustomVariants }}
+        basePath="/us/en"
+      />,
+    );
+    expect(trackKlaviyoViewedProduct).toHaveBeenCalledTimes(1);
+
+    rerender(
+      <ProductDetails
+        product={{ ...productWithoutCustomVariants, id: "product-2" }}
+        basePath="/us/en"
+      />,
+    );
+    expect(trackKlaviyoViewedProduct).toHaveBeenCalledTimes(2);
+  });
+
+  it("sends Klaviyo Added to Cart once the item is in the cart", async () => {
+    vi.mocked(trackKlaviyoAddedToCart).mockClear();
+    cart.addItem.mockResolvedValueOnce(true);
+    render(
+      <ProductDetails
+        product={productWithoutCustomVariants}
+        basePath="/us/en"
+      />,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: /addToCart/ }));
+
+    await waitFor(() => expect(trackKlaviyoAddedToCart).toHaveBeenCalled());
+  });
+
+  it("sends no Klaviyo Added to Cart when the add fails", async () => {
+    vi.mocked(trackKlaviyoAddedToCart).mockClear();
+    cart.addItem.mockClear();
+    cart.addItem.mockResolvedValueOnce(false);
+    render(
+      <ProductDetails
+        product={productWithoutCustomVariants}
+        basePath="/us/en"
+      />,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: /addToCart/ }));
+
+    await waitFor(() => expect(cart.addItem).toHaveBeenCalled());
+    expect(trackKlaviyoAddedToCart).not.toHaveBeenCalled();
+  });
+
   it("requests the default variant for the product page", () => {
     expect(PRODUCT_PAGE_EXPAND).toContain("default_variant");
   });
