@@ -11,7 +11,7 @@ import {
   Section,
   Text,
 } from "react-email";
-import { getStoreName, getStoreUrl } from "@/lib/store";
+import { FALLBACK_STORE_NAME, getStoreUrl } from "@/lib/store";
 
 interface PasswordResetEmailProps {
   resetUrl: string;
@@ -21,7 +21,7 @@ interface PasswordResetEmailProps {
 
 export function PasswordResetEmail({
   resetUrl,
-  storeName = getStoreName(),
+  storeName = FALLBACK_STORE_NAME,
   storeUrl = getStoreUrl(),
 }: PasswordResetEmailProps) {
   return (

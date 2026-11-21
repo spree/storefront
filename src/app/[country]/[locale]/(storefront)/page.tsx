@@ -1,7 +1,9 @@
 import type { Metadata } from "next";
-import { FeaturedProductsSection } from "@/components/home/FeaturedProductsSection";
+import { Suspense } from "react";
+import { CollectionCarouselsSection } from "@/components/home/CollectionCarouselsSection";
 import { HeroSection } from "@/components/home/HeroSection";
 import { WholesaleSection } from "@/components/home/WholesaleSection";
+import { ProductCarouselSkeleton } from "@/components/products/LazyProductCarousel";
 import { resolveCurrency } from "@/lib/data/markets";
 import { generateHomeMetadata } from "@/lib/metadata/home";
 
@@ -27,12 +29,20 @@ export default async function HomePage({ params }: HomePageProps) {
   return (
     <div>
       <HeroSection basePath={basePath} locale={locale} />
-      <FeaturedProductsSection
-        basePath={basePath}
-        locale={locale}
-        country={country}
-        currency={currency}
-      />
+      <Suspense
+        fallback={
+          <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-16">
+            <ProductCarouselSkeleton />
+          </div>
+        }
+      >
+        <CollectionCarouselsSection
+          basePath={basePath}
+          locale={locale}
+          country={country}
+          currency={currency}
+        />
+      </Suspense>
       <WholesaleSection basePath={basePath} locale={locale} />
     </div>
   );

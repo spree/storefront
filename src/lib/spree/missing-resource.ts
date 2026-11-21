@@ -79,6 +79,10 @@ function resourceLookup(path: string): ResourceLookup | null {
         options,
       );
   }
+  if (section === "collections" && rest.length === 1) {
+    return (options) =>
+      getLookupClient().collections.get(rest[0], { fields: ["id"] }, options);
+  }
   if (section === "policies" && rest.length === 1) {
     return (options) => getLookupClient().policies.get(rest[0], options);
   }
@@ -90,7 +94,8 @@ function resourceLookup(path: string): ResourceLookup | null {
 }
 
 /**
- * Whether the product, category, policy or seller addressed by a storefront path
+ * Whether the product, category, collection, policy or seller addressed by a
+ * storefront path
  * (the part after `/{country}/{locale}`) is definitely missing.
  *
  * Pages render inside a streaming layout, so by the time they call

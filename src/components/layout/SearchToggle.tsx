@@ -7,9 +7,16 @@ import type { ReactNode } from "react";
 import { useCallback, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 
+const loadSearchBar = () => import("@/components/search/SearchBar");
+
+/** Start downloading the search bar on intent, so opening it skips the skeleton. */
+const preloadSearchBar = (): void => {
+  void loadSearchBar();
+};
+
 const SearchBar = dynamic(
   () =>
-    import("@/components/search/SearchBar").then((mod) => ({
+    loadSearchBar().then((mod) => ({
       default: mod.SearchBar,
     })),
   {
@@ -75,6 +82,8 @@ export function SearchToggle({
                 variant="ghost"
                 size="icon-lg"
                 onClick={() => setSearchOpen(true)}
+                onPointerEnter={preloadSearchBar}
+                onFocus={preloadSearchBar}
                 aria-label={t("openSearch")}
                 aria-expanded={searchOpen}
                 aria-controls="search-overlay"

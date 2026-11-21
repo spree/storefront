@@ -1,15 +1,15 @@
 import { formatMoney, type Order } from "@spree/sdk";
 import type { WebhookEvent } from "@spree/sdk/webhooks";
 import { createElement } from "react";
+import { getStore } from "@/lib/data/store";
 import { DataRequestConfirmationEmail } from "@/lib/emails/data-request-confirmation";
 import { OrderCanceledEmail } from "@/lib/emails/order-canceled";
 import { OrderConfirmationEmail } from "@/lib/emails/order-confirmation";
 import { PasswordResetEmail } from "@/lib/emails/password-reset";
 import { sendEmail } from "@/lib/emails/send";
 import { ShipmentShippedEmail } from "@/lib/emails/shipment-shipped";
-import { getStoreName, getStoreUrl } from "@/lib/store";
+import { getStoreUrl } from "@/lib/store";
 
-const STORE_NAME = getStoreName();
 const SITE_URL = getStoreUrl();
 
 if (!SITE_URL && process.env.NODE_ENV === "production") {
@@ -53,6 +53,7 @@ export async function handleOrderPlaced(event: WebhookEvent<"order.placed">) {
   if (isAlreadyProcessed(event.id)) return;
   const order = event.data;
   if (!order.email) return;
+  const { name: storeName } = await getStore(order.locale ?? undefined);
 
   const customerName =
     order.shipping_address?.full_name || order.billing_address?.full_name || "";
@@ -69,8 +70,9 @@ export async function handleOrderPlaced(event: WebhookEvent<"order.placed">) {
 
   await sendEmail({
     to: order.email,
-    subject: `${STORE_NAME} Order Confirmation #${order.number}`,
+    subject: `${storeName} Order Confirmation #${order.number}`,
     react: createElement(OrderConfirmationEmail, {
+      storeName,
       orderNumber: order.number,
       customerName,
       items: (order.items || []).map((item) => ({
@@ -109,14 +111,16 @@ export async function handleOrderCanceled(
   if (isAlreadyProcessed(event.id)) return;
   const order = event.data;
   if (!order.email) return;
+  const { name: storeName } = await getStore(order.locale ?? undefined);
 
   const customerName =
     order.shipping_address?.full_name || order.billing_address?.full_name || "";
 
   await sendEmail({
     to: order.email,
-    subject: `${STORE_NAME} Order Canceled #${order.number}`,
+    subject: `${storeName} Order Canceled #${order.number}`,
     react: createElement(OrderCanceledEmail, {
+      storeName,
       orderNumber: order.number,
       customerName,
       items: (order.items || []).map((item) => ({
@@ -180,11 +184,13 @@ export async function handleOrderFulfilled(
     });
 
   if (shipments.length === 0) return;
+  const { name: storeName } = await getStore(order.locale ?? undefined);
 
   await sendEmail({
     to: order.email,
-    subject: `${STORE_NAME} Shipment Notification #${order.number}`,
+    subject: `${storeName} Shipment Notification #${order.number}`,
     react: createElement(ShipmentShippedEmail, {
+      storeName,
       orderNumber: order.number,
       customerName,
       shipments,
@@ -216,14 +222,16 @@ export async function handlePasswordReset(
       "Missing NEXT_PUBLIC_SITE_URL configuration — cannot build password reset link",
     );
   }
+  const { name: storeName } = await getStore();
   const url = new URL(redirect_url ?? "/account/reset-password", SITE_URL);
   url.searchParams.set("token", reset_token);
   const resetUrl = url.toString();
 
   await sendEmail({
     to: email,
-    subject: `${STORE_NAME} Password Reset`,
+    subject: `${storeName} Password Reset`,
     react: createElement(PasswordResetEmail, {
+      storeName,
       resetUrl,
     }),
   });
@@ -251,6 +259,7 @@ export async function handleDataRequestConfirmation(
       "Missing NEXT_PUBLIC_SITE_URL configuration — cannot build data request confirmation link",
     );
   }
+  const { name: storeName } = await getStore();
   const url = new URL(
     redirect_url ?? "/account/data-requests/confirm",
     SITE_URL,
@@ -260,8 +269,9 @@ export async function handleDataRequestConfirmation(
 
   await sendEmail({
     to: email,
-    subject: `${STORE_NAME} ${erasure ? "Confirm Your Erasure Request" : "Confirm Your Data Request"}`,
+    subject: `${storeName} ${erasure ? "Confirm Your Erasure Request" : "Confirm Your Data Request"}`,
     react: createElement(DataRequestConfirmationEmail, {
+      storeName,
       confirmUrl: url.toString(),
       kind: erasure ? "erasure" : "access",
     }),

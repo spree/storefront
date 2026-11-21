@@ -1,15 +1,23 @@
 import { SpreeError } from "@spree/sdk";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-const { getProduct, getCategory, getPolicy, getSeller, createClient, flags } =
-  vi.hoisted(() => ({
-    getProduct: vi.fn(),
-    getCategory: vi.fn(),
-    getPolicy: vi.fn(),
-    getSeller: vi.fn(),
-    createClient: vi.fn(),
-    flags: { marketplace: true },
-  }));
+const {
+  getProduct,
+  getCategory,
+  getCollection,
+  getPolicy,
+  getSeller,
+  createClient,
+  flags,
+} = vi.hoisted(() => ({
+  getProduct: vi.fn(),
+  getCategory: vi.fn(),
+  getCollection: vi.fn(),
+  getPolicy: vi.fn(),
+  getSeller: vi.fn(),
+  createClient: vi.fn(),
+  flags: { marketplace: true },
+}));
 
 vi.mock("@spree/sdk", async (importOriginal) => ({
   ...(await importOriginal<typeof import("@spree/sdk")>()),
@@ -27,6 +35,7 @@ vi.mock("@/lib/spree/config", () => ({
 createClient.mockReturnValue({
   products: { get: getProduct },
   categories: { get: getCategory },
+  collections: { get: getCollection },
   policies: { get: getPolicy },
   sellers: { get: getSeller },
 });
@@ -52,7 +61,34 @@ describe("isMissingStorefrontResource", () => {
     getPolicy.mockResolvedValue({ id: "pol_1" });
     getSeller.mockReset();
     getSeller.mockResolvedValue({ id: "sel_1" });
+    getCollection.mockReset();
+    getCollection.mockResolvedValue({ id: "coll_1" });
     flags.marketplace = true;
+  });
+
+  it("checks collection pages by permalink", async () => {
+    await expect(
+      isMissingStorefrontResource("/collections/summer-sale", options),
+    ).resolves.toBe(false);
+    expect(getCollection).toHaveBeenCalledWith(
+      "summer-sale",
+      { fields: ["id"] },
+      options,
+    );
+
+    getCollection.mockRejectedValue(apiError(404));
+    await expect(
+      isMissingStorefrontResource("/collections/gone", options),
+    ).resolves.toBe(true);
+  });
+
+  it("leaves the collections index and nested paths to the page", async () => {
+    for (const path of ["/collections", "/collections/a/b"]) {
+      await expect(isMissingStorefrontResource(path, options)).resolves.toBe(
+        false,
+      );
+    }
+    expect(getCollection).not.toHaveBeenCalled();
   });
 
   it("checks seller profiles by slug on marketplace builds", async () => {

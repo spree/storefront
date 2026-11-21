@@ -8,7 +8,10 @@ import { matchLocale } from "@/i18n/normalize";
 import { updateCartMarket } from "@/lib/data/checkout";
 import { rebaseAccountRedirectSearch } from "@/lib/utils/account-redirect";
 import { setStoreCookies } from "@/lib/utils/cookies";
-import { getPathWithoutPrefix } from "@/lib/utils/path";
+import {
+  readLocaleAlternates,
+  resolveLocaleSwitchPath,
+} from "@/lib/utils/locale-switch";
 
 interface UseCountrySwitchOptions {
   currentCountry: string;
@@ -60,10 +63,15 @@ export function useCountrySwitch({
     setIsCountryNavigating(true);
 
     const newCurrency = entry.currency;
-    const pathRest = getPathWithoutPrefix(pathname);
-    const newPath = `/${nextCountry}/${newLocale}${pathRest}`;
     const currentBasePath = `/${activeCountry}/${currentLocale}`;
     const nextBasePath = `/${nextCountry}/${newLocale}`;
+    // Translated slugs differ per locale: land on the page's alternate for
+    // the target locale instead of reusing the current slug (which 404s).
+    const newPath = resolveLocaleSwitchPath(
+      pathname,
+      nextBasePath,
+      readLocaleAlternates(document),
+    );
 
     try {
       if (

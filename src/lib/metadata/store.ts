@@ -1,11 +1,25 @@
+import type { Store } from "@spree/sdk";
 import type { Metadata } from "next";
+import { getTranslations } from "next-intl/server";
+import { getStore, storeSeoTitle } from "@/lib/data/store";
 import { SOCIAL_IMAGE_PATH } from "@/lib/seo";
-import {
-  getStoreMetaDescription,
-  getStoreName,
-  getStoreSeoTitle,
-  getStoreUrl,
-} from "@/lib/store";
+import { getStoreUrl } from "@/lib/store";
+
+/**
+ * The store's meta description from the Store API, falling back to the
+ * storefront's translated tagline so pages always carry a description.
+ */
+export async function storeMetaDescription(
+  store: Store,
+  locale: string,
+): Promise<string> {
+  if (store.meta_description) return store.meta_description;
+  const t = await getTranslations({
+    locale: locale as Locale,
+    namespace: "footer",
+  });
+  return t("description");
+}
 
 function normalizeOpenGraphLocale(locale: string): string {
   const parts = locale.split(/[-_]/);
@@ -20,9 +34,10 @@ interface StoreMetadataParams {
 export async function generateStoreMetadata({
   locale,
 }: StoreMetadataParams): Promise<Metadata> {
-  const storeName = getStoreSeoTitle();
+  const store = await getStore(locale);
+  const seoTitle = storeSeoTitle(store);
   const storeUrl = getStoreUrl();
-  const metaDescription = getStoreMetaDescription();
+  const metaDescription = await storeMetaDescription(store, locale);
   const metaKeywords = process.env.STORE_META_KEYWORDS;
   const twitter = process.env.STORE_TWITTER;
 
@@ -38,13 +53,13 @@ export async function generateStoreMetadata({
   return {
     ...metadataBaseSpread,
     title: {
-      template: `%s | ${storeName}`,
-      default: storeName,
+      template: `%s | ${seoTitle}`,
+      default: seoTitle,
     },
     description: metaDescription,
     ...(metaKeywords ? { keywords: metaKeywords } : {}),
     openGraph: {
-      siteName: getStoreName(),
+      siteName: store.name,
       locale: normalizeOpenGraphLocale(locale),
       type: "website",
       images: [SOCIAL_IMAGE_PATH],

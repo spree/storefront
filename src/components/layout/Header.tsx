@@ -1,4 +1,4 @@
-import type { Category } from "@spree/sdk";
+import type { Category, Collection } from "@spree/sdk";
 import { User } from "lucide-react";
 import dynamic from "next/dynamic";
 import Image from "next/image";
@@ -8,8 +8,8 @@ import type { ReactNode } from "react";
 import { CartButton } from "@/components/layout/CartButton";
 import { SearchToggle } from "@/components/layout/SearchToggle";
 import { Button } from "@/components/ui/button";
+import { getStore } from "@/lib/data/store";
 import { isMarketplaceEnabled, isWholesaleEnabled } from "@/lib/spree";
-import { getStoreName } from "@/lib/store";
 
 const LazyMobileMenu = dynamic(
   () =>
@@ -33,8 +33,6 @@ const LazyRegionPreferences = dynamic(
   },
 );
 
-const storeName = getStoreName();
-
 interface HeaderProps {
   basePath: string;
   locale: Locale;
@@ -43,16 +41,19 @@ interface HeaderProps {
 
 interface HeaderMobileMenuProps {
   rootCategories: Category[];
+  collections?: Collection[];
   basePath: string;
 }
 
 export function HeaderMobileMenu({
   rootCategories,
+  collections,
   basePath,
 }: HeaderMobileMenuProps) {
   return (
     <LazyMobileMenu
       rootCategories={rootCategories}
+      collections={collections}
       basePath={basePath}
       wholesaleEnabled={isWholesaleEnabled()}
       marketplaceEnabled={isMarketplaceEnabled()}
@@ -65,7 +66,10 @@ export async function Header({
   locale,
   mobileNavigation,
 }: HeaderProps) {
-  const t = await getTranslations({ locale, namespace: "header" });
+  const [t, store] = await Promise.all([
+    getTranslations({ locale, namespace: "header" }),
+    getStore(locale),
+  ]);
   const wholesaleEnabled = isWholesaleEnabled();
   const marketplaceEnabled = isMarketplaceEnabled();
 
@@ -77,7 +81,7 @@ export async function Header({
         <Link href={basePath || "/"} className="flex items-center min-w-0">
           <Image
             src="/spree.png"
-            alt={storeName}
+            alt={store.name}
             width={90}
             height={32}
             className="max-w-full object-contain"
@@ -89,6 +93,12 @@ export async function Header({
       }
       rightStart={
         <div className="hidden lg:flex lg:items-center lg:gap-1">
+          <Link
+            href={`${basePath}/collections`}
+            className="px-2 py-1.5 text-sm text-gray-500 hover:text-gray-900 transition-colors whitespace-nowrap"
+          >
+            {t("collections")}
+          </Link>
           {marketplaceEnabled && (
             <Link
               href={`${basePath}/sellers`}

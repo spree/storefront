@@ -53,7 +53,11 @@ import {
 } from "@/lib/utils/address";
 import { getCardIconType, getCardLabel } from "@/lib/utils/credit-card";
 import { extractBasePath } from "@/lib/utils/path";
-import { paypalClientId, resolveGatewayId } from "@/lib/utils/payment-gateway";
+import {
+  adyenMinorUnits,
+  paypalClientId,
+  resolveGatewayId,
+} from "@/lib/utils/payment-gateway";
 
 export type PaymentCompleteResult =
   | { type: "session"; sessionId: string; sessionResult?: string }
@@ -79,6 +83,26 @@ interface PaymentSectionProps {
   setProcessing: (processing: boolean) => void;
   onSessionMethodChange?: (isSessionBased: boolean) => void;
   errors?: string[];
+}
+
+/**
+ * The saved cards one payment method can charge. The list holds every
+ * gateway's cards, and a card saved with another gateway fails there. A
+ * backend that does not name the card's method keeps the whole list.
+ */
+function cardsForMethod(
+  cards: SpreeCreditCard[],
+  method: PaymentMethod | undefined,
+): SpreeCreditCard[] {
+  return cards.filter((card) => {
+    // Typed here because SDK releases before the field was added omit it.
+    const methodId = (
+      card as SpreeCreditCard & { payment_method_id?: string | null }
+    ).payment_method_id;
+    return (
+      card.gateway_payment_profile_id && (!methodId || methodId === method?.id)
+    );
+  });
 }
 
 export function PaymentSection({
@@ -153,6 +177,8 @@ export function PaymentSection({
 
   // ── Saved cards (session-based gateways only) ───────────────────────
   const [savedCards, setSavedCards] = useState<SpreeCreditCard[]>([]);
+  // Every saved card, once loaded; each method shows only its own.
+  const allCardsRef = useRef<SpreeCreditCard[] | null>(null);
   // null = "add new payment method", string = gateway_payment_profile_id
   const [selectedCardId, setSelectedCardId] = useState<string | null>(null);
 
@@ -174,6 +200,9 @@ export function PaymentSection({
     | null
   >(null);
   const initRef = useRef(false);
+  // Request ID of a saved-card init still loading cards (pending only while
+  // it matches sessionRequestIdRef; any newer session request supersedes it).
+  const pendingInitRequestIdRef = useRef<number | null>(null);
   const sessionRequestIdRef = useRef(0);
   const completionInFlightRef = useRef(false);
 
@@ -253,6 +282,59 @@ export function PaymentSection({
   // Track the cart total so we can recreate the session when it changes
   const lastTotalRef = useRef<string | null>(null);
   const selectedCardRef = useRef<string | null>(null);
+  // The amount update in flight, resolving true once the current session
+  // holds the new amount; a payment submit waits for it.
+  const amountSyncRef = useRef<Promise<boolean> | null>(null);
+
+  // Load saved cards (if authenticated), then create the first session for
+  // `method`. Loading cards is async, so the shopper may pick another method
+  // (or something else may start a session) in the meantime; claiming a
+  // request ID up front lets us detect that and drop the stale init instead
+  // of overwriting the newer selection's session.
+  const initSessionWithSavedCards = useCallback(
+    async (method: PaymentMethod) => {
+      const initRequestId = ++sessionRequestIdRef.current;
+      pendingInitRequestIdRef.current = initRequestId;
+      // Record the amount due now so the total-sync effect doesn't start a
+      // competing session while saved cards are still loading.
+      lastTotalRef.current = rawAmountDue;
+
+      setLoading(true);
+      setGatewayError(null);
+      setSessionExternalData(null);
+      setPaymentSessionId(null);
+      gatewayHandleRef.current = null;
+
+      let cardId: string | null = null;
+      let methodCards: SpreeCreditCard[] = [];
+
+      if (isAuthenticated) {
+        try {
+          const result = await getCreditCards();
+          allCardsRef.current = result.data;
+          methodCards = cardsForMethod(result.data, method);
+          if (methodCards.length > 0) {
+            const defaultCard =
+              methodCards.find((c) => c.default) || methodCards[0];
+            cardId = defaultCard.gateway_payment_profile_id;
+          }
+        } catch {
+          // Cards failed to load — proceed without saved cards
+        }
+      }
+
+      // Superseded by a newer method selection or session request.
+      if (initRequestId !== sessionRequestIdRef.current) return;
+
+      // This method's cards only: another method's would be charged where
+      // they were never saved.
+      setSavedCards(methodCards);
+      setSelectedCardId(cardId);
+      selectedCardRef.current = cardId;
+      await createSession(cardId, method);
+    },
+    [rawAmountDue, createSession, isAuthenticated],
+  );
 
   // On mount: load saved cards (if authenticated + session method), then create initial session
   useEffect(() => {
@@ -262,46 +344,8 @@ export function PaymentSection({
     if (!isSessionBased) return;
 
     initRef.current = true;
-
-    const init = async () => {
-      setLoading(true);
-
-      let initialCardId: string | null = null;
-
-      if (isAuthenticated) {
-        try {
-          const result = await getCreditCards();
-          const gatewayCards = result.data.filter(
-            (card) => card.gateway_payment_profile_id,
-          );
-          setSavedCards(gatewayCards);
-
-          if (gatewayCards.length > 0) {
-            const defaultCard =
-              gatewayCards.find((c) => c.default) || gatewayCards[0];
-            initialCardId = defaultCard.gateway_payment_profile_id;
-            setSelectedCardId(initialCardId);
-          }
-        } catch {
-          // Cards failed to load — proceed without saved cards
-        }
-      }
-
-      selectedCardRef.current = initialCardId;
-      lastTotalRef.current = cart.total;
-
-      await createSession(initialCardId, selectedMethod);
-    };
-
-    init();
-  }, [
-    selectedMethod,
-    isSessionBased,
-    isAuthenticated,
-    createSession,
-    cart.total,
-    isZeroAmount,
-  ]);
+    initSessionWithSavedCards(selectedMethod);
+  }, [selectedMethod, isSessionBased, initSessionWithSavedCards, isZeroAmount]);
 
   // When the cart total changes, sync the live payment session with the
   // provider in place. Recreating it instead would unmount the gateway form
@@ -311,9 +355,14 @@ export function PaymentSection({
   useEffect(() => {
     if (!initRef.current) return;
     if (!isSessionBased || !selectedMethod) return;
-    if (lastTotalRef.current === cart.total) return;
+    // Saved-card init is still loading and will create the session against
+    // the server's current total; recreating it now would supersede the init
+    // and drop the saved default card. Once the session exists this effect
+    // re-runs (paymentSessionId changes) and syncs any difference in place.
+    if (pendingInitRequestIdRef.current === sessionRequestIdRef.current) return;
+    if (lastTotalRef.current === rawAmountDue) return;
 
-    lastTotalRef.current = cart.total;
+    lastTotalRef.current = rawAmountDue;
 
     if (!paymentSessionId) {
       createSession(selectedCardRef.current, selectedMethod);
@@ -321,13 +370,19 @@ export function PaymentSection({
     }
 
     const method = selectedMethod;
-    const sync = async () => {
+    // Tie this sync to the session it updates: if the shopper switches
+    // methods (or another session request starts) before it resolves, its
+    // result must not overwrite the newer session.
+    const syncRequestId = sessionRequestIdRef.current;
+    const sync = async (): Promise<boolean> => {
       try {
+        // What a new session defaults to: the total less store credit.
         const result = await updateCheckoutPaymentSession(
           cart.id,
           paymentSessionId,
-          { amount: cart.total ?? undefined },
+          { amount: rawAmountDue ?? undefined },
         );
+        if (syncRequestId !== sessionRequestIdRef.current) return false;
         if (!result.success || !result.session) {
           throw new Error("session update rejected");
         }
@@ -345,16 +400,22 @@ export function PaymentSection({
           );
           setPaymentSessionId(result.session.id);
         }
+        return true;
       } catch {
+        if (syncRequestId !== sessionRequestIdRef.current) return false;
         // Gateway doesn't support in-place updates — fall back to the
         // destructive recreate rather than paying against a stale amount.
         createSession(selectedCardRef.current, method);
+        return false;
       }
     };
-    sync();
+    const syncing = sync().finally(() => {
+      if (amountSyncRef.current === syncing) amountSyncRef.current = null;
+    });
+    amountSyncRef.current = syncing;
   }, [
     cart.id,
-    cart.total,
+    rawAmountDue,
     createSession,
     isSessionBased,
     paymentSessionId,
@@ -390,39 +451,23 @@ export function PaymentSection({
     if (!newMethod) return;
 
     if (newMethod.session_required) {
-      // Switching to a session-based method: create session
-      // Reset saved cards state — will be re-initialized
       if (!initRef.current) {
         initRef.current = true;
-        const init = async () => {
-          setLoading(true);
-          let cardId: string | null = null;
-
-          if (isAuthenticated) {
-            try {
-              const result = await getCreditCards();
-              const gatewayCards = result.data.filter(
-                (card) => card.gateway_payment_profile_id,
-              );
-              setSavedCards(gatewayCards);
-              if (gatewayCards.length > 0) {
-                const defaultCard =
-                  gatewayCards.find((c) => c.default) || gatewayCards[0];
-                cardId = defaultCard.gateway_payment_profile_id;
-                setSelectedCardId(cardId);
-              }
-            } catch {
-              // proceed without saved cards
-            }
-          }
-
-          selectedCardRef.current = cardId;
-          lastTotalRef.current = cart.total;
-          await createSession(cardId, newMethod);
-        };
-        init();
+        initSessionWithSavedCards(newMethod);
       } else {
-        createSession(selectedCardRef.current, newMethod);
+        // The new method's own cards from the list already loaded; another
+        // method's would be charged where they were never saved.
+        const methodCards = cardsForMethod(
+          allCardsRef.current ?? [],
+          newMethod,
+        );
+        const defaultCard =
+          methodCards.find((c) => c.default) || methodCards[0];
+        const cardId = defaultCard?.gateway_payment_profile_id ?? null;
+        setSavedCards(methodCards);
+        setSelectedCardId(cardId);
+        selectedCardRef.current = cardId;
+        createSession(cardId, newMethod);
       }
     } else {
       // Switching to a direct method: invalidate any in-flight session
@@ -507,36 +552,86 @@ export function PaymentSection({
   // can no longer be paid is replaced: a completed one has already taken the
   // money when placing the order failed, and one we could not read may have,
   // so a new session would let the buyer pay twice.
+  // After a failed completion, opens a new session only when the current one
+  // can no longer be paid, and answers the current one's status.
+  const replaceSessionIfUnpayable = useCallback(async () => {
+    if (!paymentSessionId || !selectedMethod) return undefined;
+
+    const requestId = sessionRequestIdRef.current;
+    const current = await getCheckoutPaymentSession(cart.id, paymentSessionId);
+    const status = current.success ? current.session?.status : undefined;
+    // The shopper may have picked another method meanwhile; its session stands.
+    if (requestId !== sessionRequestIdRef.current) return status;
+    if (status === "failed" || status === "canceled" || status === "expired") {
+      createSession(selectedCardRef.current, selectedMethod);
+    }
+    return status;
+  }, [cart.id, createSession, paymentSessionId, selectedMethod]);
+
   const handlePayPalApproved =
     useCallback(async (): Promise<PayPalApprovalOutcome> => {
       const result = await handleGatewayApproved();
       if (result === "completed") return "completed";
-      if (result === "not_started" || !paymentSessionId || !selectedMethod) {
-        return "failed";
-      }
+      if (result === "not_started") return "failed";
 
-      const current = await getCheckoutPaymentSession(
-        cart.id,
-        paymentSessionId,
-      );
-      const status = current.success ? current.session?.status : undefined;
+      const status = await replaceSessionIfUnpayable();
       if (status === "pending" || status === "processing") return "restart";
-
-      if (
-        status === "failed" ||
-        status === "canceled" ||
-        status === "expired"
-      ) {
-        createSession(selectedCardRef.current, selectedMethod);
-      }
       return "failed";
-    }, [
+    }, [handleGatewayApproved, replaceSessionIfUnpayable]);
+
+  // Adyen's session opens unpayable: Spree makes it payable at the amount it
+  // holds, and Drop-in pays it with the session data that comes back.
+  const handleAdyenBeforeSubmit = useCallback(async (): Promise<string> => {
+    if (!paymentSessionId) throw new Error(t("failedToInitPayment"));
+    // A submit overtaking an amount update would pay the old figure, so it
+    // waits for every update in flight, including one started meanwhile, and
+    // stops if one failed or a newer session replaced it.
+    for (
+      let amountSync = amountSyncRef.current;
+      amountSync;
+      amountSync = amountSyncRef.current
+    ) {
+      if (!(await amountSync)) throw new Error(t("failedToInitPayment"));
+    }
+
+    const result = await updateCheckoutPaymentSession(
       cart.id,
-      createSession,
-      handleGatewayApproved,
       paymentSessionId,
-      selectedMethod,
-    ]);
+      { external_data: { submit: true } },
+    );
+    const payableSessionData = result.success
+      ? result.session?.external_data?.session_data
+      : undefined;
+    if (typeof payableSessionData !== "string" || !payableSessionData) {
+      throw new Error(
+        (!result.success && result.error) || t("failedToInitPayment"),
+      );
+    }
+    return payableSessionData;
+  }, [cart.id, paymentSessionId, t]);
+
+  // A failed completion leaves Drop-in mounted while Adyen keeps the session
+  // open for another try; only a session that can no longer be paid is
+  // replaced.
+  const handleAdyenApproved = useCallback(
+    async (sessionResult: string) => {
+      const result = await handleGatewayApproved(sessionResult);
+      if (result === "failed") await replaceSessionIfUnpayable();
+    },
+    [handleGatewayApproved, replaceSessionIfUnpayable],
+  );
+
+  // Pay Now waits for Drop-in, which shows its own message when an attempt
+  // ends without a payment. After a refusal or error the session may be over
+  // (expired, or refused by Spree), so it is replaced when it can no longer be
+  // paid; invalid fields leave it as it is.
+  const handleAdyenFailed = useCallback(
+    (reason: "invalid" | "ended") => {
+      setProcessing(false);
+      if (reason === "ended") void replaceSessionIfUnpayable();
+    },
+    [setProcessing, replaceSessionIfUnpayable],
+  );
 
   // ── Submit ──────────────────────────────────────────────────────────
   useImperativeHandle(
@@ -978,8 +1073,25 @@ export function PaymentSection({
                                     key={sid}
                                     sessionId={sid}
                                     sessionData={sdata}
+                                    clientKey={
+                                      ext.client_key as string | undefined
+                                    }
+                                    environment={ext.environment}
+                                    amount={
+                                      rawAmountDue
+                                        ? {
+                                            value: adyenMinorUnits(
+                                              rawAmountDue,
+                                              cart.currency,
+                                            ),
+                                            currency: cart.currency,
+                                          }
+                                        : undefined
+                                    }
                                     onReady={handleGatewayReady}
-                                    onApproved={handleGatewayApproved}
+                                    onBeforeSubmit={handleAdyenBeforeSubmit}
+                                    onApproved={handleAdyenApproved}
+                                    onFailed={handleAdyenFailed}
                                   />
                                 </div>
                               ) : null;

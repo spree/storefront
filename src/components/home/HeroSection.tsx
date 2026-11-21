@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { getTranslations } from "next-intl/server";
 import { Button } from "@/components/ui/button";
-import { getStoreName } from "@/lib/store";
+import { getStore } from "@/lib/data/store";
 
 interface HeroSectionProps {
   basePath: string;
@@ -13,7 +13,7 @@ export async function HeroSection({ basePath, locale }: HeroSectionProps) {
     locale: locale as Locale,
     namespace: "home",
   });
-  const storeName = getStoreName();
+  const { name: storeName } = await getStore(locale);
 
   /* Demo-only: Remove for production. */
   const githubUrl = "https://github.com/spree/storefront";

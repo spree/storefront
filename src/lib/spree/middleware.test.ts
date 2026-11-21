@@ -125,6 +125,36 @@ describe("Spree locale middleware", () => {
     expect(response.headers.get("location")).toBeNull();
   });
 
+  it("sets locale cookies when they are missing", () => {
+    const response = middleware(
+      new NextRequest("https://store.example/de/de/products"),
+    );
+
+    expect(response.cookies.get("spree_country")?.value).toBe("de");
+    expect(response.cookies.get("spree_locale")?.value).toBe("de");
+  });
+
+  it("leaves matching locale cookies untouched so Server Actions skip re-rendering", () => {
+    const request = new NextRequest("https://store.example/us/en/products");
+    request.cookies.set("spree_country", "us");
+    request.cookies.set("spree_locale", "en");
+
+    const response = middleware(request);
+
+    expect(response.headers.get("location")).toBeNull();
+    expect(response.cookies.getAll()).toEqual([]);
+  });
+
+  it("updates locale cookies when the URL switches language", () => {
+    const request = new NextRequest("https://store.example/us/de/products");
+    request.cookies.set("spree_country", "us");
+    request.cookies.set("spree_locale", "en");
+
+    const response = middleware(request);
+
+    expect(response.cookies.get("spree_locale")?.value).toBe("de");
+  });
+
   it("does not treat an empty auth cookie as a session credential", () => {
     const request = new NextRequest(
       "https://store.example/us/en/account/orders",

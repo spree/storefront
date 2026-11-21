@@ -17,6 +17,14 @@ interface ProductCarouselProps {
   basePath: string;
   /** Optional currency used for analytics in each ProductCard. */
   currency?: string;
+  /** Analytics list the cards belong to. */
+  listId?: string;
+  listName?: string;
+  /**
+   * Fetch the first card's image at high priority. Only the carousel nearest
+   * the top of the page should, so several carousels don't compete.
+   */
+  prioritizeFirst?: boolean;
 }
 
 const NAV_BUTTON_BASE =
@@ -26,6 +34,9 @@ export function ProductCarousel({
   products,
   basePath,
   currency,
+  listId = "featured-products",
+  listName = "Featured Products",
+  prioritizeFirst = true,
 }: ProductCarouselProps): ReactElement {
   const t = useTranslations("products");
   const [isBeginning, setIsBeginning] = useState(true);
@@ -100,10 +111,12 @@ export function ProductCarousel({
               product={product}
               basePath={basePath}
               index={index}
-              listId="featured-products"
-              listName="Featured Products"
+              listId={listId}
+              listName={listName}
               currency={currency}
-              fetchPriority={index === 0 ? "high" : undefined}
+              fetchPriority={
+                prioritizeFirst && index === 0 ? "high" : undefined
+              }
             />
           </SwiperSlide>
         ))}

@@ -3,6 +3,9 @@
  *
  * All store-level environment variables are accessed here so the rest of the
  * codebase has a single source of truth with consistent fallback values.
+ *
+ * The store name, SEO title and meta description come from the Store API
+ * instead — see `getStore()` in `@/lib/data/store`.
  */
 
 /**
@@ -34,21 +37,10 @@ export function getStoreUrl(): string | undefined {
 }
 
 /**
- * Get the store name from environment variables.
+ * Store name used when the Store API can't be reached, and as the default for
+ * email templates rendered outside a webhook (e.g. previews).
  */
-export function getStoreName(): string {
-  return process.env.NEXT_PUBLIC_STORE_NAME || "Spree Store";
-}
-
-/**
- * Get the store description from environment variables.
- */
-export function getStoreDescription(): string {
-  return (
-    process.env.NEXT_PUBLIC_STORE_DESCRIPTION ||
-    "A modern e-commerce storefront powered by Spree Commerce and Next.js."
-  );
-}
+export const FALLBACK_STORE_NAME = "Spree Store";
 
 /**
  * Get the default country ISO code (lowercase).
@@ -62,22 +54,6 @@ export function getDefaultCountry(): string {
  */
 export function getDefaultLocale(): string {
   return process.env.NEXT_PUBLIC_DEFAULT_LOCALE || "en";
-}
-
-/**
- * Get the SEO title, preferring STORE_SEO_TITLE and falling back to the
- * store name (NEXT_PUBLIC_STORE_NAME).
- */
-export function getStoreSeoTitle(): string {
-  return process.env.STORE_SEO_TITLE || getStoreName();
-}
-
-/**
- * Get the meta description, preferring STORE_META_DESCRIPTION and falling
- * back to the store description (NEXT_PUBLIC_STORE_DESCRIPTION).
- */
-export function getStoreMetaDescription(): string {
-  return process.env.STORE_META_DESCRIPTION || getStoreDescription();
 }
 
 /**

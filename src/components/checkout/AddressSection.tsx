@@ -120,13 +120,19 @@ export function AddressSection({
         offeredAddresses[0])
       : undefined;
 
-  const [email, setEmail] = useState(cart.email || user?.email || "");
+  const [typedEmail, setTypedEmail] = useState(cart.email || user?.email || "");
   // Lock the email field only once the account email is actually loaded. The
   // server-derived `isAuthenticated` can be true while the AuthContext `user` is
   // still null — during hydration, or after a transient sync is preserved as
   // `stale` — so keying off `isAuthenticated` alone would leave the field
   // disabled and blank, blocking checkout. Gate on the account email instead.
-  const hasAccountEmail = isAuthenticated && !!user?.email;
+  const accountEmail = isAuthenticated ? user?.email : undefined;
+  const hasAccountEmail = !!accountEmail;
+  // A locked field shows, and saves, the account email. It is derived rather
+  // than copied into state: on a fresh load of checkout the cart has no email
+  // yet and `user` arrives after the first render, so state seeded from either
+  // would stay empty — a blank, disabled field whose address never saves.
+  const email = accountEmail || typedEmail;
   const defaultCountryIso = countries[0]?.iso ?? "";
 
   const [shipAddress, setShipAddress] = useState<AddressFormData>(() => {
@@ -209,18 +215,23 @@ export function AddressSection({
     [onAutoSave],
   );
 
-  // Auto-save the pre-selected saved address on mount
+  // Auto-save the pre-selected saved address once an email is available. The
+  // account email can arrive after the buyer has already picked another saved
+  // address (or started typing one), so save what the form holds now rather
+  // than the initial default.
   useEffect(() => {
     if (mountAutoSaveFiredRef.current) return;
     if (!initialSavedAddress || !email.trim()) return;
 
     mountAutoSaveFiredRef.current = true;
-    tryAutoSave(
-      email,
-      addressToFormData(initialSavedAddress),
-      initialSavedAddress.id,
-    );
-  }, [initialSavedAddress, email, tryAutoSave]);
+    tryAutoSave(email, shipAddress, selectedSavedAddressId);
+  }, [
+    initialSavedAddress,
+    email,
+    shipAddress,
+    selectedSavedAddressId,
+    tryAutoSave,
+  ]);
 
   const updateShipAddress = (field: keyof AddressFormData, value: string) => {
     setShipAddress((prev) => updateAddressField(prev, field, value));
@@ -315,7 +326,7 @@ export function AddressSection({
           id="email"
           required
           value={email}
-          onChange={(e) => setEmail(e.target.value)}
+          onChange={(e) => setTypedEmail(e.target.value)}
           onBlur={handleEmailBlur}
           disabled={hasAccountEmail}
           placeholder={t("emailAddress")}
@@ -344,6 +355,7 @@ export function AddressSection({
           <AddressSelector
             groups={addressGroups}
             currentAddress={shipAddress}
+            selectedSavedAddressId={selectedSavedAddressId}
             countries={countries}
             states={shipStates}
             loadingStates={isPendingShip}

@@ -12,16 +12,15 @@ import {
   CheckoutSummary,
   useCheckout,
 } from "@/contexts/CheckoutContext";
+import { useStore } from "@/contexts/StoreContext";
 import { POLICY_LINKS } from "@/lib/constants/policies";
-import { getStoreName } from "@/lib/store";
 import { extractBasePath } from "@/lib/utils/path";
-
-const storeName = getStoreName();
 
 function CheckoutHeader() {
   const pathname = usePathname();
   const basePath = extractBasePath(pathname);
   const t = useTranslations("checkoutLayout");
+  const { storeName } = useStore();
 
   return (
     <header className="flex items-center justify-between h-16">
@@ -52,6 +51,7 @@ function CheckoutFooter() {
   const basePath = extractBasePath(pathname);
   const t = useTranslations("checkoutLayout");
   const tp = useTranslations("policies");
+  const { storeName } = useStore();
 
   return (
     <footer className="py-4 text-xs text-gray-500 border-t border-gray-200 mt-auto flex flex-wrap items-center gap-x-3 gap-y-1">

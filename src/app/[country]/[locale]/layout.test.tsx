@@ -25,6 +25,14 @@ vi.mock("next-intl", () => ({
 vi.mock("@/lib/data/markets", () => ({
   getStorefrontMarkets: mocks.getStorefrontMarkets,
 }));
+vi.mock("@/lib/data/store", () => ({
+  getStore: async () => ({
+    id: "store-1",
+    name: "Example Store",
+    seo_title: null,
+    meta_description: null,
+  }),
+}));
 vi.mock("@/lib/store", () => ({
   getDefaultCountry: () => "us",
   getDefaultLocale: () => "en",

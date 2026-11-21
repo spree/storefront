@@ -81,7 +81,15 @@ function nextWithLocaleContext(
   const response = NextResponse.next({
     request: { headers: requestHeaders },
   });
-  setLocaleCookies(response, country, locale);
+  // Only write the cookies when they change. Next.js treats any cookie the
+  // proxy sets on a Server Action request as a mutation by that action, and
+  // answers it with a full page re-render plus a client cache wipe.
+  if (
+    request.cookies.get(COUNTRY_COOKIE)?.value !== country ||
+    request.cookies.get(LOCALE_COOKIE)?.value !== locale
+  ) {
+    setLocaleCookies(response, country, locale);
+  }
   return response;
 }
 
