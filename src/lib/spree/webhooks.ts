@@ -50,6 +50,7 @@ export interface CreateWebhookHandlerOptions {
 export function createWebhookHandler(options: CreateWebhookHandlerOptions) {
   const { secret, handlers, toleranceSeconds, waitUntil } = options;
 
+  // biome-ignore lint/correctness/noComponentHookFactories: POST is a Route Handler, not a React component
   return async function POST(request: Request) {
     if (!secret) {
       console.error("[spree-webhook] Secret is not configured");

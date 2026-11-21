@@ -99,9 +99,12 @@ describe("resolveLocaleSwitchPath", () => {
     ["/fr/fr/collections/soldes", "/de/de/collections"],
     ["/fr/fr/policies/confidentialite", "/de/de"],
     ["/fr/fr/wholesale/products/friteuse", "/de/de/wholesale"],
-  ])("never reuses a translated slug without alternates: %s", (pathname, expected) => {
-    expect(resolveLocaleSwitchPath(pathname, "/de/de", [])).toBe(expected);
-  });
+  ])(
+    "never reuses a translated slug without alternates: %s",
+    (pathname, expected) => {
+      expect(resolveLocaleSwitchPath(pathname, "/de/de", [])).toBe(expected);
+    },
+  );
 
   it.each([
     ["/fr/fr/cart", "/de/de/cart"],

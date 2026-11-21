@@ -88,38 +88,41 @@ describe("AddressSection with a different address that resembles a saved one", (
   it.each([
     ["an apartment line", { address2: "Flat 2" }],
     ["a company", { company: "Acme Ltd" }],
-  ])("keeps the address typed with %s instead of reusing the saved one", async (_case, extra) => {
-    const { onAutoSave } = renderSection();
-    // Mount pre-selects the saved address.
-    await waitFor(() =>
-      expect(onAutoSave).toHaveBeenCalledWith({
-        email: "ana@example.com",
-        shipping_address_id: "addr_home",
-      }),
-    );
-
-    await userEvent.click(screen.getByText("useDifferentAddress"));
-    typeSavedAddressWith(extra);
-
-    // The form stays open with what was typed, on "Use a different address".
-    const [fieldId, value] = Object.entries(extra)[0] as [string, string];
-    expect(field(fieldId)).toHaveValue(value);
-    expect(screen.getAllByRole("radio")[1]).toBeChecked();
-
-    // Leaving the form saves the address as typed, not the saved entry.
-    fireEvent.blur(field("postal_code"));
-
-    await waitFor(() =>
-      expect(onAutoSave).toHaveBeenLastCalledWith({
-        email: "ana@example.com",
-        shipping_address: expect.objectContaining({
-          address1: "10 High Street",
-          postal_code: "62701",
-          [fieldId]: value,
+  ])(
+    "keeps the address typed with %s instead of reusing the saved one",
+    async (_case, extra) => {
+      const { onAutoSave } = renderSection();
+      // Mount pre-selects the saved address.
+      await waitFor(() =>
+        expect(onAutoSave).toHaveBeenCalledWith({
+          email: "ana@example.com",
+          shipping_address_id: "addr_home",
         }),
-      }),
-    );
-  });
+      );
+
+      await userEvent.click(screen.getByText("useDifferentAddress"));
+      typeSavedAddressWith(extra);
+
+      // The form stays open with what was typed, on "Use a different address".
+      const [fieldId, value] = Object.entries(extra)[0] as [string, string];
+      expect(field(fieldId)).toHaveValue(value);
+      expect(screen.getAllByRole("radio")[1]).toBeChecked();
+
+      // Leaving the form saves the address as typed, not the saved entry.
+      fireEvent.blur(field("postal_code"));
+
+      await waitFor(() =>
+        expect(onAutoSave).toHaveBeenLastCalledWith({
+          email: "ana@example.com",
+          shipping_address: expect.objectContaining({
+            address1: "10 High Street",
+            postal_code: "62701",
+            [fieldId]: value,
+          }),
+        }),
+      );
+    },
+  );
 
   it("does not close the form while the buyer is still typing an address", async () => {
     renderSection();

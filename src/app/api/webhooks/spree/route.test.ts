@@ -54,30 +54,31 @@ describe("POST /api/webhooks/spree — product events", () => {
     vi.unstubAllEnvs();
   });
 
-  it.each(
-    PRODUCT_CATALOG_EVENTS,
-  )("expires product lists, search and the product on %s", async (name) => {
-    const response = await POST(signedRequest(name, product));
+  it.each(PRODUCT_CATALOG_EVENTS)(
+    "expires product lists, search and the product on %s",
+    async (name) => {
+      const response = await POST(signedRequest(name, product));
 
-    expect(response.status).toBe(200);
-    expect(await response.json()).toEqual({ received: true, handled: true });
-    const tags = mockRevalidateTag.mock.calls.map(([tag]) => tag);
-    expect(tags).toEqual(
-      expect.arrayContaining([
-        "products",
-        "products-wholesale",
-        "product-filters",
-        "product-filters-wholesale",
-        "product:prod_86Rf07xd4z",
-        "product:dual-basket-air-fryer",
-        "product:prod_86Rf07xd4z-wholesale",
-        "product:dual-basket-air-fryer-wholesale",
-      ]),
-    );
-    for (const [, profile] of mockRevalidateTag.mock.calls) {
-      expect(profile).toEqual({ expire: 0 });
-    }
-  });
+      expect(response.status).toBe(200);
+      expect(await response.json()).toEqual({ received: true, handled: true });
+      const tags = mockRevalidateTag.mock.calls.map(([tag]) => tag);
+      expect(tags).toEqual(
+        expect.arrayContaining([
+          "products",
+          "products-wholesale",
+          "product-filters",
+          "product-filters-wholesale",
+          "product:prod_86Rf07xd4z",
+          "product:dual-basket-air-fryer",
+          "product:prod_86Rf07xd4z-wholesale",
+          "product:dual-basket-air-fryer-wholesale",
+        ]),
+      );
+      for (const [, profile] of mockRevalidateTag.mock.calls) {
+        expect(profile).toEqual({ expire: 0 });
+      }
+    },
+  );
 
   it("rejects a product event with a bad signature", async () => {
     const response = await POST(
