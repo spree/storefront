@@ -198,7 +198,18 @@
     "properties": "Właściwości",
     "yes": "Tak",
     "no": "Nie",
-    "optionFilterChip": "{filter}: {value}"
+    "optionFilterChip": "{filter}: {value}",
+    "giftCard": {
+      "sendToSomeoneElse": "Wyślij tę kartę podarunkową innej osobie",
+      "sentToYou": "Wyślemy Ci kartę podarunkową e-mailem, gdy zamówienie zostanie opłacone.",
+      "recipientEmail": "E-mail odbiorcy",
+      "recipientName": "Imię odbiorcy (opcjonalnie)",
+      "message": "Wiadomość (opcjonalnie)",
+      "sendOn": "Wyślij dnia (opcjonalnie)",
+      "sendOnHelp": "Pozostaw puste, aby wysłać ją od razu po opłaceniu zamówienia. Do 90 dni naprzód.",
+      "forRecipient": "Dla {recipient}",
+      "forYou": "Wysłana do Ciebie"
+    }
   },
   "navigation": {
     "home": "Strona główna",

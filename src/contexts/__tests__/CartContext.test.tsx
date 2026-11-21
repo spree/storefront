@@ -116,7 +116,12 @@ describe("CartContext", () => {
         await result.current.addItem("variant-1", 2);
       });
 
-      expect(mockAddToCart).toHaveBeenCalledWith("variant-1", 2, "dtc");
+      expect(mockAddToCart).toHaveBeenCalledWith(
+        "variant-1",
+        2,
+        "dtc",
+        undefined,
+      );
       expect(result.current.cart).toBe(updatedCart);
       expect(result.current.isOpen).toBe(true);
       expect(result.current.updating).toBe(false);
