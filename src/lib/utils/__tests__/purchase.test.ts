@@ -1,6 +1,6 @@
 import type { Order, OrderGroup } from "@spree/sdk";
 import { describe, expect, it } from "vitest";
-import { toPurchase } from "../purchase";
+import { pickupLocation, toPurchase } from "../purchase";
 
 function order(overrides: Partial<Order> = {}): Order {
   return {
@@ -163,5 +163,36 @@ describe("toPurchase", () => {
 
     expect(toPurchase(paid).payments).toHaveLength(1);
     expect(toPurchase(group).payments).toEqual([]);
+  });
+
+  // A pickup is collected from the location the order is fulfilled from, so
+  // the buyer's own address is not where it goes.
+  describe("pickup", () => {
+    const counter = { id: "sloc_1", name: "Shop location" };
+    const pickup = {
+      id: "ful_p",
+      delivery_method: { name: "Store Pickup", pickup: true },
+      stock_location: counter,
+    } as unknown as Order["fulfillments"][number];
+    const shipped = {
+      id: "ful_s",
+      delivery_method: { name: "Standard", pickup: false },
+      stock_location: counter,
+    } as unknown as Order["fulfillments"][number];
+
+    it("names the location only for a pickup delivery", () => {
+      expect(pickupLocation(pickup)).toBe(counter);
+      expect(pickupLocation(shipped)).toBeNull();
+    });
+
+    it("is pickup-only when every delivery is collected", () => {
+      expect(toPurchase(order({ fulfillments: [pickup] })).pickup_only).toBe(
+        true,
+      );
+      expect(
+        toPurchase(order({ fulfillments: [pickup, shipped] })).pickup_only,
+      ).toBe(false);
+      expect(toPurchase(order()).pickup_only).toBe(false);
+    });
   });
 });

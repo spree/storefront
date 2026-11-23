@@ -449,6 +449,7 @@
     "failedToLoad": "Echec du chargement des details de la commande.",
     "qty": "Qte : {quantity}",
     "shippingMethod": "Mode de livraison",
+    "pickupLocation": "Lieu de retrait",
     "standardShipping": "Livraison standard",
     "payment": "Paiement",
     "giftCard": "Carte cadeau",

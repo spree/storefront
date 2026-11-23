@@ -449,6 +449,7 @@
     "failedToLoad": "Error al cargar los detalles del pedido.",
     "qty": "Cant.: {quantity}",
     "shippingMethod": "Metodo de envio",
+    "pickupLocation": "Punto de recogida",
     "standardShipping": "Envio estandar",
     "payment": "Pago",
     "giftCard": "Tarjeta regalo",

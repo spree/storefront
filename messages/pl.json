@@ -449,6 +449,7 @@
     "failedToLoad": "Nie udało się załadować szczegółów zamówienia.",
     "qty": "Ilość: {quantity}",
     "shippingMethod": "Metoda wysyłki",
+    "pickupLocation": "Miejsce odbioru",
     "standardShipping": "Wysyłka standardowa",
     "payment": "Płatność",
     "giftCard": "Karta podarunkowa",

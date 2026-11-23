@@ -16,6 +16,7 @@ import type {
   Order,
   OrderGroup,
   Payment,
+  StockLocation,
 } from "@spree/sdk";
 import { isOrderGroup } from "@spree/sdk";
 
@@ -60,11 +61,26 @@ export interface Purchase {
   /** True when the checkout produced more than one order. */
   split: boolean;
   /**
+   * True when every delivery is collected by the customer, so nothing goes to
+   * the shipping address.
+   */
+  pickup_only: boolean;
+  /**
    * The money lines the summary renders. A group carries its own roll-ups of
    * its children — and the payment-side figures (gift card, store credit,
    * amount due) only exist on the group, since the payment is made against it.
    */
   totals: CompletedPurchase;
+}
+
+/**
+ * Where the customer collects a pickup delivery — the location the order is
+ * fulfilled from — or null when it is shipped.
+ */
+export function pickupLocation(fulfillment: Fulfillment): StockLocation | null {
+  return fulfillment.delivery_method?.pickup
+    ? (fulfillment.stock_location ?? null)
+    : null;
 }
 
 function toSegment(order: Order): PurchaseSegment {
@@ -85,6 +101,7 @@ function toSegment(order: Order): PurchaseSegment {
 export function toPurchase(result: CompletedPurchase): Purchase {
   const orders = isOrderGroup(result) ? (result.orders ?? []) : [result];
   const segments = orders.map(toSegment);
+  const fulfillments = segments.flatMap((segment) => segment.fulfillments);
 
   return {
     number: result.number,
@@ -99,9 +116,12 @@ export function toPurchase(result: CompletedPurchase): Purchase {
     // The payment is made once, against the group — a child serializes an
     // empty list, so the group's own is the only one to show.
     payments: result.payments ?? [],
-    fulfillments: segments.flatMap((segment) => segment.fulfillments),
+    fulfillments,
     segments,
     split: segments.length > 1,
+    pickup_only:
+      fulfillments.length > 0 &&
+      fulfillments.every((fulfillment) => pickupLocation(fulfillment)),
     totals: result,
   };
 }

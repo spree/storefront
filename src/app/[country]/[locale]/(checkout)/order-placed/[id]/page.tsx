@@ -8,6 +8,7 @@ import { use, useEffect, useMemo, useRef, useState } from "react";
 import { AddressBlock } from "@/components/order/AddressBlock";
 import { OrderTotals } from "@/components/order/OrderTotals";
 import { PaymentInfo } from "@/components/order/PaymentInfo";
+import { PickupLocation } from "@/components/order/PickupLocation";
 import { Button } from "@/components/ui/button";
 import { ProductImage } from "@/components/ui/product-image";
 import { useCheckout } from "@/contexts/CheckoutContext";
@@ -17,7 +18,11 @@ import { getCompletedOrder } from "@/lib/data/checkout";
 import { getCachedCompletedOrder } from "@/lib/utils/completed-order-cache";
 import { extractBasePath } from "@/lib/utils/path";
 import { lineItemAmount } from "@/lib/utils/price";
-import { type CompletedPurchase, toPurchase } from "@/lib/utils/purchase";
+import {
+  type CompletedPurchase,
+  pickupLocation,
+  toPurchase,
+} from "@/lib/utils/purchase";
 
 interface OrderPlacedPageProps {
   params: Promise<{
@@ -227,23 +232,27 @@ export default function OrderPlacedPage({ params }: OrderPlacedPageProps) {
               <h3 className="text-sm font-semibold text-gray-900 mb-3">
                 {t("shippingMethod")}
               </h3>
-              {purchase.fulfillments.map((fulfillment) => (
-                <div
-                  key={fulfillment.id}
-                  className="flex items-start gap-3 mb-2 last:mb-0"
-                >
-                  <Package className="w-4 h-4 text-gray-400 mt-0.5 flex-shrink-0" />
-                  <div>
-                    <p className="text-sm font-medium text-gray-900">
-                      {fulfillment.delivery_method?.name ||
-                        t("standardShipping")}
-                    </p>
-                    <p className="text-xs text-gray-500">
-                      {formatMoney(fulfillment.cost, purchase.currency)}
-                    </p>
+              {purchase.fulfillments.map((fulfillment) => {
+                const location = pickupLocation(fulfillment);
+                return (
+                  <div
+                    key={fulfillment.id}
+                    className="flex items-start gap-3 mb-2 last:mb-0"
+                  >
+                    <Package className="w-4 h-4 text-gray-400 mt-0.5 flex-shrink-0" />
+                    <div>
+                      <p className="text-sm font-medium text-gray-900">
+                        {fulfillment.delivery_method?.name ||
+                          t("standardShipping")}
+                      </p>
+                      <p className="text-xs text-gray-500">
+                        {formatMoney(fulfillment.cost, purchase.currency)}
+                      </p>
+                      {location && <PickupLocation location={location} />}
+                    </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
 
@@ -272,7 +281,7 @@ export default function OrderPlacedPage({ params }: OrderPlacedPageProps) {
       {/* Contact & Addresses */}
       <div className="bg-white rounded-xl border border-gray-200 overflow-hidden mb-6">
         <div className="grid grid-cols-1 sm:grid-cols-2 divide-y sm:divide-y-0 sm:divide-x divide-gray-200">
-          {purchase.shipping_address && (
+          {purchase.shipping_address && !purchase.pickup_only && (
             <div className="px-6 py-4">
               <h3 className="text-sm font-semibold text-gray-900 mb-2">
                 {t("shippingAddress")}
