@@ -73,16 +73,21 @@ interface PaymentSectionProps {
   countries: Country[];
   isAuthenticated: boolean;
   fetchStates: (countryIso: string) => Promise<State[]>;
+  /** Resolves to the re-priced cart, or null when the address was not saved. */
   onUpdateBillingAddress: (data: {
     billing_address?: CartAddressParams;
     use_shipping?: boolean;
-  }) => Promise<boolean>;
+  }) => Promise<Cart | null>;
   /** Resolves true once the order is placed, false when completion failed. */
   onPaymentComplete: (result: PaymentCompleteResult) => Promise<boolean>;
   processing: boolean;
   setProcessing: (processing: boolean) => void;
   onSessionMethodChange?: (isSessionBased: boolean) => void;
   errors?: string[];
+}
+
+function amountDueOf(cart: Cart): string | null {
+  return cart.amount_due ?? cart.total;
 }
 
 /**
@@ -137,7 +142,7 @@ export function PaymentSection({
   // prices-hidden guests) must NOT read as zero — that would complete
   // checkout with no payment. Only a real numeric 0 is a free order;
   // an unknown amount falls through to the normal payment path.
-  const rawAmountDue = cart.amount_due ?? cart.total;
+  const rawAmountDue = amountDueOf(cart);
   const amountDue =
     rawAmountDue == null ? Number.NaN : parseFloat(rawAmountDue);
   const isZeroAmount = Number.isFinite(amountDue) && amountDue === 0;
@@ -485,6 +490,29 @@ export function PaymentSection({
     setBillAddress((prev) => updateAddressField(prev, field, value));
   };
 
+  const saveBillingAddress = useCallback(
+    () =>
+      onUpdateBillingAddress(
+        useShippingForBilling
+          ? { use_shipping: true }
+          : { billing_address: formDataToAddress(billAddress) },
+      ),
+    [useShippingForBilling, billAddress, onUpdateBillingAddress],
+  );
+
+  // Resolves false when an amount update in flight failed or was superseded.
+  // It waits for every update, including one started meanwhile.
+  const awaitAmountSync = useCallback(async (): Promise<boolean> => {
+    for (
+      let amountSync = amountSyncRef.current;
+      amountSync;
+      amountSync = amountSyncRef.current
+    ) {
+      if (!(await amountSync)) return false;
+    }
+    return true;
+  }, []);
+
   // ── Auto-complete after gateway approval (PayPal popup / Adyen sessions) ──
   // "not_started" when completion never reached the payment (one already in
   // flight, or the billing address could not be saved).
@@ -500,20 +528,7 @@ export function PaymentSection({
       setGatewayError(null);
 
       try {
-        // Update billing address
-        let addressSuccess: boolean;
-        if (useShippingForBilling) {
-          addressSuccess = await onUpdateBillingAddress({
-            use_shipping: true,
-          });
-        } else {
-          const billingData = formDataToAddress(billAddress);
-          addressSuccess = await onUpdateBillingAddress({
-            billing_address: billingData,
-          });
-        }
-
-        if (!addressSuccess) {
+        if (!(await saveBillingAddress())) {
           setProcessing(false);
           completionInFlightRef.current = false;
           setGatewayError(t("failedToSaveBilling"));
@@ -536,15 +551,7 @@ export function PaymentSection({
         return "not_started";
       }
     },
-    [
-      paymentSessionId,
-      useShippingForBilling,
-      billAddress,
-      onUpdateBillingAddress,
-      onPaymentComplete,
-      setProcessing,
-      t,
-    ],
+    [paymentSessionId, saveBillingAddress, onPaymentComplete, setProcessing, t],
   );
 
   // PayPal keeps the session open when it declined the buyer's funding
@@ -583,16 +590,8 @@ export function PaymentSection({
   // holds, and Drop-in pays it with the session data that comes back.
   const handleAdyenBeforeSubmit = useCallback(async (): Promise<string> => {
     if (!paymentSessionId) throw new Error(t("failedToInitPayment"));
-    // A submit overtaking an amount update would pay the old figure, so it
-    // waits for every update in flight, including one started meanwhile, and
-    // stops if one failed or a newer session replaced it.
-    for (
-      let amountSync = amountSyncRef.current;
-      amountSync;
-      amountSync = amountSyncRef.current
-    ) {
-      if (!(await amountSync)) throw new Error(t("failedToInitPayment"));
-    }
+    // A submit overtaking an amount update would pay the old figure.
+    if (!(await awaitAmountSync())) throw new Error(t("failedToInitPayment"));
 
     const result = await updateCheckoutPaymentSession(
       cart.id,
@@ -608,7 +607,7 @@ export function PaymentSection({
       );
     }
     return payableSessionData;
-  }, [cart.id, paymentSessionId, t]);
+  }, [awaitAmountSync, cart.id, paymentSessionId, t]);
 
   // A failed completion leaves Drop-in mounted while Adyen keeps the session
   // open for another try; only a session that can no longer be paid is
@@ -633,6 +632,13 @@ export function PaymentSection({
     [setProcessing, replaceSessionIfUnpayable],
   );
 
+  const stopForNewTotal = useCallback(() => {
+    const msg = t("totalChanged");
+    setGatewayError(msg);
+    setProcessing(false);
+    return { error: msg };
+  }, [setProcessing, t]);
+
   // ── Submit ──────────────────────────────────────────────────────────
   useImperativeHandle(
     ref,
@@ -646,21 +652,14 @@ export function PaymentSection({
           if (isZeroAmount) {
             setProcessing(true);
             try {
-              // Still update billing address
-              let addressSuccess: boolean;
-              if (useShippingForBilling) {
-                addressSuccess = await onUpdateBillingAddress({
-                  use_shipping: true,
-                });
-              } else {
-                const billingData = formDataToAddress(billAddress);
-                addressSuccess = await onUpdateBillingAddress({
-                  billing_address: billingData,
-                });
-              }
-              if (!addressSuccess) {
+              const updatedCart = await saveBillingAddress();
+              if (!updatedCart) {
                 setProcessing(false);
                 return { error: t("failedToSaveBilling") };
+              }
+              // Tax by the billing address can make the order payable.
+              if (amountDueOf(updatedCart) !== rawAmountDue) {
+                return stopForNewTotal();
               }
               await onPaymentComplete({ type: "direct" });
               return {};
@@ -680,19 +679,8 @@ export function PaymentSection({
 
           try {
             // 1. Update billing address
-            let addressSuccess: boolean;
-            if (useShippingForBilling) {
-              addressSuccess = await onUpdateBillingAddress({
-                use_shipping: true,
-              });
-            } else {
-              const billingData = formDataToAddress(billAddress);
-              addressSuccess = await onUpdateBillingAddress({
-                billing_address: billingData,
-              });
-            }
-
-            if (!addressSuccess) {
+            const updatedCart = await saveBillingAddress();
+            if (!updatedCart) {
               setProcessing(false);
               return { error: t("failedToSaveBilling") };
             }
@@ -700,6 +688,18 @@ export function PaymentSection({
             // 2. Process payment based on method type
             if (selectedMethod.session_required) {
               // Session-based flow (Stripe, Adyen, etc.)
+              // When tax follows the billing address, saving it can change
+              // the total. The session still holds the amount shown before,
+              // and paying now would charge that figure for an order that
+              // can no longer be placed. The buyer sees the new total and
+              // pays again once the session has been moved to it.
+              if (amountDueOf(updatedCart) !== rawAmountDue) {
+                return stopForNewTotal();
+              }
+              if (!(await awaitAmountSync())) {
+                setProcessing(false);
+                return { error: t("failedToInitPayment") };
+              }
               if (!paymentSessionId || !sessionExternalData) {
                 setProcessing(false);
                 return { error: t("failedToInitPayment") };
@@ -786,13 +786,14 @@ export function PaymentSection({
     }),
     [
       isZeroAmount,
+      rawAmountDue,
       selectedMethod,
       paymentSessionId,
       sessionExternalData,
       selectedCardId,
-      useShippingForBilling,
-      billAddress,
-      onUpdateBillingAddress,
+      saveBillingAddress,
+      awaitAmountSync,
+      stopForNewTotal,
       onPaymentComplete,
       cart.id,
       setProcessing,

@@ -464,14 +464,16 @@ function CheckoutPageContentInner({
     [],
   );
 
-  // Handle billing address update (called by PaymentSection before gateway confirmation)
+  // Handle billing address update (called by PaymentSection before gateway
+  // confirmation). Tax can follow the billing address, so the re-priced cart
+  // is shown and handed back.
   const handleUpdateBillingAddress = useCallback(
     async (data: {
       billing_address?: CartAddressParams;
       use_shipping?: boolean;
-    }): Promise<boolean> => {
+    }): Promise<Cart | null> => {
       const currentOrder = cartRef.current;
-      if (!currentOrder) return false;
+      if (!currentOrder) return null;
 
       setError(null);
 
@@ -485,13 +487,14 @@ function CheckoutPageContentInner({
 
         if (!updateResult.success) {
           setError(updateResult.error || tRef.current("failedToSaveBilling"));
-          return false;
+          return null;
         }
 
-        return true;
+        setCart(updateResult.cart);
+        return updateResult.cart;
       } catch {
         setError(tRef.current("failedToSaveBillingRetry"));
-        return false;
+        return null;
       }
     },
     [],

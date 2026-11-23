@@ -1,5 +1,12 @@
 import type { Cart, CreditCard, PaymentMethod } from "@spree/sdk";
-import { act, fireEvent, render, screen } from "@testing-library/react";
+import {
+  act,
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+} from "@testing-library/react";
+import { createRef, type Ref } from "react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("next-intl", () => ({
@@ -59,7 +66,11 @@ vi.mock("@/lib/data/payment", () => ({
     updateCheckoutPaymentSession(...args),
 }));
 
-import { PaymentSection } from "@/components/checkout/PaymentSection";
+import {
+  PaymentSection,
+  type PaymentSectionHandle,
+} from "@/components/checkout/PaymentSection";
+import { confirmWithSavedCard } from "@/components/checkout/StripePaymentForm";
 
 function deferred<T>() {
   let resolve!: (value: T) => void;
@@ -109,15 +120,29 @@ const savedCard = {
   year: 2030,
 } as unknown as CreditCard;
 
-function section(currentCart: Cart = cart, setProcessing = vi.fn()) {
+function section(
+  currentCart: Cart = cart,
+  setProcessing = vi.fn(),
+  handlers: {
+    onUpdateBillingAddress?: () => Promise<Cart | null>;
+    onPaymentComplete?: () => Promise<boolean>;
+    ref?: Ref<PaymentSectionHandle>;
+  } = {},
+) {
   return (
     <PaymentSection
+      ref={handlers.ref}
       cart={currentCart}
       countries={[]}
       isAuthenticated
       fetchStates={vi.fn().mockResolvedValue([])}
-      onUpdateBillingAddress={vi.fn().mockResolvedValue(true)}
-      onPaymentComplete={vi.fn().mockResolvedValue(true)}
+      onUpdateBillingAddress={
+        handlers.onUpdateBillingAddress ??
+        vi.fn().mockResolvedValue(currentCart)
+      }
+      onPaymentComplete={
+        handlers.onPaymentComplete ?? vi.fn().mockResolvedValue(true)
+      }
       processing={false}
       setProcessing={setProcessing}
     />
@@ -435,5 +460,102 @@ describe("PaymentSection", () => {
       "ps_stripe",
       { amount: "12.00" },
     );
+  });
+  describe("Pay now when the billing address changes the total", () => {
+    const taxedCart = {
+      ...cart,
+      total: "10.50",
+      amount_due: "10.50",
+    } as Cart;
+
+    async function renderWithSavedCard(
+      onUpdateBillingAddress: () => Promise<Cart | null>,
+    ) {
+      getCreditCards.mockResolvedValue({ data: [savedCard] });
+      createCheckoutPaymentSession.mockResolvedValue(stripeSession);
+      updateCheckoutPaymentSession.mockResolvedValue(stripeSession);
+      vi.mocked(confirmWithSavedCard).mockReset();
+      vi.mocked(confirmWithSavedCard).mockResolvedValue({});
+      const onPaymentComplete = vi.fn().mockResolvedValue(true);
+      const setProcessing = vi.fn();
+      const ref = createRef<PaymentSectionHandle>();
+
+      const view = render(
+        section(cart, setProcessing, {
+          ref,
+          onUpdateBillingAddress,
+          onPaymentComplete,
+        }),
+      );
+      fireEvent.click(screen.getByRole("radio", { name: "Stripe" }));
+      await waitFor(() =>
+        expect(createCheckoutPaymentSession).toHaveBeenCalledWith(
+          cart.id,
+          stripeMethod.id,
+          expect.objectContaining({
+            stripe_payment_method_id: "pm_saved_card",
+          }),
+        ),
+      );
+      await act(async () => {});
+
+      return { ...view, ref, setProcessing, onPaymentComplete };
+    }
+
+    it("does not charge the card the amount shown before the address was saved", async () => {
+      const { ref, setProcessing, onPaymentComplete } =
+        await renderWithSavedCard(vi.fn().mockResolvedValue(taxedCart));
+
+      let result: { error?: string } | undefined;
+      await act(async () => {
+        result = await ref.current?.submit();
+      });
+
+      expect(result).toEqual({ error: "totalChanged" });
+      expect(confirmWithSavedCard).not.toHaveBeenCalled();
+      expect(onPaymentComplete).not.toHaveBeenCalled();
+      expect(setProcessing).toHaveBeenLastCalledWith(false);
+      expect(screen.getByText("totalChanged")).toBeInTheDocument();
+    });
+
+    it("charges once the session holds the new total", async () => {
+      const amountUpdate = deferred<typeof stripeSession>();
+      const { ref, rerender, onPaymentComplete } = await renderWithSavedCard(
+        vi.fn().mockResolvedValue(taxedCart),
+      );
+      updateCheckoutPaymentSession.mockReturnValue(amountUpdate.promise);
+
+      // The checkout shows the re-priced cart; the session follows it.
+      rerender(
+        section(taxedCart, vi.fn(), {
+          ref,
+          onUpdateBillingAddress: vi.fn().mockResolvedValue(taxedCart),
+          onPaymentComplete,
+        }),
+      );
+      expect(updateCheckoutPaymentSession).toHaveBeenCalledWith(
+        cart.id,
+        "ps_stripe",
+        { amount: "10.50" },
+      );
+
+      let submitted: Promise<{ error?: string } | undefined> | undefined;
+      await act(async () => {
+        submitted = ref.current?.submit();
+      });
+      // Nothing is charged before the session holds the new amount.
+      expect(confirmWithSavedCard).not.toHaveBeenCalled();
+
+      await act(async () => {
+        amountUpdate.resolve(stripeSession);
+        await submitted;
+      });
+
+      expect(confirmWithSavedCard).toHaveBeenCalledTimes(1);
+      expect(onPaymentComplete).toHaveBeenCalledWith({
+        type: "session",
+        sessionId: "ps_stripe",
+      });
+    });
   });
 });

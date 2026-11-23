@@ -266,6 +266,7 @@
     "failedToSelectRate": "Error al seleccionar la tarifa de envio",
     "failedToSaveBilling": "Error al guardar la direccion de facturacion",
     "failedToSaveBillingRetry": "Error al guardar la direccion de facturacion. Por favor, intenta de nuevo.",
+    "totalChanged": "Tu total se ha actualizado según tu dirección de facturación. Revísalo y vuelve a pagar.",
     "failedToCompleteOrder": "Error al completar el pedido",
     "stripeNotLoaded": "Stripe aun no se ha cargado",
     "paymentProcessingError": "Ocurrio un error durante el pago.",
