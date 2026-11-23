@@ -177,6 +177,8 @@ The storefront can render and send its own order, shipment, and account emails w
 
 Product lists, search and product pages are cached for up to 10 minutes. To show catalog changes at once (for example, a product taken down, archived or set to draft leaving search), subscribe the webhook endpoint (`/api/webhooks/spree`, signed with `SPREE_WEBHOOK_SECRET`) to these events: `product.created`, `product.updated`, `product.deleted`, `product.activated`, `product.approved`, `product.drafted` and `product.archived`. You can use the same endpoint as for emails.
 
+Store settings from Spree Admin → Settings → Store (name, SEO title and description, keywords, logo, social accounts and support email) are cached for up to an hour. Subscribe the same endpoint to `store.updated` to show changes at once.
+
 ## Deployment
 
 Deploy to Vercel, Docker (a multi-stage `Dockerfile` ships at the repo root), or any Node.js host. See the [Deployment guide](https://spreecommerce.org/docs/developer/storefront/nextjs/deployment).

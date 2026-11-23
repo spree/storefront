@@ -1,4 +1,4 @@
-import type { Market } from "@spree/sdk";
+import type { Market, Store } from "@spree/sdk";
 import type { Metadata, Viewport } from "next";
 import { headers } from "next/headers";
 import { notFound, redirect } from "next/navigation";
@@ -127,7 +127,7 @@ export async function CountryLocaleLayoutContent({
           locale={requestedLocale}
           markets={availableMarkets}
           messages={messages}
-          storeName={store.name}
+          store={store}
         >
           {children}
         </CountryLocaleProviders>
@@ -186,7 +186,7 @@ interface CountryLocaleProvidersProps {
   locale: Locale;
   markets: Market[];
   messages: IntlMessages;
-  storeName: string;
+  store: Store;
 }
 
 export function CountryLocaleProviders({
@@ -195,7 +195,7 @@ export function CountryLocaleProviders({
   locale,
   markets,
   messages,
-  storeName,
+  store,
 }: CountryLocaleProvidersProps) {
   return (
     <NextIntlClientProvider messages={messages} locale={locale}>
@@ -203,11 +203,11 @@ export function CountryLocaleProviders({
         initialCountry={country}
         initialLocale={locale}
         initialMarkets={markets}
-        storeName={storeName}
+        storeName={store.name}
       >
         <AuthProvider>
           <CartProvider>
-            <JsonLd data={buildOrganizationJsonLd(storeName)} />
+            <JsonLd data={buildOrganizationJsonLd(store)} />
             {children}
             <CartDrawer />
             <Toaster />

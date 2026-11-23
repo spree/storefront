@@ -1,4 +1,4 @@
-import type { Category, Media, Product } from "@spree/sdk";
+import type { Category, Media, Product, Store } from "@spree/sdk";
 import { ensureProtocol, getStoreUrl } from "@/lib/store";
 
 /**
@@ -126,56 +126,89 @@ export function buildBreadcrumbJsonLd(
   };
 }
 
+/** A profile handle as merchants type it, with or without a leading `@`. */
+const PROFILE_HANDLE = /^@?([\w.-]+)$/;
+
+/** An X (Twitter) username: 1–15 letters, digits or underscores. */
+const TWITTER_USERNAME = /^\w{1,15}$/;
+
 /**
- * Build JSON-LD Organization schema from the store name (Store API) and the
- * optional social/contact environment variables.
+ * Parse a profile URL typed with or without its protocol (`x.com/acme`).
+ * Only http(s) URLs with a path are accepted: a bare domain is not a profile.
+ */
+function parseProfileUrl(value: string): URL | null {
+  try {
+    const url = new URL(ensureProtocol(value));
+    if (url.protocol !== "https:" && url.protocol !== "http:") return null;
+    return url.pathname.length > 1 ? url : null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * A social profile URL from a Store API value, which holds whatever the
+ * merchant typed in Spree Admin: a handle (`acme`, `@acme`), a URL without
+ * its protocol (`facebook.com/acme`) or a full URL. Anything else is dropped.
+ */
+export function socialProfileUrl(
+  value: string | null | undefined,
+  host: string,
+): string | null {
+  const trimmed = value?.trim();
+  if (!trimmed) return null;
+  if (trimmed.includes("/")) return parseProfileUrl(trimmed)?.href ?? null;
+  const handle = PROFILE_HANDLE.exec(trimmed)?.[1];
+  return handle ? `https://${host}/${handle}` : null;
+}
+
+/**
+ * The store's X (Twitter) account as an `@handle`, for the `twitter:site`
+ * meta tag. Accepts the same handle-or-URL value as `socialProfileUrl`, and
+ * returns null when no valid username can be read from it.
+ */
+export function twitterHandle(value: string | null | undefined): string | null {
+  const trimmed = value?.trim();
+  if (!trimmed) return null;
+  const candidate = trimmed.includes("/")
+    ? parseProfileUrl(trimmed)?.pathname.split("/")[1]
+    : trimmed;
+  const username = candidate?.replace(/^@/, "");
+  return username && TWITTER_USERNAME.test(username) ? `@${username}` : null;
+}
+
+/**
+ * Build JSON-LD Organization schema from the store's name, branding, social
+ * accounts and support email (Spree Admin → Settings → Store).
  * https://schema.org/Organization
  */
-export function buildOrganizationJsonLd(
-  storeName: string,
-): Record<string, unknown> {
+export function buildOrganizationJsonLd(store: Store): Record<string, unknown> {
   const storeUrl = getStoreUrl();
-  const logoUrl = process.env.STORE_LOGO_URL;
-  const facebook = process.env.STORE_FACEBOOK;
-  const twitter = process.env.STORE_TWITTER;
-  const instagram = process.env.STORE_INSTAGRAM;
-  const supportEmail = process.env.STORE_SUPPORT_EMAIL;
 
   const schema: Record<string, unknown> = {
     "@context": "https://schema.org",
     "@type": "Organization",
-    name: storeName,
+    name: store.name,
     ...(storeUrl ? { url: storeUrl } : {}),
   };
 
-  if (logoUrl) {
-    schema.logo = logoUrl;
+  if (store.logo_url) {
+    schema.logo = store.logo_url;
   }
 
-  const sameAs: string[] = [];
-  if (facebook) sameAs.push(facebook);
-  if (twitter) {
-    sameAs.push(
-      twitter.startsWith("http")
-        ? twitter
-        : `https://twitter.com/${twitter.replace("@", "")}`,
-    );
-  }
-  if (instagram) {
-    sameAs.push(
-      instagram.startsWith("http")
-        ? instagram
-        : `https://instagram.com/${instagram.replace("@", "")}`,
-    );
-  }
+  const sameAs = [
+    socialProfileUrl(store.facebook, "facebook.com"),
+    socialProfileUrl(store.twitter, "x.com"),
+    socialProfileUrl(store.instagram, "instagram.com"),
+  ].filter((url): url is string => url !== null);
   if (sameAs.length > 0) {
     schema.sameAs = sameAs;
   }
 
-  if (supportEmail) {
+  if (store.customer_support_email) {
     schema.contactPoint = {
       "@type": "ContactPoint",
-      email: supportEmail,
+      email: store.customer_support_email,
       contactType: "customer service",
     };
   }

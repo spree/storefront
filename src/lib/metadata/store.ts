@@ -2,7 +2,7 @@ import type { Store } from "@spree/sdk";
 import type { Metadata } from "next";
 import { getTranslations } from "next-intl/server";
 import { getStore, storeSeoTitle } from "@/lib/data/store";
-import { SOCIAL_IMAGE_PATH } from "@/lib/seo";
+import { SOCIAL_IMAGE_PATH, twitterHandle } from "@/lib/seo";
 import { getStoreUrl } from "@/lib/store";
 
 /**
@@ -38,8 +38,7 @@ export async function generateStoreMetadata({
   const seoTitle = storeSeoTitle(store);
   const storeUrl = getStoreUrl();
   const metaDescription = await storeMetaDescription(store, locale);
-  const metaKeywords = process.env.STORE_META_KEYWORDS;
-  const twitter = process.env.STORE_TWITTER;
+  const twitterSite = twitterHandle(store.twitter);
 
   let metadataBaseSpread: Partial<{ metadataBase: URL }> = {};
   if (storeUrl) {
@@ -57,7 +56,7 @@ export async function generateStoreMetadata({
       default: seoTitle,
     },
     description: metaDescription,
-    ...(metaKeywords ? { keywords: metaKeywords } : {}),
+    ...(store.meta_keywords ? { keywords: store.meta_keywords } : {}),
     openGraph: {
       siteName: store.name,
       locale: normalizeOpenGraphLocale(locale),
@@ -66,11 +65,7 @@ export async function generateStoreMetadata({
     },
     twitter: {
       card: "summary_large_image",
-      ...(twitter
-        ? {
-            site: twitter.startsWith("@") ? twitter : `@${twitter}`,
-          }
-        : {}),
+      ...(twitterSite ? { site: twitterSite } : {}),
     },
   };
 }

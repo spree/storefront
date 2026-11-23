@@ -82,7 +82,7 @@ async function NotFoundDocument(): Promise<React.JSX.Element> {
         locale={locale}
         markets={markets}
         messages={messages}
-        storeName={store.name}
+        store={store}
       >
         <StorefrontLayout params={Promise.resolve({ country, locale })}>
           <NotFoundContent basePath={basePath} />
