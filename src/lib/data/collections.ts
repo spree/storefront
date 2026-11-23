@@ -11,7 +11,11 @@ import {
 } from "@spree/sdk";
 import { cacheLife, cacheTag } from "next/cache";
 import { getProductFilters } from "@/lib/data/products";
-import { getAccessToken, getClient, getLocaleOptions } from "@/lib/spree";
+import {
+  getCatalogAccessToken,
+  getClient,
+  getLocaleOptions,
+} from "@/lib/spree";
 
 type LocaleOptions = { locale?: string; country?: string };
 
@@ -90,18 +94,23 @@ export async function getCollection(
 /**
  * Persistent cached collection products fetch. Goes through the collection's
  * own products endpoint so that, with no `sort`, the merchant's chosen
- * ordering (`sort_order`, including a manual arrangement) applies.
+ * ordering (`sort_order`, including a manual arrangement) applies. The
+ * customer JWT is sent so the listing is narrowed to the customer's catalogs;
+ * guest users pass undefined so the cache entry is shared.
  */
 export async function cachedListCollectionProducts(
   collectionId: string,
   params: ProductListParams | undefined,
   options: LocaleOptions,
-  _userToken?: string,
+  userToken?: string,
 ): Promise<PaginatedResponse<Product>> {
   "use cache: remote";
   cacheLife("tenMinutes");
   cacheTag("products", `collection-products:${collectionId}`);
-  return getClient().collections.products.list(collectionId, params, options);
+  return getClient().collections.products.list(collectionId, params, {
+    ...options,
+    ...(userToken ? { token: userToken } : undefined),
+  });
 }
 
 /**
@@ -114,7 +123,7 @@ export async function getCollectionProducts(
   params?: ProductListParams,
 ): Promise<PaginatedResponse<Product>> {
   const options = await getLocaleOptions();
-  const userToken = await getAccessToken();
+  const userToken = await getCatalogAccessToken();
   return cachedListCollectionProducts(collectionId, params, options, userToken);
 }
 

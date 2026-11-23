@@ -9,7 +9,7 @@ import {
   cachedListCollectionProducts,
   getCollections,
 } from "@/lib/data/collections";
-import { getAccessToken } from "@/lib/spree";
+import { getCatalogAccessToken } from "@/lib/spree";
 
 /** Collections promoted on the home page, in the merchant's order. */
 const HOME_COLLECTION_LIMIT = 3;
@@ -111,7 +111,7 @@ async function loadShelves(
         },
         options,
       ),
-      getAccessToken(),
+      getCatalogAccessToken(),
     ]);
     const shelves = await Promise.all(
       collections

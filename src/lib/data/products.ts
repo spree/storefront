@@ -5,7 +5,7 @@ import { cacheLife, cacheTag } from "next/cache";
 import {
   cacheTagSuffix,
   DEFAULT_SURFACE,
-  getAccessToken,
+  getCatalogAccessToken,
   getClientForSurface,
   getLocaleOptions,
   type Surface,
@@ -18,11 +18,12 @@ import {
  * - locale/country: determines language and market-specific pricing
  * - surface: DTC vs wholesale — different catalog + channel pricing. Baked
  *   into both the cache tag and the arguments so the two never share entries.
- * - userToken: per-user cache segmentation (separate arg, NOT passed to
- *   SDK). Authenticated users may see different prices (B2B, loyalty).
- *   Each user's JWT is unique so the cache is segmented per user.
- *   Guest users pass undefined. On the wholesale surface the token is
- *   always present — the channel 401s guests.
+ * - userToken: the customer JWT, sent to the Store API on every surface.
+ *   The API narrows products to the customer's catalogs (company, customer
+ *   group) and prices them for the customer, so the response is per user.
+ *   Each user's JWT is unique, so the cache is segmented per user. Guests
+ *   pass undefined and share one entry. On the wholesale surface the token
+ *   is always present — the channel 401s guests.
  */
 export async function cachedListProducts(
   params: ProductListParams | undefined,
@@ -35,10 +36,7 @@ export async function cachedListProducts(
   cacheTag(`products${cacheTagSuffix(surface)}`);
   return getClientForSurface(surface).products.list(params, {
     ...options,
-    // Wholesale catalog requires the customer JWT — the channel is gated.
-    ...(surface === "wholesale" && userToken
-      ? { token: userToken }
-      : undefined),
+    ...(userToken ? { token: userToken } : undefined),
   });
 }
 
@@ -47,7 +45,7 @@ export async function getProducts(
   surface: Surface = DEFAULT_SURFACE,
 ) {
   const options = await getLocaleOptions();
-  const userToken = await getAccessToken();
+  const userToken = await getCatalogAccessToken();
   return cachedListProducts(params, options, surface, userToken);
 }
 
@@ -57,9 +55,8 @@ export async function getProducts(
  * - slugOrId, expand: identify the product and response shape
  * - locale/country: determines language and market-specific pricing
  * - surface: DTC vs wholesale — see cachedListProducts
- * - userToken: per-user cache segmentation (separate arg, NOT passed to
- *   SDK). Authenticated users may see different prices (B2B, loyalty).
- *   Guest users pass undefined, so all guests share one entry.
+ * - userToken: the customer JWT — see cachedListProducts. A product outside
+ *   the customer's catalogs answers 404.
  */
 export async function cachedGetProduct(
   slugOrId: string,
@@ -79,9 +76,7 @@ export async function cachedGetProduct(
     { expand },
     {
       ...options,
-      ...(surface === "wholesale" && userToken
-        ? { token: userToken }
-        : undefined),
+      ...(userToken ? { token: userToken } : undefined),
     },
   );
 }
@@ -92,7 +87,7 @@ export async function getProduct(
   surface: Surface = DEFAULT_SURFACE,
 ) {
   const options = await getLocaleOptions();
-  const userToken = await getAccessToken();
+  const userToken = await getCatalogAccessToken();
   return cachedGetProduct(
     slugOrId,
     params?.expand ?? [],
@@ -113,9 +108,7 @@ async function cachedGetProductFilters(
   cacheTag(`product-filters${cacheTagSuffix(surface)}`);
   return getClientForSurface(surface).products.filters(params, {
     ...options,
-    ...(surface === "wholesale" && userToken
-      ? { token: userToken }
-      : undefined),
+    ...(userToken ? { token: userToken } : undefined),
   });
 }
 
@@ -124,6 +117,6 @@ export async function getProductFilters(
   surface: Surface = DEFAULT_SURFACE,
 ) {
   const options = await getLocaleOptions();
-  const userToken = await getAccessToken();
+  const userToken = await getCatalogAccessToken();
   return cachedGetProductFilters(params, options, surface, userToken);
 }
