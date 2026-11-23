@@ -40,8 +40,18 @@ vi.mock("@/components/checkout/AdyenPaymentForm", () => ({
   },
 }));
 
+const paypalForm: { onApproved?: () => Promise<string> } = {};
 vi.mock("@/components/checkout/PayPalPaymentForm", () => ({
-  PayPalPaymentForm: () => null,
+  PayPalPaymentForm: ({
+    paypalOrderId,
+    onApproved,
+  }: {
+    paypalOrderId: string;
+    onApproved: () => Promise<string>;
+  }) => {
+    paypalForm.onApproved = onApproved;
+    return <div data-testid="paypal-form">{paypalOrderId}</div>;
+  },
 }));
 
 vi.mock("@/components/checkout/AddressFormFields", () => ({
@@ -56,10 +66,11 @@ vi.mock("@/lib/data/credit-cards", () => ({
 const createCheckoutPaymentSession = vi.fn();
 const updateCheckoutPaymentSession = vi.fn();
 const getCheckoutPaymentSession = vi.fn();
+const createDirectPayment = vi.fn();
 vi.mock("@/lib/data/payment", () => ({
   createCheckoutPaymentSession: (...args: unknown[]) =>
     createCheckoutPaymentSession(...args),
-  createDirectPayment: vi.fn(),
+  createDirectPayment: (...args: unknown[]) => createDirectPayment(...args),
   getCheckoutPaymentSession: (...args: unknown[]) =>
     getCheckoutPaymentSession(...args),
   updateCheckoutPaymentSession: (...args: unknown[]) =>
@@ -92,6 +103,12 @@ const stripeMethod = {
   type: "stripe",
   session_required: true,
 } as unknown as PaymentMethod;
+const paypalMethod = {
+  id: "pm_paypal",
+  name: "PayPal",
+  type: "paypal",
+  session_required: true,
+} as unknown as PaymentMethod;
 const adyenMethod = {
   id: "pm_adyen",
   name: "Adyen",
@@ -104,7 +121,7 @@ const cart = {
   total: "10.00",
   amount_due: "10.00",
   currency: "USD",
-  payment_methods: [directMethod, stripeMethod, adyenMethod],
+  payment_methods: [directMethod, stripeMethod, adyenMethod, paypalMethod],
   shipping_address: null,
   billing_address: null,
   shipping_eq_billing_address: true,
@@ -516,6 +533,64 @@ describe("PaymentSection", () => {
       expect(onPaymentComplete).not.toHaveBeenCalled();
       expect(setProcessing).toHaveBeenLastCalledWith(false);
       expect(screen.getByText("totalChanged")).toBeInTheDocument();
+    });
+
+    it("does not complete a PayPal approval when saving the billing address changed the total", async () => {
+      getCreditCards.mockResolvedValue({ data: [] });
+      createCheckoutPaymentSession.mockResolvedValue({
+        success: true,
+        session: {
+          id: "ps_paypal",
+          external_id: "paypal_order",
+          external_data: { client_id: "paypal_client", intent: "CAPTURE" },
+        },
+      });
+      const onPaymentComplete = vi.fn().mockResolvedValue(true);
+      const setProcessing = vi.fn();
+
+      render(
+        section(cart, setProcessing, {
+          onUpdateBillingAddress: vi.fn().mockResolvedValue(taxedCart),
+          onPaymentComplete,
+        }),
+      );
+      fireEvent.click(screen.getByRole("radio", { name: "PayPal" }));
+      await screen.findByTestId("paypal-form");
+
+      let outcome: string | undefined;
+      await act(async () => {
+        outcome = await paypalForm.onApproved?.();
+      });
+
+      expect(outcome).toBe("failed");
+      expect(onPaymentComplete).not.toHaveBeenCalled();
+      expect(setProcessing).toHaveBeenLastCalledWith(false);
+      expect(screen.getByText("totalChanged")).toBeInTheDocument();
+    });
+
+    it("does not place a direct payment order at a total the buyer has not seen", async () => {
+      createDirectPayment.mockReset();
+      const onPaymentComplete = vi.fn().mockResolvedValue(true);
+      const setProcessing = vi.fn();
+      const ref = createRef<PaymentSectionHandle>();
+
+      render(
+        section(cart, setProcessing, {
+          ref,
+          onUpdateBillingAddress: vi.fn().mockResolvedValue(taxedCart),
+          onPaymentComplete,
+        }),
+      );
+
+      let result: { error?: string } | undefined;
+      await act(async () => {
+        result = await ref.current?.submit();
+      });
+
+      expect(result).toEqual({ error: "totalChanged" });
+      expect(createDirectPayment).not.toHaveBeenCalled();
+      expect(onPaymentComplete).not.toHaveBeenCalled();
+      expect(setProcessing).toHaveBeenLastCalledWith(false);
     });
 
     it("charges once the session holds the new total", async () => {

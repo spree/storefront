@@ -197,6 +197,10 @@ export function PaymentSection({
   > | null>(null);
   const [paymentSessionId, setPaymentSessionId] = useState<string | null>(null);
   const [gatewayError, setGatewayError] = useState<string | null>(null);
+  // Set when saving the billing address re-priced the cart. Kept apart from
+  // gatewayError, which a new session clears and which shows only under a
+  // session-based method, so the buyer sees why nothing was charged.
+  const [totalNotice, setTotalNotice] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const gatewayHandleRef = useRef<
     | StripePaymentFormHandle
@@ -491,7 +495,7 @@ export function PaymentSection({
   };
 
   const saveBillingAddress = useCallback(
-    () =>
+    (): Promise<Cart | null> =>
       onUpdateBillingAddress(
         useShippingForBilling
           ? { use_shipping: true }
@@ -526,12 +530,23 @@ export function PaymentSection({
       completionInFlightRef.current = true;
       setProcessing(true);
       setGatewayError(null);
+      setTotalNotice(null);
 
       try {
-        if (!(await saveBillingAddress())) {
+        const updatedCart = await saveBillingAddress();
+        if (!updatedCart) {
           setProcessing(false);
           completionInFlightRef.current = false;
           setGatewayError(t("failedToSaveBilling"));
+          return "not_started";
+        }
+        // The buyer approved the amount shown before the address was saved
+        // (PayPal's popup never passes through submit). Completing now would
+        // settle that figure for an order whose total has moved.
+        if (amountDueOf(updatedCart) !== rawAmountDue) {
+          setTotalNotice(t("totalChanged"));
+          setProcessing(false);
+          completionInFlightRef.current = false;
           return "not_started";
         }
 
@@ -551,7 +566,14 @@ export function PaymentSection({
         return "not_started";
       }
     },
-    [paymentSessionId, saveBillingAddress, onPaymentComplete, setProcessing, t],
+    [
+      paymentSessionId,
+      rawAmountDue,
+      saveBillingAddress,
+      onPaymentComplete,
+      setProcessing,
+      t,
+    ],
   );
 
   // PayPal keeps the session open when it declined the buyer's funding
@@ -632,9 +654,9 @@ export function PaymentSection({
     [setProcessing, replaceSessionIfUnpayable],
   );
 
-  const stopForNewTotal = useCallback(() => {
+  const stopForNewTotal = useCallback((): { error: string } => {
     const msg = t("totalChanged");
-    setGatewayError(msg);
+    setTotalNotice(msg);
     setProcessing(false);
     return { error: msg };
   }, [setProcessing, t]);
@@ -646,6 +668,7 @@ export function PaymentSection({
       submit: async () => {
         if (completionInFlightRef.current) return {};
         completionInFlightRef.current = true;
+        setTotalNotice(null);
 
         try {
           // Zero amount — no payment needed
@@ -685,17 +708,19 @@ export function PaymentSection({
               return { error: t("failedToSaveBilling") };
             }
 
+            // When tax follows the billing address, saving it can change the
+            // total. A session still holds the amount shown before, and
+            // paying now would charge that figure for an order that can no
+            // longer be placed; a direct payment would place the order at a
+            // total the buyer never saw. The buyer reviews the new total and
+            // pays again (a session is moved to it first).
+            if (amountDueOf(updatedCart) !== rawAmountDue) {
+              return stopForNewTotal();
+            }
+
             // 2. Process payment based on method type
             if (selectedMethod.session_required) {
               // Session-based flow (Stripe, Adyen, etc.)
-              // When tax follows the billing address, saving it can change
-              // the total. The session still holds the amount shown before,
-              // and paying now would charge that figure for an order that
-              // can no longer be placed. The buyer sees the new total and
-              // pays again once the session has been moved to it.
-              if (amountDueOf(updatedCart) !== rawAmountDue) {
-                return stopForNewTotal();
-              }
               if (!(await awaitAmountSync())) {
                 setProcessing(false);
                 return { error: t("failedToInitPayment") };
@@ -810,6 +835,14 @@ export function PaymentSection({
         <h2 className="text-lg font-bold text-gray-900">
           {t("paymentMethod")}
         </h2>
+        {totalNotice && (
+          <div className="mt-2 rounded-sm border border-red-300 bg-red-50 px-4 py-3">
+            <p className="text-sm text-red-700 flex items-center gap-2">
+              <CircleAlert className="h-4 w-4 flex-shrink-0" />
+              {totalNotice}
+            </p>
+          </div>
+        )}
         <div className="mt-2 rounded-sm border bg-gray-50 px-4 py-6 text-center">
           <Info
             className="w-8 h-8 text-gray-300 mx-auto mb-2"
@@ -871,6 +904,15 @@ export function PaymentSection({
       {/* Section Header */}
       <h2 className="text-lg font-bold text-gray-900">{t("paymentMethod")}</h2>
       <p className="text-sm text-gray-500 mt-0.5">{t("secureTransactions")}</p>
+
+      {totalNotice && (
+        <div className="rounded-sm border border-red-300 bg-red-50 px-4 py-3 mt-2">
+          <p className="text-sm text-red-700 flex items-center gap-2">
+            <CircleAlert className="h-4 w-4 flex-shrink-0" />
+            {totalNotice}
+          </p>
+        </div>
+      )}
 
       {/* Inline requirement errors from parent */}
       {errors && errors.length > 0 && (
