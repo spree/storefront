@@ -132,13 +132,19 @@ const PROFILE_HANDLE = /^@?([\w.-]+)$/;
 /** An X (Twitter) username: 1–15 letters, digits or underscores. */
 const TWITTER_USERNAME = /^\w{1,15}$/;
 
+/** A URL that already starts with a scheme (`https://`, `HTTPS://`, `ftp://`). */
+const URL_WITH_SCHEME = /^[a-z][a-z\d+.-]*:\/\//i;
+
 /**
  * Parse a profile URL typed with or without its protocol (`x.com/acme`).
- * Only http(s) URLs with a path are accepted: a bare domain is not a profile.
+ * Only http(s) URLs with a path are accepted: a bare domain is not a profile,
+ * and a URL with another scheme is dropped rather than rewritten as https.
  */
 function parseProfileUrl(value: string): URL | null {
   try {
-    const url = new URL(ensureProtocol(value));
+    const url = new URL(
+      URL_WITH_SCHEME.test(value) ? value : `https://${value}`,
+    );
     if (url.protocol !== "https:" && url.protocol !== "http:") return null;
     return url.pathname.length > 1 ? url : null;
   } catch {
@@ -178,6 +184,16 @@ export function twitterHandle(value: string | null | undefined): string | null {
 }
 
 /**
+ * The store's X profile URL for `sameAs`. A bare handle must be a valid X
+ * username, the same rule `twitterHandle` applies for `twitter:site`.
+ */
+function twitterProfileUrl(value: string | null | undefined): string | null {
+  if (value?.includes("/")) return socialProfileUrl(value, "x.com");
+  const handle = twitterHandle(value);
+  return handle ? `https://x.com/${handle.slice(1)}` : null;
+}
+
+/**
  * Build JSON-LD Organization schema from the store's name, branding, social
  * accounts and support email (Spree Admin → Settings → Store).
  * https://schema.org/Organization
@@ -198,7 +214,7 @@ export function buildOrganizationJsonLd(store: Store): Record<string, unknown> {
 
   const sameAs = [
     socialProfileUrl(store.facebook, "facebook.com"),
-    socialProfileUrl(store.twitter, "x.com"),
+    twitterProfileUrl(store.twitter),
     socialProfileUrl(store.instagram, "instagram.com"),
   ].filter((url): url is string => url !== null);
   if (sameAs.length > 0) {

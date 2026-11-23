@@ -28,6 +28,7 @@ describe("socialProfileUrl", () => {
     ["www.facebook.com/acme/", "https://www.facebook.com/acme/"],
     ["https://facebook.com/acme", "https://facebook.com/acme"],
     ["http://facebook.com/acme", "http://facebook.com/acme"],
+    ["HTTPS://facebook.com/acme", "https://facebook.com/acme"],
   ])("turns %j into %s", (value, expected) => {
     expect(socialProfileUrl(value, "facebook.com")).toBe(expected);
   });
@@ -40,6 +41,7 @@ describe("socialProfileUrl", () => {
     "Acme Store",
     "https://facebook.com/",
     "javascript:alert(1)//",
+    "ftp://facebook.com/acme",
   ])("drops %j", (value) => {
     expect(socialProfileUrl(value, "facebook.com")).toBeNull();
   });
@@ -56,6 +58,7 @@ describe("twitterHandle", () => {
     ["https://x.com/acme?lang=en", "@acme"],
     ["https://x.com/acme/status/123", "@acme"],
     ["https://x.com/@acme", "@acme"],
+    ["HTTPS://x.com/acme", "@acme"],
   ])("turns %j into %s", (value, expected) => {
     expect(twitterHandle(value)).toBe(expected);
   });
@@ -121,6 +124,16 @@ describe("buildOrganizationJsonLd", () => {
     });
 
     expect(schema).not.toHaveProperty("sameAs");
+  });
+
+  it("leaves out an X handle that is not a valid X username", () => {
+    const schema = buildOrganizationJsonLd({
+      ...baseStore,
+      twitter: "acme.store",
+      instagram: "acme.store",
+    });
+
+    expect(schema.sameAs).toEqual(["https://instagram.com/acme.store"]);
   });
 
   it("includes the logo and support email", () => {

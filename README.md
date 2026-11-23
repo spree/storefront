@@ -89,7 +89,7 @@ Project structure, the `src/lib/data/` server actions, and the JWT-in-httpOnly-c
 ### Prerequisites
 
 - Node.js 20+ (required for Next.js 16)
-- A running Spree Commerce 5.4+
+- A running Spree Commerce 6.0.6+
 
 ### Installation
 
