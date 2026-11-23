@@ -12,6 +12,7 @@ import {
 } from "@/components/ui/input-group";
 import { ProductImage } from "@/components/ui/product-image";
 import { SellerImage } from "@/components/ui/seller-image";
+import { useAuth } from "@/contexts/AuthContext";
 import { useStore } from "@/contexts/StoreContext";
 import { useFormatMoney } from "@/hooks/useFormatMoney";
 import { trackQuickSearch, trackSelectItem } from "@/lib/analytics/gtm";
@@ -44,7 +45,9 @@ const RESULT_CACHE_SIZE = 30;
 
 /**
  * Module-level so it survives the SearchBar remount each time the overlay
- * opens. Keyed by request URL, which carries the query, country and locale.
+ * opens. Keyed by the signed-in customer and the request URL, which carries
+ * the query, country and locale: a customer's results are narrowed to their
+ * catalogs, so another session in the same tab must never reuse them.
  * Entries expire with the route's browser cache, so results stay as fresh.
  */
 const resultCache = new Map<
@@ -105,6 +108,7 @@ function suggestionHref(suggestion: Suggestion, basePath: string): string {
 export function SearchBar({ basePath, autoFocus, onNavigate }: SearchBarProps) {
   const router = useRouter();
   const { country, locale, currency } = useStore();
+  const { user } = useAuth();
   const t = useTranslations("products");
   const formatMoney = useFormatMoney();
   const [query, setQuery] = useState("");
@@ -179,7 +183,7 @@ export function SearchBar({ basePath, autoFocus, onNavigate }: SearchBarProps) {
       return;
     }
 
-    const cacheKey = quickSearchUrl(value, { country, locale });
+    const cacheKey = `${user?.id ?? "guest"} ${quickSearchUrl(value, { country, locale })}`;
     const cached = cachedResults(cacheKey);
     if (cached) {
       showResults(seq, value, cached);
