@@ -235,7 +235,10 @@ export function skipWithoutStripe(): void {
  * returning once the order-placed page is reached. Expects shipping to be
  * chosen already — the Payment Element only mounts after that.
  */
-export async function payWithStripeTestCard(page: Page): Promise<void> {
+export async function payWithStripeTestCard(
+  page: Page,
+  { signedIn = false } = {},
+): Promise<void> {
   // Pay with a Stripe test card. The Payment Element only renders
   //    after a session-based payment method is selected, which only
   //    appears once shipping is locked in. Two hazards make this step a
@@ -303,7 +306,11 @@ export async function payWithStripeTestCard(page: Page): Promise<void> {
   //    against an emptied form — so re-verify the fill and click again on
   //    a timed-out attempt instead of waiting a full minute on a submit
   //    that can no longer succeed.
-  await page.getByRole("checkbox", { name: /i agree/i }).check();
+  //    Checkout asks guests only: a signed-in customer accepted the
+  //    policies when registering.
+  if (!signedIn) {
+    await page.getByRole("checkbox", { name: /i agree/i }).check();
+  }
 
   await expect(async () => {
     // A prior attempt's submit may have landed while its waitForURL had

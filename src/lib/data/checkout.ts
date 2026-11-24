@@ -99,11 +99,15 @@ export async function getCheckoutOrder(cartId: string): Promise<Cart | null> {
   const cart = await getCart(undefined, surface);
   if (cart && cart.id === cartId) return cart;
 
-  // Cart completed — fetch as completed order.
-  return withFallback(
-    async () => (await getOrder(cartId, undefined, surface)) as unknown as Cart,
-    null,
-  );
+  // Cart completed — fetch the order it became. A Spree 6 order has no
+  // checkout step, so mark it complete: callers check `current_step` to send
+  // the buyer to the order-placed page instead of reopening checkout.
+  return withFallback(async () => {
+    const order = await getOrder(cartId, undefined, surface);
+    return order
+      ? ({ ...order, current_step: "complete" } as unknown as Cart)
+      : null;
+  }, null);
 }
 
 /**

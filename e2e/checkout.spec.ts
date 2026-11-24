@@ -1,7 +1,10 @@
 import { expect, test } from "@playwright/test";
 import {
+  addToCart,
+  BASE_PATH,
   fillShippingAddress,
   payWithStripeTestCard,
+  signUp,
   skipWithoutStripe,
 } from "./support";
 
@@ -114,5 +117,52 @@ test("guest can complete a checkout with a Stripe test card", async ({
   await payWithStripeTestCard(page);
 
   // 7. Confirm the order summary rendered.
+  await expect(page.getByText(/order #/i)).toBeVisible();
+
+  // 8. Reopening the checkout link of the order just placed leads back to its
+  //    order-placed page, not to a checkout form for the items already bought.
+  const orderPlacedUrl = page.url();
+  await page.goto(checkoutHref);
+  await expect(page).toHaveURL(orderPlacedUrl, { timeout: 30_000 });
+});
+
+test("a customer who reopens a placed order's checkout link sees the order", async ({
+  page,
+}) => {
+  skipWithoutStripe();
+  test.setTimeout(300_000);
+  await signUp(page);
+
+  // Seeded by scripts/e2e/bootstrap-spree.sh.
+  const product = { slug: "e2e-first-party-mug", name: "E2E First-Party Mug" };
+  await page.goto(`${BASE_PATH}/products/${product.slug}`);
+  await expect(
+    page.getByRole("heading", { level: 1, name: product.name }),
+  ).toBeVisible({ timeout: 30_000 });
+  const drawer = await addToCart(page, product.name);
+
+  const checkoutLink = drawer.getByRole("link", { name: /^checkout$/i });
+  let checkoutHref = "";
+  await expect(async () => {
+    checkoutHref =
+      (await checkoutLink.getAttribute("href", { timeout: 3_000 })) ?? "";
+    expect(checkoutHref).toBeTruthy();
+  }).toPass({ timeout: 30_000 });
+  await page.goto(checkoutHref);
+
+  // Signed in, checkout asks for no email; wait for the streamed duplicate of
+  // the address form to collapse instead.
+  await expect(page.getByLabel(/country/i)).toHaveCount(1, { timeout: 20_000 });
+  await fillShippingAddress(page);
+  await page.getByRole("heading", { name: /shipping method/i }).click();
+  const firstRate = page.getByRole("radio").first();
+  await expect(firstRate).toBeVisible({ timeout: 30_000 });
+  await firstRate.check();
+  await payWithStripeTestCard(page, { signedIn: true });
+  await expect(page.getByText(/order #/i)).toBeVisible();
+
+  const orderPlacedUrl = page.url();
+  await page.goto(checkoutHref);
+  await expect(page).toHaveURL(orderPlacedUrl, { timeout: 30_000 });
   await expect(page.getByText(/order #/i)).toBeVisible();
 });
