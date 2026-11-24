@@ -105,6 +105,8 @@ interface SessionSnapshot {
   amount: string | null;
   /** Its provider data, as the gateway form receives it. */
   data: string;
+  /** Bumped by every amount update, which patches a PayPal order in place. */
+  version: number;
 }
 
 /**
@@ -307,6 +309,7 @@ export function PaymentSection({
             sessionSnapshotsRef.current.set(result.session.id, {
               amount: result.session.amount ?? requestedAmount,
               data: JSON.stringify(data),
+              version: 0,
             });
             setSessionExternalData(data);
             adoptSessionId(result.session.id);
@@ -425,6 +428,8 @@ export function PaymentSection({
           // unavoidable case. Identical data keeps the mounted form untouched.
           const extData = result.session.external_data;
           const amount = result.session.amount ?? requestedAmount;
+          const version =
+            (sessionSnapshotsRef.current.get(sessionId)?.version ?? 0) + 1;
           if (extData && Object.keys(extData).length > 0) {
             const next = {
               ...extData,
@@ -433,6 +438,7 @@ export function PaymentSection({
             sessionSnapshotsRef.current.set(result.session.id, {
               amount,
               data: JSON.stringify(next),
+              version,
             });
             setSessionExternalData((prev) =>
               JSON.stringify(prev) === JSON.stringify(next) ? prev : next,
@@ -441,7 +447,11 @@ export function PaymentSection({
           } else {
             const held = sessionSnapshotsRef.current.get(sessionId);
             if (held) {
-              sessionSnapshotsRef.current.set(sessionId, { ...held, amount });
+              sessionSnapshotsRef.current.set(sessionId, {
+                ...held,
+                amount,
+                version,
+              });
             }
           }
           return true;
@@ -585,6 +595,9 @@ export function PaymentSection({
   const handleGatewayApproved = useCallback(
     async (
       sessionResult?: string,
+      // PayPal only: the session version its popup opened at, null when no
+      // open was recorded for this session.
+      openedVersion?: number | null,
     ): Promise<"completed" | "failed" | "not_started"> => {
       if (completionInFlightRef.current) return "not_started";
       if (!paymentSessionId) return "not_started";
@@ -616,7 +629,13 @@ export function PaymentSection({
         // Completing on any mismatch would settle an amount the buyer did not
         // approve, or one the order no longer totals.
         const current = sessionSnapshotsRef.current.get(paymentSessionId);
+        // An update that finished while the popup was open patched the order
+        // to an amount the buyer never saw there.
+        const updatedSinceOpen =
+          openedVersion !== undefined &&
+          (openedVersion === null || current?.version !== openedVersion);
         if (
+          updatedSinceOpen ||
           approvedAmount === undefined ||
           updateInFlightAtApproval ||
           amountSyncRef.current !== null ||
@@ -669,16 +688,34 @@ export function PaymentSection({
     return status;
   }, [cart.id, createSession, paymentSessionId, selectedMethod]);
 
+  // The session version each PayPal popup opened at, so an approval can be
+  // matched to the amount the buyer saw in it.
+  const paypalOpenedRef = useRef<{ sessionId: string; version: number } | null>(
+    null,
+  );
+  const handlePayPalOpen = useCallback((): void => {
+    const sessionId = currentSessionIdRef.current;
+    const held = sessionId
+      ? sessionSnapshotsRef.current.get(sessionId)
+      : undefined;
+    paypalOpenedRef.current =
+      sessionId && held ? { sessionId, version: held.version } : null;
+  }, []);
+
   const handlePayPalApproved =
     useCallback(async (): Promise<PayPalApprovalOutcome> => {
-      const result = await handleGatewayApproved();
+      const opened = paypalOpenedRef.current;
+      const result = await handleGatewayApproved(
+        undefined,
+        opened && opened.sessionId === paymentSessionId ? opened.version : null,
+      );
       if (result === "completed") return "completed";
       if (result === "not_started") return "failed";
 
       const status = await replaceSessionIfUnpayable();
       if (status === "pending" || status === "processing") return "restart";
       return "failed";
-    }, [handleGatewayApproved, replaceSessionIfUnpayable]);
+    }, [handleGatewayApproved, paymentSessionId, replaceSessionIfUnpayable]);
 
   // Adyen's session opens unpayable: Spree makes it payable at the amount it
   // holds, and Drop-in pays it with the session data that comes back.
@@ -1263,6 +1300,7 @@ export function PaymentSection({
                                     intent={intent}
                                     currency={cart.currency}
                                     onReady={handleGatewayReady}
+                                    onOpen={handlePayPalOpen}
                                     onApproved={handlePayPalApproved}
                                   />
                                 </div>

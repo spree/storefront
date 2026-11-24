@@ -46,6 +46,8 @@ interface PayPalPaymentFormProps {
   intent: string;
   currency: string;
   onReady: (handle: PayPalPaymentFormHandle) => void;
+  /** Called when the PayPal popup opens on the order, before the buyer sees it. */
+  onOpen?: () => void;
   /** Called when user approves payment in the PayPal popup. */
   onApproved: () => Promise<PayPalApprovalOutcome>;
 }
@@ -56,6 +58,7 @@ export function PayPalPaymentForm({
   intent,
   currency,
   onReady,
+  onOpen,
   onApproved,
 }: PayPalPaymentFormProps) {
   const t = useTranslations("checkout");
@@ -125,6 +128,8 @@ export function PayPalPaymentForm({
   // Stable ref for onApproved to avoid re-renders of PayPalButtons
   const onApprovedRef = useRef(onApproved);
   onApprovedRef.current = onApproved;
+  const onOpenRef = useRef(onOpen);
+  onOpenRef.current = onOpen;
 
   if (!PayPalSDK) {
     return (
@@ -160,7 +165,10 @@ export function PayPalPaymentForm({
                   ? { color: "gold" as const }
                   : {}),
               }}
-              createOrder={async () => paypalOrderId}
+              createOrder={async () => {
+                onOpenRef.current?.();
+                return paypalOrderId;
+              }}
               onApprove={async (_data, actions) => {
                 approvedRef.current = true;
                 setApprovedForUI(true);

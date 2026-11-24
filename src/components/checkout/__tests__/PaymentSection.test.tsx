@@ -40,15 +40,21 @@ vi.mock("@/components/checkout/AdyenPaymentForm", () => ({
   },
 }));
 
-const paypalForm: { onApproved?: () => Promise<string> } = {};
+const paypalForm: {
+  onOpen?: () => void;
+  onApproved?: () => Promise<string>;
+} = {};
 vi.mock("@/components/checkout/PayPalPaymentForm", () => ({
   PayPalPaymentForm: ({
     paypalOrderId,
+    onOpen,
     onApproved,
   }: {
     paypalOrderId: string;
+    onOpen?: () => void;
     onApproved: () => Promise<string>;
   }) => {
+    paypalForm.onOpen = onOpen;
     paypalForm.onApproved = onApproved;
     return <div data-testid="paypal-form">{paypalOrderId}</div>;
   },
@@ -768,6 +774,84 @@ describe("PaymentSection", () => {
       expect(outcome).toBe("failed");
       expect(onPaymentComplete).not.toHaveBeenCalled();
       expect(screen.getByText("totalChanged")).toBeInTheDocument();
+    });
+
+    describe("a PayPal approval", () => {
+      const paypalSession = (amount: string) => ({
+        success: true,
+        session: {
+          id: "ps_paypal",
+          external_id: "paypal_order",
+          amount,
+          external_data: { client_id: "paypal_client", intent: "CAPTURE" },
+        },
+      });
+
+      async function openPayPal(currentCart: Cart, handlers: object) {
+        getCreditCards.mockResolvedValue({ data: [] });
+        createCheckoutPaymentSession.mockResolvedValue(
+          paypalSession(amountDueOf(currentCart)),
+        );
+        const view = render(section(currentCart, vi.fn(), handlers));
+        fireEvent.click(screen.getByRole("radio", { name: "PayPal" }));
+        await screen.findByTestId("paypal-form");
+        act(() => paypalForm.onOpen?.());
+        return view;
+      }
+
+      function amountDueOf(currentCart: Cart): string {
+        return (currentCart.amount_due ?? currentCart.total) as string;
+      }
+
+      it("completes when the order is unchanged since the popup opened", async () => {
+        const onPaymentComplete = vi.fn().mockResolvedValue(true);
+        const handlers = {
+          onUpdateBillingAddress: vi.fn().mockResolvedValue(cart),
+          onPaymentComplete,
+        };
+        await openPayPal(cart, handlers);
+
+        let outcome: string | undefined;
+        await act(async () => {
+          outcome = await paypalForm.onApproved?.();
+        });
+
+        expect(outcome).toBe("completed");
+        expect(onPaymentComplete).toHaveBeenCalledWith({
+          type: "session",
+          sessionId: "ps_paypal",
+          sessionResult: undefined,
+        });
+      });
+
+      it("does not complete when an amount update patched the order while the popup was open", async () => {
+        const onPaymentComplete = vi.fn().mockResolvedValue(true);
+        const handlers = {
+          onUpdateBillingAddress: vi.fn().mockResolvedValue(taxedCart),
+          onPaymentComplete,
+        };
+        updateCheckoutPaymentSession.mockResolvedValue(paypalSession("10.50"));
+        const { rerender } = await openPayPal(cart, handlers);
+
+        // The popup shows 10.00; the update to 10.50 lands before approval.
+        await act(async () => {
+          rerender(section(taxedCart, vi.fn(), handlers));
+        });
+        expect(updateCheckoutPaymentSession).toHaveBeenCalledWith(
+          cart.id,
+          "ps_paypal",
+          { amount: "10.50" },
+        );
+
+        let outcome: string | undefined;
+        await act(async () => {
+          outcome = await paypalForm.onApproved?.();
+        });
+
+        expect(outcome).toBe("failed");
+        expect(onPaymentComplete).not.toHaveBeenCalled();
+        expect(screen.getByText("totalChanged")).toBeInTheDocument();
+      });
     });
 
     it("charges once the session holds the new total", async () => {
