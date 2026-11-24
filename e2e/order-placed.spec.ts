@@ -176,7 +176,9 @@ test("a pickup order names where to collect it, not the buyer's address", async 
           id: "ful_e2e_p",
           cost: "0.0",
           delivery_method: { name: "Store Pickup", pickup: true },
-          stock_location: {
+          // Ship-to-store: it leaves a warehouse the buyer cannot visit.
+          stock_location: { id: "sloc_e2e_wh", name: "Back warehouse" },
+          pickup_location: {
             id: "sloc_e2e",
             name: "Shop location",
             address1: "1 Market Street",
@@ -200,6 +202,7 @@ test("a pickup order names where to collect it, not the buyer's address", async 
   await expect(page.getByText("Shop location")).toBeVisible();
   await expect(page.getByText("1 Market Street")).toBeVisible();
   await expect(page.getByText("Ring the bell at the side door.")).toBeVisible();
+  await expect(page.getByText("Back warehouse")).toHaveCount(0);
   // The buyer's address is still the billing address, but not where it goes.
   await expect(page.getByText("Shipping Address")).toHaveCount(0);
   await expect(page.getByText("Billing Address")).toBeVisible();

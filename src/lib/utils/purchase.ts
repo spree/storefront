@@ -74,13 +74,17 @@ export interface Purchase {
 }
 
 /**
- * Where the customer collects a pickup delivery — the location the order is
- * fulfilled from — or null when it is shipped.
+ * Where the customer collects a pickup delivery, or null when it is shipped.
+ * The API resolves it to the counter chosen at checkout, which is not always
+ * the stock location the order ships from: a ship-to-store order leaves a
+ * warehouse the customer cannot visit.
  */
 export function pickupLocation(fulfillment: Fulfillment): StockLocation | null {
-  return fulfillment.delivery_method?.pickup
-    ? (fulfillment.stock_location ?? null)
-    : null;
+  // Typed by @spree/sdk from the release that adds it to the Store API.
+  const { pickup_location } = fulfillment as Fulfillment & {
+    pickup_location?: StockLocation | null;
+  };
+  return pickup_location ?? null;
 }
 
 function toSegment(order: Order): PurchaseSegment {
@@ -121,7 +125,7 @@ export function toPurchase(result: CompletedPurchase): Purchase {
     split: segments.length > 1,
     pickup_only:
       fulfillments.length > 0 &&
-      fulfillments.every((fulfillment) => pickupLocation(fulfillment)),
+      fulfillments.every((fulfillment) => fulfillment.delivery_method?.pickup),
     totals: result,
   };
 }
