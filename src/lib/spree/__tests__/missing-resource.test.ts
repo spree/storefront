@@ -224,4 +224,49 @@ describe("isMissingStorefrontResource", () => {
     expect(getCategory).not.toHaveBeenCalled();
     expect(getPolicy).not.toHaveBeenCalled();
   });
+  it("looks a product up as the signed-in customer, the way its page does", async () => {
+    const asCustomer = { ...options, token: "customer-jwt" };
+
+    getProduct.mockResolvedValue({ id: "prod_catalog_only" });
+    await expect(
+      isMissingStorefrontResource("/products/catalog-only", asCustomer),
+    ).resolves.toBe(false);
+    expect(getProduct).toHaveBeenCalledWith(
+      "catalog-only",
+      { fields: ["id"] },
+      asCustomer,
+    );
+
+    // Outside the customer's catalogs the Store API still answers 404.
+    getProduct.mockRejectedValue(apiError(404));
+    await expect(
+      isMissingStorefrontResource("/products/elsewhere", asCustomer),
+    ).resolves.toBe(true);
+  });
+
+  it("reads categories, collections, policies and sellers as a guest, like their pages", async () => {
+    const asCustomer = { ...options, token: "customer-jwt" };
+
+    await isMissingStorefrontResource("/c/men/shirts", asCustomer);
+    await isMissingStorefrontResource("/collections/summer", asCustomer);
+    await isMissingStorefrontResource("/policies/returns", asCustomer);
+    await isMissingStorefrontResource("/sellers/sparks", asCustomer);
+
+    expect(getCategory).toHaveBeenCalledWith(
+      "men/shirts",
+      { fields: ["id"] },
+      options,
+    );
+    expect(getCollection).toHaveBeenCalledWith(
+      "summer",
+      { fields: ["id"] },
+      options,
+    );
+    expect(getPolicy).toHaveBeenCalledWith("returns", options);
+    expect(getSeller).toHaveBeenCalledWith(
+      "sparks",
+      { fields: ["id"] },
+      options,
+    );
+  });
 });

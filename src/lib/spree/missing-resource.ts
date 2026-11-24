@@ -35,9 +35,19 @@ function getLookupClient(): Client {
 interface LookupOptions {
   country: string;
   locale: string;
+  /**
+   * The signed-in customer's live JWT. Product pages send it, and the Store
+   * API answers 404 for a product outside the customer's catalogs, so the
+   * product lookup sends it too. The other pages read as a guest.
+   */
+  token?: string;
 }
 
 type ResourceLookup = (options: LookupOptions) => Promise<unknown>;
+
+function localeOnly({ country, locale }: LookupOptions): LookupOptions {
+  return { country, locale };
+}
 
 /**
  * The SDK interpolates slugs into the Store API path unencoded, so a decoded
@@ -68,6 +78,8 @@ function resourceLookup(path: string): ResourceLookup | null {
   const [section, ...rest] = segments as string[];
 
   if (section === "products" && rest.length === 1) {
+    // Looked up as the customer, like the product page, so a product visible
+    // only in their catalog is not answered with the guest 404.
     return (options) =>
       getLookupClient().products.get(rest[0], { fields: ["id"] }, options);
   }
@@ -76,19 +88,28 @@ function resourceLookup(path: string): ResourceLookup | null {
       getLookupClient().categories.get(
         rest.join("/"),
         { fields: ["id"] },
-        options,
+        localeOnly(options),
       );
   }
   if (section === "collections" && rest.length === 1) {
     return (options) =>
-      getLookupClient().collections.get(rest[0], { fields: ["id"] }, options);
+      getLookupClient().collections.get(
+        rest[0],
+        { fields: ["id"] },
+        localeOnly(options),
+      );
   }
   if (section === "policies" && rest.length === 1) {
-    return (options) => getLookupClient().policies.get(rest[0], options);
+    return (options) =>
+      getLookupClient().policies.get(rest[0], localeOnly(options));
   }
   if (section === "sellers" && rest.length === 1) {
     return (options) =>
-      getLookupClient().sellers.get(rest[0], { fields: ["id"] }, options);
+      getLookupClient().sellers.get(
+        rest[0],
+        { fields: ["id"] },
+        localeOnly(options),
+      );
   }
   return null;
 }

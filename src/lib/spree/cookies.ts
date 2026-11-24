@@ -1,6 +1,6 @@
 import { cookies } from "next/headers";
 import { getConfig } from "./config";
-import { isJwtExpired } from "./jwt";
+import { liveAccessToken } from "./jwt";
 import {
   cartCookieBaseName,
   DEFAULT_SURFACE,
@@ -44,7 +44,7 @@ function getCartIdCookieName(surface: Surface = DEFAULT_SURFACE): string {
   return `${getCartCookieName(surface)}_id`;
 }
 
-function getAccessTokenCookieName(): string {
+export function getAccessTokenCookieName(): string {
   try {
     return getConfig().accessTokenCookieName ?? DEFAULT_ACCESS_TOKEN_COOKIE;
   } catch {
@@ -128,8 +128,7 @@ export async function getAccessToken(): Promise<string | undefined> {
  * client refreshes the session on mount and re-renders with the live token.
  */
 export async function getCatalogAccessToken(): Promise<string | undefined> {
-  const token = await getAccessToken();
-  return token && !isJwtExpired(token, 30) ? token : undefined;
+  return liveAccessToken(await getAccessToken());
 }
 
 export async function setAccessToken(token: string): Promise<void> {
