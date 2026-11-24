@@ -266,6 +266,7 @@
     "failedToSelectRate": "Echec de la selection du tarif de livraison",
     "failedToSaveBilling": "Echec de l'enregistrement de l'adresse de facturation",
     "failedToSaveBillingRetry": "Echec de l'enregistrement de l'adresse de facturation. Veuillez reessayer.",
+    "totalChanged": "Votre total a été mis à jour pour votre adresse de facturation. Vérifiez-le et payez à nouveau.",
     "failedToCompleteOrder": "Echec de la finalisation de la commande",
     "stripeNotLoaded": "Stripe n'est pas encore charge",
     "paymentProcessingError": "Une erreur est survenue lors du paiement.",
