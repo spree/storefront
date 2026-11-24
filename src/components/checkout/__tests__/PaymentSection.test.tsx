@@ -593,6 +593,121 @@ describe("PaymentSection", () => {
       expect(setProcessing).toHaveBeenLastCalledWith(false);
     });
 
+    it("stops when the total moves while it waits for the session amount", async () => {
+      const billingSave = deferred<Cart | null>();
+      const amountUpdate = deferred<typeof stripeSession>();
+      const { ref, rerender, onPaymentComplete } = await renderWithSavedCard(
+        () => billingSave.promise,
+      );
+      updateCheckoutPaymentSession.mockReturnValue(amountUpdate.promise);
+
+      let submitted: Promise<{ error?: string } | undefined> | undefined;
+      await act(async () => {
+        submitted = ref.current?.submit();
+      });
+
+      // A gift card removed in the summary re-prices the cart mid-submit.
+      const higherCart = {
+        ...cart,
+        total: "12.00",
+        amount_due: "12.00",
+      } as Cart;
+      rerender(
+        section(higherCart, vi.fn(), {
+          ref,
+          onUpdateBillingAddress: () => billingSave.promise,
+          onPaymentComplete,
+        }),
+      );
+
+      let result: { error?: string } | undefined;
+      await act(async () => {
+        billingSave.resolve(cart);
+        amountUpdate.resolve({
+          ...stripeSession,
+          session: { ...stripeSession.session, amount: "12.00" },
+        } as typeof stripeSession);
+        result = await submitted;
+      });
+
+      expect(result).toEqual({ error: "totalChanged" });
+      expect(confirmWithSavedCard).not.toHaveBeenCalled();
+      expect(onPaymentComplete).not.toHaveBeenCalled();
+    });
+
+    it("does not pay with a session the amount update replaced", async () => {
+      const amountUpdate = deferred<typeof stripeSession>();
+      const { ref, rerender, onPaymentComplete } = await renderWithSavedCard(
+        vi.fn().mockResolvedValue(taxedCart),
+      );
+      updateCheckoutPaymentSession.mockReturnValue(amountUpdate.promise);
+
+      rerender(
+        section(taxedCart, vi.fn(), {
+          ref,
+          onUpdateBillingAddress: vi.fn().mockResolvedValue(taxedCart),
+          onPaymentComplete,
+        }),
+      );
+
+      let submitted: Promise<{ error?: string } | undefined> | undefined;
+      await act(async () => {
+        submitted = ref.current?.submit();
+      });
+
+      // The provider could not update in place and handed back a new secret.
+      let result: { error?: string } | undefined;
+      await act(async () => {
+        amountUpdate.resolve({
+          ...stripeSession,
+          session: {
+            ...stripeSession.session,
+            external_data: { client_secret: "stripe_secret_2" },
+          },
+        });
+        result = await submitted;
+      });
+
+      expect(result).toEqual({ error: "failedToInitPayment" });
+      expect(confirmWithSavedCard).not.toHaveBeenCalled();
+      expect(onPaymentComplete).not.toHaveBeenCalled();
+    });
+
+    it("does not complete a PayPal approval for an order created at another amount", async () => {
+      getCreditCards.mockResolvedValue({ data: [] });
+      createCheckoutPaymentSession.mockResolvedValue({
+        success: true,
+        session: {
+          id: "ps_paypal",
+          external_id: "paypal_order",
+          amount: "10.00",
+          external_data: { client_id: "paypal_client", intent: "CAPTURE" },
+        },
+      });
+      // The update to the new total has not reached the PayPal order yet.
+      updateCheckoutPaymentSession.mockReturnValue(new Promise(() => {}));
+      const onPaymentComplete = vi.fn().mockResolvedValue(true);
+      const handlers = {
+        onUpdateBillingAddress: vi.fn().mockResolvedValue(taxedCart),
+        onPaymentComplete,
+      };
+
+      const { rerender } = render(section(cart, vi.fn(), handlers));
+      fireEvent.click(screen.getByRole("radio", { name: "PayPal" }));
+      await screen.findByTestId("paypal-form");
+      // The total on screen already reads the new amount.
+      rerender(section(taxedCart, vi.fn(), handlers));
+
+      let outcome: string | undefined;
+      await act(async () => {
+        outcome = await paypalForm.onApproved?.();
+      });
+
+      expect(outcome).toBe("failed");
+      expect(onPaymentComplete).not.toHaveBeenCalled();
+      expect(screen.getByText("totalChanged")).toBeInTheDocument();
+    });
+
     it("charges once the session holds the new total", async () => {
       const amountUpdate = deferred<typeof stripeSession>();
       const { ref, rerender, onPaymentComplete } = await renderWithSavedCard(

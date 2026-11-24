@@ -15,6 +15,7 @@ import {
   useCallback,
   useEffect,
   useImperativeHandle,
+  useLayoutEffect,
   useMemo,
   useRef,
   useState,
@@ -90,6 +91,22 @@ function amountDueOf(cart: Cart): string | null {
   return cart.amount_due ?? cart.total;
 }
 
+function sameAmount(
+  left: string | null | undefined,
+  right: string | null | undefined,
+): boolean {
+  if (left == null || right == null) return (left ?? null) === (right ?? null);
+  return parseFloat(left) === parseFloat(right);
+}
+
+/** What a payment session holds once Spree has answered for it. */
+interface SessionSnapshot {
+  /** The amount it charges, or that its PayPal order was created for. */
+  amount: string | null;
+  /** Its provider data, as the gateway form receives it. */
+  data: string;
+}
+
 /**
  * The saved cards one payment method can charge. The list holds every
  * gateway's cards, and a card saved with another gateway fails there. A
@@ -143,6 +160,11 @@ export function PaymentSection({
   // checkout with no payment. Only a real numeric 0 is a free order;
   // an unknown amount falls through to the normal payment path.
   const rawAmountDue = amountDueOf(cart);
+  // The latest amount due, for checks made after an await.
+  const amountDueRef = useRef(rawAmountDue);
+  useLayoutEffect(() => {
+    amountDueRef.current = rawAmountDue;
+  }, [rawAmountDue]);
   const amountDue =
     rawAmountDue == null ? Number.NaN : parseFloat(rawAmountDue);
   const isZeroAmount = Number.isFinite(amountDue) && amountDue === 0;
@@ -196,6 +218,17 @@ export function PaymentSection({
     unknown
   > | null>(null);
   const [paymentSessionId, setPaymentSessionId] = useState<string | null>(null);
+  // Written with the state, so a submit resuming after an await can tell
+  // whether the session it started with is still the current one.
+  const currentSessionIdRef = useRef<string | null>(null);
+  const sessionSnapshotsRef = useRef(new Map<string, SessionSnapshot>());
+  const adoptSessionId = useCallback((sessionId: string | null): void => {
+    currentSessionIdRef.current = sessionId;
+    for (const heldId of sessionSnapshotsRef.current.keys()) {
+      if (heldId !== sessionId) sessionSnapshotsRef.current.delete(heldId);
+    }
+    setPaymentSessionId(sessionId);
+  }, []);
   const [gatewayError, setGatewayError] = useState<string | null>(null);
   // Set when saving the billing address re-priced the cart. Kept apart from
   // gatewayError, which a new session clears and which shows only under a
@@ -236,7 +269,7 @@ export function PaymentSection({
       setLoading(true);
       setGatewayError(null);
       setSessionExternalData(null);
-      setPaymentSessionId(null);
+      adoptSessionId(null);
       gatewayHandleRef.current = null;
 
       try {
@@ -252,6 +285,8 @@ export function PaymentSection({
           externalData.stripe_payment_method_id = cardId;
         }
 
+        // A new session defaults to the amount due when it is created.
+        const requestedAmount = amountDueRef.current;
         const result = await createCheckoutPaymentSession(
           cart.id,
           method.id,
@@ -265,11 +300,16 @@ export function PaymentSection({
           if (extData && Object.keys(extData).length > 0) {
             // Include external_id so gateway forms can access the
             // provider-side session/order ID (e.g. Adyen session ID).
-            setSessionExternalData({
+            const data = {
               ...extData,
               _external_id: result.session.external_id,
+            };
+            sessionSnapshotsRef.current.set(result.session.id, {
+              amount: result.session.amount ?? requestedAmount,
+              data: JSON.stringify(data),
             });
-            setPaymentSessionId(result.session.id);
+            setSessionExternalData(data);
+            adoptSessionId(result.session.id);
           } else {
             setGatewayError(t("failedToInitPayment"));
           }
@@ -285,7 +325,7 @@ export function PaymentSection({
         }
       }
     },
-    [cart.id, t],
+    [adoptSessionId, cart.id, t],
   );
 
   // Track the cart total so we can recreate the session when it changes
@@ -311,7 +351,7 @@ export function PaymentSection({
       setLoading(true);
       setGatewayError(null);
       setSessionExternalData(null);
-      setPaymentSessionId(null);
+      adoptSessionId(null);
       gatewayHandleRef.current = null;
 
       let cardId: string | null = null;
@@ -342,7 +382,7 @@ export function PaymentSection({
       selectedCardRef.current = cardId;
       await createSession(cardId, method);
     },
-    [rawAmountDue, createSession, isAuthenticated],
+    [rawAmountDue, adoptSessionId, createSession, isAuthenticated],
   );
 
   // On mount: load saved cards (if authenticated + session method), then create initial session
@@ -355,6 +395,71 @@ export function PaymentSection({
     initRef.current = true;
     initSessionWithSavedCards(selectedMethod);
   }, [selectedMethod, isSessionBased, initSessionWithSavedCards, isZeroAmount]);
+
+  // Moves the live session to `requestedAmount`, in place when the provider
+  // allows it. A payment submit waits for the update through amountSyncRef.
+  const syncSessionAmount = useCallback(
+    (
+      sessionId: string,
+      requestedAmount: string | null,
+      method: PaymentMethod,
+    ): void => {
+      // Tie this sync to the session it updates: if the shopper switches
+      // methods (or another session request starts) before it resolves, its
+      // result must not overwrite the newer session.
+      const syncRequestId = sessionRequestIdRef.current;
+      const sync = async (): Promise<boolean> => {
+        try {
+          // What a new session defaults to: the total less store credit.
+          const result = await updateCheckoutPaymentSession(
+            cart.id,
+            sessionId,
+            { amount: requestedAmount ?? undefined },
+          );
+          if (syncRequestId !== sessionRequestIdRef.current) return false;
+          if (!result.success || !result.session) {
+            throw new Error("session update rejected");
+          }
+          // Providers that can't update in place hand back fresh identifiers;
+          // adopting them remounts the form (the `key` changes), which is the
+          // unavoidable case. Identical data keeps the mounted form untouched.
+          const extData = result.session.external_data;
+          const amount = result.session.amount ?? requestedAmount;
+          if (extData && Object.keys(extData).length > 0) {
+            const next = {
+              ...extData,
+              _external_id: result.session.external_id,
+            };
+            sessionSnapshotsRef.current.set(result.session.id, {
+              amount,
+              data: JSON.stringify(next),
+            });
+            setSessionExternalData((prev) =>
+              JSON.stringify(prev) === JSON.stringify(next) ? prev : next,
+            );
+            adoptSessionId(result.session.id);
+          } else {
+            const held = sessionSnapshotsRef.current.get(sessionId);
+            if (held) {
+              sessionSnapshotsRef.current.set(sessionId, { ...held, amount });
+            }
+          }
+          return true;
+        } catch {
+          if (syncRequestId !== sessionRequestIdRef.current) return false;
+          // Gateway doesn't support in-place updates — fall back to the
+          // destructive recreate rather than paying against a stale amount.
+          createSession(selectedCardRef.current, method);
+          return false;
+        }
+      };
+      const syncing = sync().finally(() => {
+        if (amountSyncRef.current === syncing) amountSyncRef.current = null;
+      });
+      amountSyncRef.current = syncing;
+    },
+    [adoptSessionId, cart.id, createSession],
+  );
 
   // When the cart total changes, sync the live payment session with the
   // provider in place. Recreating it instead would unmount the gateway form
@@ -378,57 +483,14 @@ export function PaymentSection({
       return;
     }
 
-    const method = selectedMethod;
-    // Tie this sync to the session it updates: if the shopper switches
-    // methods (or another session request starts) before it resolves, its
-    // result must not overwrite the newer session.
-    const syncRequestId = sessionRequestIdRef.current;
-    const sync = async (): Promise<boolean> => {
-      try {
-        // What a new session defaults to: the total less store credit.
-        const result = await updateCheckoutPaymentSession(
-          cart.id,
-          paymentSessionId,
-          { amount: rawAmountDue ?? undefined },
-        );
-        if (syncRequestId !== sessionRequestIdRef.current) return false;
-        if (!result.success || !result.session) {
-          throw new Error("session update rejected");
-        }
-        // Providers that can't update in place hand back fresh identifiers;
-        // adopting them remounts the form (the `key` changes), which is the
-        // unavoidable case. Identical data keeps the mounted form untouched.
-        const extData = result.session.external_data;
-        if (extData && Object.keys(extData).length > 0) {
-          const next = {
-            ...extData,
-            _external_id: result.session.external_id,
-          };
-          setSessionExternalData((prev) =>
-            JSON.stringify(prev) === JSON.stringify(next) ? prev : next,
-          );
-          setPaymentSessionId(result.session.id);
-        }
-        return true;
-      } catch {
-        if (syncRequestId !== sessionRequestIdRef.current) return false;
-        // Gateway doesn't support in-place updates — fall back to the
-        // destructive recreate rather than paying against a stale amount.
-        createSession(selectedCardRef.current, method);
-        return false;
-      }
-    };
-    const syncing = sync().finally(() => {
-      if (amountSyncRef.current === syncing) amountSyncRef.current = null;
-    });
-    amountSyncRef.current = syncing;
+    syncSessionAmount(paymentSessionId, rawAmountDue, selectedMethod);
   }, [
-    cart.id,
     rawAmountDue,
     createSession,
     isSessionBased,
     paymentSessionId,
     selectedMethod,
+    syncSessionAmount,
   ]);
 
   const [billStates, isPendingBill] = useCountryStates(
@@ -483,7 +545,7 @@ export function PaymentSection({
       // request so a late-resolving createSession won't repopulate state.
       sessionRequestIdRef.current += 1;
       setSessionExternalData(null);
-      setPaymentSessionId(null);
+      adoptSessionId(null);
       setGatewayError(null);
       gatewayHandleRef.current = null;
       setLoading(false);
@@ -540,10 +602,15 @@ export function PaymentSection({
           setGatewayError(t("failedToSaveBilling"));
           return "not_started";
         }
-        // The buyer approved the amount shown before the address was saved
-        // (PayPal's popup never passes through submit). Completing now would
-        // settle that figure for an order whose total has moved.
-        if (amountDueOf(updatedCart) !== rawAmountDue) {
+        // The buyer approved the amount the session held, which can predate
+        // both the saved address and the total on screen (PayPal's popup
+        // never passes through submit). Completing on a mismatch would settle
+        // that figure for an order whose total has moved.
+        const approved = sessionSnapshotsRef.current.get(paymentSessionId);
+        if (
+          !approved ||
+          !sameAmount(amountDueOf(updatedCart), approved.amount)
+        ) {
           setTotalNotice(t("totalChanged"));
           setProcessing(false);
           completionInFlightRef.current = false;
@@ -566,14 +633,7 @@ export function PaymentSection({
         return "not_started";
       }
     },
-    [
-      paymentSessionId,
-      rawAmountDue,
-      saveBillingAddress,
-      onPaymentComplete,
-      setProcessing,
-      t,
-    ],
+    [paymentSessionId, saveBillingAddress, onPaymentComplete, setProcessing, t],
   );
 
   // PayPal keeps the session open when it declined the buyer's funding
@@ -681,7 +741,7 @@ export function PaymentSection({
                 return { error: t("failedToSaveBilling") };
               }
               // Tax by the billing address can make the order payable.
-              if (amountDueOf(updatedCart) !== rawAmountDue) {
+              if (!sameAmount(amountDueOf(updatedCart), rawAmountDue)) {
                 return stopForNewTotal();
               }
               await onPaymentComplete({ type: "direct" });
@@ -714,7 +774,7 @@ export function PaymentSection({
             // longer be placed; a direct payment would place the order at a
             // total the buyer never saw. The buyer reviews the new total and
             // pays again (a session is moved to it first).
-            if (amountDueOf(updatedCart) !== rawAmountDue) {
+            if (!sameAmount(amountDueOf(updatedCart), rawAmountDue)) {
               return stopForNewTotal();
             }
 
@@ -728,6 +788,36 @@ export function PaymentSection({
               if (!paymentSessionId || !sessionExternalData) {
                 setProcessing(false);
                 return { error: t("failedToInitPayment") };
+              }
+              // The cart and the session may have moved during the wait (a
+              // gift card removed in the summary, say). Pay only when both
+              // still hold the amount the buyer pressed Pay now for.
+              const held = sessionSnapshotsRef.current.get(paymentSessionId);
+              if (!sameAmount(amountDueRef.current, rawAmountDue)) {
+                return stopForNewTotal();
+              }
+              if (!sameAmount(held?.amount, rawAmountDue)) {
+                // Move the session to the total, so the next Pay now can go
+                // through rather than stopping here again.
+                if (currentSessionIdRef.current === paymentSessionId) {
+                  syncSessionAmount(
+                    paymentSessionId,
+                    rawAmountDue,
+                    selectedMethod,
+                  );
+                }
+                return stopForNewTotal();
+              }
+              // A sync that replaced the session left this attempt holding the
+              // old id and client secret. The form now shows the new session.
+              if (
+                currentSessionIdRef.current !== paymentSessionId ||
+                held?.data !== JSON.stringify(sessionExternalData)
+              ) {
+                const msg = t("failedToInitPayment");
+                setGatewayError(msg);
+                setProcessing(false);
+                return { error: msg };
               }
               const basePath = extractBasePath(window.location.pathname);
               const returnUrl = `${window.location.origin}${basePath}/confirm-payment/${cart.id}?session=${paymentSessionId}`;
@@ -818,6 +908,7 @@ export function PaymentSection({
       selectedCardId,
       saveBillingAddress,
       awaitAmountSync,
+      syncSessionAmount,
       stopForNewTotal,
       onPaymentComplete,
       cart.id,
