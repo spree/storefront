@@ -708,6 +708,68 @@ describe("PaymentSection", () => {
       expect(screen.getByText("totalChanged")).toBeInTheDocument();
     });
 
+    it("does not complete an approved PayPal order when an amount update lands during the billing save", async () => {
+      getCreditCards.mockResolvedValue({ data: [] });
+      createCheckoutPaymentSession.mockResolvedValue({
+        success: true,
+        session: {
+          id: "ps_paypal",
+          external_id: "paypal_order",
+          amount: "10.00",
+          external_data: { client_id: "paypal_client", intent: "CAPTURE" },
+        },
+      });
+      const amountUpdate = deferred<unknown>();
+      updateCheckoutPaymentSession.mockReturnValue(amountUpdate.promise);
+      const billingSave = deferred<Cart | null>();
+      const onPaymentComplete = vi.fn().mockResolvedValue(true);
+      const handlers = {
+        onUpdateBillingAddress: () => billingSave.promise,
+        onPaymentComplete,
+      };
+
+      const { rerender } = render(section(cart, vi.fn(), handlers));
+      fireEvent.click(screen.getByRole("radio", { name: "PayPal" }));
+      await screen.findByTestId("paypal-form");
+
+      // The buyer approves the PayPal order created at 10.00.
+      const approve = paypalForm.onApproved;
+      let approval: Promise<string> | undefined;
+      await act(async () => {
+        approval = approve?.();
+      });
+
+      // Meanwhile the total moves and the session is updated to it, before
+      // the billing save answers.
+      rerender(section(taxedCart, vi.fn(), handlers));
+      expect(updateCheckoutPaymentSession).toHaveBeenCalledWith(
+        cart.id,
+        "ps_paypal",
+        { amount: "10.50" },
+      );
+      await act(async () => {
+        amountUpdate.resolve({
+          success: true,
+          session: {
+            id: "ps_paypal",
+            external_id: "paypal_order",
+            amount: "10.50",
+            external_data: { client_id: "paypal_client", intent: "CAPTURE" },
+          },
+        });
+      });
+
+      let outcome: string | undefined;
+      await act(async () => {
+        billingSave.resolve(taxedCart);
+        outcome = await approval;
+      });
+
+      expect(outcome).toBe("failed");
+      expect(onPaymentComplete).not.toHaveBeenCalled();
+      expect(screen.getByText("totalChanged")).toBeInTheDocument();
+    });
+
     it("charges once the session holds the new total", async () => {
       const amountUpdate = deferred<typeof stripeSession>();
       const { ref, rerender, onPaymentComplete } = await renderWithSavedCard(

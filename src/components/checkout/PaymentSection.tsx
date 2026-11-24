@@ -589,6 +589,12 @@ export function PaymentSection({
       if (completionInFlightRef.current) return "not_started";
       if (!paymentSessionId) return "not_started";
 
+      // Read before the save: an amount update finishing during it would
+      // overwrite the snapshot with a figure the buyer never approved.
+      const approvedAmount =
+        sessionSnapshotsRef.current.get(paymentSessionId)?.amount;
+      const updateInFlightAtApproval = amountSyncRef.current !== null;
+
       completionInFlightRef.current = true;
       setProcessing(true);
       setGatewayError(null);
@@ -604,12 +610,18 @@ export function PaymentSection({
         }
         // The buyer approved the amount the session held, which can predate
         // both the saved address and the total on screen (PayPal's popup
-        // never passes through submit). Completing on a mismatch would settle
-        // that figure for an order whose total has moved.
-        const approved = sessionSnapshotsRef.current.get(paymentSessionId);
+        // never passes through submit). An update patches the same PayPal
+        // order, and the capture takes its patched amount, so an update in
+        // flight at any point here leaves the approved figure in doubt.
+        // Completing on any mismatch would settle an amount the buyer did not
+        // approve, or one the order no longer totals.
+        const current = sessionSnapshotsRef.current.get(paymentSessionId);
         if (
-          !approved ||
-          !sameAmount(amountDueOf(updatedCart), approved.amount)
+          approvedAmount === undefined ||
+          updateInFlightAtApproval ||
+          amountSyncRef.current !== null ||
+          !sameAmount(amountDueOf(updatedCart), approvedAmount) ||
+          !sameAmount(current?.amount, approvedAmount)
         ) {
           setTotalNotice(t("totalChanged"));
           setProcessing(false);
