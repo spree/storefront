@@ -89,7 +89,7 @@ Project structure, the `src/lib/data/` server actions, and the JWT-in-httpOnly-c
 ### Prerequisites
 
 - Node.js 20+ (required for Next.js 16)
-- A running Spree Commerce 5.4+
+- A running Spree Commerce 6.0.6+
 
 ### Installation
 
@@ -176,6 +176,8 @@ The storefront can render and send its own order, shipment, and account emails w
 ## Catalog Cache Revalidation
 
 Product lists, search and product pages are cached for up to 10 minutes. To show catalog changes at once (for example, a product taken down, archived or set to draft leaving search), subscribe the webhook endpoint (`/api/webhooks/spree`, signed with `SPREE_WEBHOOK_SECRET`) to these events: `product.created`, `product.updated`, `product.deleted`, `product.activated`, `product.approved`, `product.drafted` and `product.archived`. You can use the same endpoint as for emails.
+
+Store settings from Spree Admin → Settings → Store (name, SEO title and description, keywords, logo, social accounts and support email) are cached for up to an hour. Subscribe the same endpoint to `store.updated` to show changes at once.
 
 ## Deployment
 

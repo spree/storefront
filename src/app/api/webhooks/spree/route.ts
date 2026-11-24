@@ -15,6 +15,7 @@ import {
   handleProductChanged,
   type ProductCatalogEvent,
 } from "@/lib/webhooks/products";
+import { handleStoreUpdated } from "@/lib/webhooks/store";
 
 export async function POST(request: NextRequest): Promise<NextResponse> {
   const webhookSecret = process.env.SPREE_WEBHOOK_SECRET;
@@ -42,6 +43,8 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       "product.approved": handleProductChanged,
       "product.drafted": handleProductChanged,
       "product.archived": handleProductChanged,
+      // Store settings: name, SEO metadata, logo, social accounts.
+      "store.updated": handleStoreUpdated,
     } satisfies Record<ProductCatalogEvent, unknown> & WebhookHandlers,
   });
 
