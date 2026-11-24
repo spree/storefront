@@ -266,6 +266,7 @@
     "failedToSelectRate": "Versandrate konnte nicht ausgewählt werden",
     "failedToSaveBilling": "Rechnungsadresse konnte nicht gespeichert werden",
     "failedToSaveBillingRetry": "Rechnungsadresse konnte nicht gespeichert werden. Bitte versuchen Sie es erneut.",
+    "totalChanged": "Ihre Gesamtsumme wurde für Ihre Rechnungsadresse aktualisiert. Bitte prüfen Sie sie und zahlen Sie erneut.",
     "failedToCompleteOrder": "Bestellung konnte nicht abgeschlossen werden",
     "stripeNotLoaded": "Stripe wurde noch nicht geladen",
     "paymentProcessingError": "Bei der Zahlung ist ein Fehler aufgetreten.",

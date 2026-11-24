@@ -266,6 +266,7 @@
     "failedToSelectRate": "Nie udało się wybrać stawki wysyłki",
     "failedToSaveBilling": "Nie udało się zapisać adresu rozliczeniowego",
     "failedToSaveBillingRetry": "Nie udało się zapisać adresu rozliczeniowego. Spróbuj ponownie.",
+    "totalChanged": "Suma została zaktualizowana dla Twojego adresu rozliczeniowego. Sprawdź ją i zapłać ponownie.",
     "failedToCompleteOrder": "Nie udało się złożyć zamówienia",
     "stripeNotLoaded": "Stripe nie został jeszcze załadowany",
     "paymentProcessingError": "Wystąpił błąd podczas przetwarzania płatności.",

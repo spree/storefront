@@ -96,3 +96,33 @@ describe("POST /api/webhooks/spree — product events", () => {
     expect(mockRevalidateTag).not.toHaveBeenCalled();
   });
 });
+
+describe("POST /api/webhooks/spree — store events", () => {
+  beforeEach(() => {
+    vi.stubEnv("SPREE_WEBHOOK_SECRET", SECRET);
+  });
+
+  afterEach(() => {
+    vi.clearAllMocks();
+    vi.unstubAllEnvs();
+  });
+
+  it("expires the cached store on store.updated", async () => {
+    const response = await POST(
+      signedRequest("store.updated", { id: "store_1", name: "Acme" }),
+    );
+
+    expect(response.status).toBe(200);
+    expect(await response.json()).toEqual({ received: true, handled: true });
+    expect(mockRevalidateTag.mock.calls).toEqual([["store", { expire: 0 }]]);
+  });
+
+  it("rejects a store event with a bad signature", async () => {
+    const response = await POST(
+      signedRequest("store.updated", { id: "store_1" }, "wrong_secret"),
+    );
+
+    expect(response.status).toBe(401);
+    expect(mockRevalidateTag).not.toHaveBeenCalled();
+  });
+});

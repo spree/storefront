@@ -266,6 +266,7 @@
     "failedToSelectRate": "Failed to select shipping rate",
     "failedToSaveBilling": "Failed to save billing address",
     "failedToSaveBillingRetry": "Failed to save billing address. Please try again.",
+    "totalChanged": "Your total was updated for your billing address. Please review it and pay again.",
     "failedToCompleteOrder": "Failed to complete order",
     "stripeNotLoaded": "Stripe has not loaded yet",
     "paymentProcessingError": "An error occurred during payment.",
