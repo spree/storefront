@@ -68,7 +68,7 @@ describe("SearchBar session handling", () => {
     vi.clearAllMocks();
   });
 
-  it("does not cache results fetched while the session is still loading", async () => {
+  it("searches again once auth settles if a search ran while it loaded", async () => {
     signedIn(null, true);
     mockFetch.mockResolvedValue(resultsNamed("Loading result"));
     const view = render(<SearchBar basePath="/us/en" />);
@@ -77,20 +77,55 @@ describe("SearchBar session handling", () => {
     await screen.findByText("Loading result");
     expect(mockFetch).toHaveBeenCalledTimes(1);
 
-    // Auth settling is not a session switch: the results stay on screen.
+    // That request may have gone out with an expired token, so once auth
+    // settles the open query is searched again as the settled session.
+    signedIn(null);
+    mockFetch.mockResolvedValue(resultsNamed("Settled guest result"));
+    view.rerender(<SearchBar basePath="/us/en" />);
+    await screen.findByText("Settled guest result");
+    expect(mockFetch).toHaveBeenCalledTimes(2);
+
+    // The loading-time response was never cached; the settled guest's is.
+    type("lo");
+    type("loading-query");
+    await screen.findByText("Settled guest result");
+    expect(mockFetch).toHaveBeenCalledTimes(2);
+  });
+
+  it("drops an in-flight guest response when auth first settles as a customer", async () => {
+    signedIn(null, true);
+    let resolve: (value: QuickSearchResponse) => void = () => {};
+    mockFetch.mockReturnValueOnce(
+      new Promise((r) => {
+        resolve = r;
+      }),
+    );
+    const view = render(<SearchBar basePath="/us/en" />);
+
+    type("first-settle");
+    await waitFor(() => expect(mockFetch).toHaveBeenCalledTimes(1));
+
+    // Auth settles as a customer whose token was refreshed meanwhile.
+    signedIn("cus_5");
+    mockFetch.mockResolvedValue(resultsNamed("Customer result", false));
+    view.rerender(<SearchBar basePath="/us/en" />);
+    await act(async () => {
+      resolve(resultsNamed("Guest result"));
+    });
+
+    expect(screen.queryByText("Guest result")).not.toBeInTheDocument();
+    await screen.findByText("Customer result");
+    expect(mockFetch).toHaveBeenCalledTimes(2);
+  });
+
+  it("leaves things alone when auth settles as a guest with no search made", async () => {
+    signedIn(null, true);
+    const view = render(<SearchBar basePath="/us/en" />);
+
     signedIn(null);
     view.rerender(<SearchBar basePath="/us/en" />);
-    expect(screen.getByText("Loading result")).toBeInTheDocument();
 
-    // But they were not cached as the guest's, so the guest searches afresh,
-    // and from then on the guest's own results are cached.
-    type("lo");
-    type("loading-query");
-    await waitFor(() => expect(mockFetch).toHaveBeenCalledTimes(2));
-    type("lo");
-    type("loading-query");
-    await screen.findByText("Loading result");
-    expect(mockFetch).toHaveBeenCalledTimes(2);
+    expect(mockFetch).not.toHaveBeenCalled();
   });
 
   it("never caches a signed-in customer's results", async () => {
@@ -161,7 +196,7 @@ describe("SearchBar session handling", () => {
     await waitFor(() => expect(mockFetch).toHaveBeenCalledTimes(2));
   });
 
-  it("does not search again when the session changes with the overlay closed", async () => {
+  it("waits for the list to reopen before searching again after a session change", async () => {
     signedIn("cus_4");
     mockFetch.mockResolvedValue(resultsNamed("Closed overlay", false));
     const view = render(<SearchBar basePath="/us/en" />);
@@ -177,5 +212,12 @@ describe("SearchBar session handling", () => {
     });
 
     expect(mockFetch).toHaveBeenCalledTimes(1);
+
+    // Opening the list again searches the query on screen as the new session.
+    mockFetch.mockResolvedValue(resultsNamed("Reopened guest result"));
+    fireEvent.blur(screen.getByRole("combobox"));
+    fireEvent.focus(screen.getByRole("combobox"));
+    await screen.findByText("Reopened guest result");
+    expect(mockFetch).toHaveBeenCalledTimes(2);
   });
 });

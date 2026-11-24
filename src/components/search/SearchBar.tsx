@@ -136,6 +136,12 @@ export function SearchBar({ basePath, autoFocus, onNavigate }: SearchBarProps) {
   // session before it.
   const settledSessionRef = useRef(sessionKey);
   const sessionStartSeqRef = useRef(0);
+  // A search went out while auth was still loading. Such a request may have
+  // carried an expired token and been answered as a guest.
+  const searchedWhileLoadingRef = useRef(false);
+  // The session changed while the list was closed: the query on screen has
+  // no results for the current session yet, so opening the list searches it.
+  const staleQueryRef = useRef(false);
 
   const suggestions = toSuggestions(results);
 
@@ -184,6 +190,7 @@ export function SearchBar({ basePath, autoFocus, onNavigate }: SearchBarProps) {
   const handleQueryChange = (value: string): void => {
     setQuery(value);
     setIsOpen(true);
+    staleQueryRef.current = false;
     search(value);
   };
 
@@ -211,6 +218,7 @@ export function SearchBar({ basePath, autoFocus, onNavigate }: SearchBarProps) {
       return;
     }
 
+    if (sessionKey === null) searchedWhileLoadingRef.current = true;
     // Previous results stay on screen until the new ones arrive.
     setLoading(true);
     debounceRef.current = setTimeout(() => {
@@ -220,17 +228,23 @@ export function SearchBar({ basePath, autoFocus, onNavigate }: SearchBarProps) {
 
   // A sign-in, sign-out or account switch: the results on screen and any
   // request in flight belong to the previous session, so drop them, and if
-  // the overlay is open search the current query again as the new session.
-  // Auth settling for the first time is not a switch: requests made while it
-  // loaded already carried the session cookie. Syncs with the auth session,
-  // which changes outside this component (the account menu, an expired
-  // session).
+  // the list is open search the current query again as the new session.
+  // Auth settling for the first time counts as a switch when it settles as a
+  // customer or a search went out while it loaded: that request may have
+  // carried an expired token and been answered as a guest. Syncs with the
+  // auth session, which changes outside this component (the account menu,
+  // an expired session).
   // biome-ignore lint/correctness/useExhaustiveDependencies: runs on session changes only; query, isOpen and search are read at that moment
   useEffect(() => {
     if (sessionKey === null) return;
     const previous = settledSessionRef.current;
     settledSessionRef.current = sessionKey;
-    if (previous === null || previous === sessionKey) return;
+    if (previous === sessionKey) return;
+    if (previous === null) {
+      const searchedWhileLoading = searchedWhileLoadingRef.current;
+      searchedWhileLoadingRef.current = false;
+      if (!searchedWhileLoading && sessionKey === "guest") return;
+    }
 
     sessionStartSeqRef.current = latestSeqRef.current;
     shownSeqRef.current = latestSeqRef.current;
@@ -239,11 +253,22 @@ export function SearchBar({ basePath, autoFocus, onNavigate }: SearchBarProps) {
       search(query);
       return;
     }
-    // Closed: nothing to show, so don't search; just stop what was pending.
+    // Closed: nothing to show, so don't search now; stop what was pending
+    // and search when the list opens again.
     if (debounceRef.current) clearTimeout(debounceRef.current);
     setSelectedIndex(-1);
     setLoading(false);
+    staleQueryRef.current = true;
   }, [sessionKey]);
+
+  // Opening the list after a session change searches the query on screen,
+  // which has no results for the current session yet.
+  const handleFocus = (): void => {
+    setIsOpen(true);
+    if (!staleQueryRef.current) return;
+    staleQueryRef.current = false;
+    search(query);
+  };
 
   const viewAllResults = () => {
     router.push(`${basePath}/products?q=${encodeURIComponent(query.trim())}`);
@@ -409,7 +434,7 @@ export function SearchBar({ basePath, autoFocus, onNavigate }: SearchBarProps) {
             type="search"
             value={query}
             onChange={(e) => handleQueryChange(e.target.value)}
-            onFocus={() => setIsOpen(true)}
+            onFocus={handleFocus}
             onBlur={handleBlur}
             onKeyDown={handleKeyDown}
             placeholder={t("search")}
