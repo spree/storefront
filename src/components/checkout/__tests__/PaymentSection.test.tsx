@@ -701,6 +701,8 @@ describe("PaymentSection", () => {
       const { rerender } = render(section(cart, vi.fn(), handlers));
       fireEvent.click(screen.getByRole("radio", { name: "PayPal" }));
       await screen.findByTestId("paypal-form");
+      // The popup opens on the order created at 10.00.
+      act(() => paypalForm.onOpen?.());
       // The total on screen already reads the new amount.
       rerender(section(taxedCart, vi.fn(), handlers));
 
@@ -737,6 +739,7 @@ describe("PaymentSection", () => {
       const { rerender } = render(section(cart, vi.fn(), handlers));
       fireEvent.click(screen.getByRole("radio", { name: "PayPal" }));
       await screen.findByTestId("paypal-form");
+      act(() => paypalForm.onOpen?.());
 
       // The buyer approves the PayPal order created at 10.00.
       const approve = paypalForm.onApproved;
@@ -822,6 +825,64 @@ describe("PaymentSection", () => {
           sessionId: "ps_paypal",
           sessionResult: undefined,
         });
+      });
+
+      it("sends amount updates one at a time and does not complete while one is pending", async () => {
+        const onPaymentComplete = vi.fn().mockResolvedValue(true);
+        const handlers = {
+          onUpdateBillingAddress: vi.fn().mockResolvedValue(cart),
+          onPaymentComplete,
+        };
+        const updates: Record<string, ReturnType<typeof deferred<unknown>>> = {
+          "10.50": deferred(),
+          "11.00": deferred(),
+        };
+        updateCheckoutPaymentSession.mockImplementation(
+          async (_cartId: string, _sessionId: string, params: object) =>
+            updates[(params as { amount: string }).amount].promise,
+        );
+        const { rerender } = await openPayPal(cart, handlers);
+
+        await act(async () => {
+          rerender(section(taxedCart, vi.fn(), handlers));
+        });
+        const higherCart = {
+          ...cart,
+          total: "11.00",
+          amount_due: "11.00",
+        } as Cart;
+        await act(async () => {
+          rerender(section(higherCart, vi.fn(), handlers));
+        });
+        // The newer update answers first; it has not even been sent, so the
+        // older one cannot patch the order after it.
+        await act(async () => {
+          updates["11.00"].resolve(paypalSession("11.00"));
+        });
+        expect(updateCheckoutPaymentSession).toHaveBeenCalledTimes(1);
+        expect(updateCheckoutPaymentSession).toHaveBeenLastCalledWith(
+          cart.id,
+          "ps_paypal",
+          { amount: "10.50" },
+        );
+
+        let outcome: string | undefined;
+        await act(async () => {
+          outcome = await paypalForm.onApproved?.();
+        });
+        expect(outcome).toBe("failed");
+        expect(onPaymentComplete).not.toHaveBeenCalled();
+
+        // Once the older one settles, the newer one goes out after it.
+        await act(async () => {
+          updates["10.50"].resolve(paypalSession("10.50"));
+        });
+        expect(updateCheckoutPaymentSession).toHaveBeenCalledTimes(2);
+        expect(updateCheckoutPaymentSession).toHaveBeenLastCalledWith(
+          cart.id,
+          "ps_paypal",
+          { amount: "11.00" },
+        );
       });
 
       it("does not complete when an amount update patched the order while the popup was open", async () => {

@@ -334,8 +334,9 @@ export function PaymentSection({
   // Track the cart total so we can recreate the session when it changes
   const lastTotalRef = useRef<string | null>(null);
   const selectedCardRef = useRef<string | null>(null);
-  // The amount update in flight, resolving true once the current session
-  // holds the new amount; a payment submit waits for it.
+  // The last of the amount updates in flight, resolving true once the current
+  // session holds the new amount; a payment submit waits for it. Updates run
+  // one after another, so it settles only after every earlier one has.
   const amountSyncRef = useRef<Promise<boolean> | null>(null);
 
   // Load saved cards (if authenticated), then create the first session for
@@ -412,6 +413,10 @@ export function PaymentSection({
       // result must not overwrite the newer session.
       const syncRequestId = sessionRequestIdRef.current;
       const sync = async (): Promise<boolean> => {
+        // Sent only once the previous update has settled. Two in flight could
+        // reach the provider out of order, and the older one would patch a
+        // PayPal order back to its amount after the newer one was checked.
+        if (syncRequestId !== sessionRequestIdRef.current) return false;
         try {
           // What a new session defaults to: the total less store credit.
           const result = await updateCheckoutPaymentSession(
@@ -463,7 +468,8 @@ export function PaymentSection({
           return false;
         }
       };
-      const syncing = sync().finally(() => {
+      const previous = amountSyncRef.current;
+      const syncing = (previous ? previous.then(sync) : sync()).finally(() => {
         if (amountSyncRef.current === syncing) amountSyncRef.current = null;
       });
       amountSyncRef.current = syncing;
