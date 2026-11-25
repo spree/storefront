@@ -14,6 +14,7 @@ import {
   type Ref,
   useCallback,
   useEffect,
+  useEffectEvent,
   useImperativeHandle,
   useLayoutEffect,
   useMemo,
@@ -568,6 +569,16 @@ export function PaymentSection({
       setLoading(false);
     }
   };
+
+  // A rule can drop the chosen method from the cart's list, leaving the first
+  // one shown in its place. Switch to it properly, so a Stripe form never pairs
+  // one account's key with another account's session.
+  const switchToShownMethod = useEffectEvent(handleMethodSelect);
+  useEffect(() => {
+    if (!initRef.current || !effectiveSelectedMethodId) return;
+    if (effectiveSelectedMethodId === selectedMethodId) return;
+    switchToShownMethod(effectiveSelectedMethodId);
+  }, [effectiveSelectedMethodId, selectedMethodId]);
 
   const updateBillAddress = (field: keyof AddressFormData, value: string) => {
     setBillAddress((prev) => updateAddressField(prev, field, value));
