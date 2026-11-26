@@ -33,7 +33,7 @@ interface CheckoutPageProps {
 async function CheckoutDataLoader({ params }: CheckoutPageProps) {
   await connection();
 
-  const { id: cartId, country: urlCountry } = await params;
+  const { id: cartId, country: urlCountry, locale } = await params;
 
   // Check auth first so we can skip address fetch for guests
   const authStatus = await checkAuth();
@@ -46,8 +46,7 @@ async function CheckoutDataLoader({ params }: CheckoutPageProps) {
 
   // Redirect to order-placed if already complete
   if (loadedCart?.current_step === "complete") {
-    const basePath = `/${urlCountry}/en`;
-    redirect(`${basePath}/order-placed/${cartId}`);
+    redirect(`/${urlCountry}/${locale}/order-placed/${cartId}`);
   }
 
   // Before the addresses are read, since the company decides which sites are

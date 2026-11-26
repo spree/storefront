@@ -93,15 +93,49 @@ describe("checkout server actions", () => {
       expect(result).toBe(mockOrder);
     });
 
-    it("falls back to getOrder when cart is null (completed)", async () => {
-      const completedOrder = { ...mockOrder, current_step: "complete" };
+    // A Spree 6 order has completed_at but no checkout step.
+    const placedOrder = {
+      id: "or_1",
+      cart_id: "order-1",
+      number: "R100",
+      completed_at: "2026-11-24T12:00:00.000Z",
+    };
+
+    it("marks the order a completed cart became as complete", async () => {
       mockClient.carts.get.mockRejectedValue(new Error("Not found"));
-      mockClient.orders.get.mockResolvedValue(completedOrder);
+      mockClient.orders.get.mockResolvedValue(placedOrder);
 
       const result = await getCheckoutOrder("order-1");
 
-      expect(mockClient.orders.get).toHaveBeenCalled();
-      expect(result).toBe(completedOrder);
+      expect(mockClient.orders.get).toHaveBeenCalledWith(
+        "order-1",
+        undefined,
+        expect.anything(),
+      );
+      expect(result).toEqual({ ...placedOrder, current_step: "complete" });
+    });
+
+    it("marks a split checkout's order group as complete", async () => {
+      const orderGroup = {
+        id: "ogrp_1",
+        number: "R100",
+        orders: [placedOrder, { ...placedOrder, id: "or_2", number: "R101" }],
+      };
+      mockClient.carts.get.mockRejectedValue(new Error("Not found"));
+      mockClient.orders.get.mockResolvedValue(orderGroup);
+
+      const result = await getCheckoutOrder("order-1");
+
+      expect(result).toEqual({ ...orderGroup, current_step: "complete" });
+    });
+
+    it("answers with the placed order when a newer cart is open", async () => {
+      mockClient.carts.get.mockResolvedValue({ ...mockOrder, id: "cart_new" });
+      mockClient.orders.get.mockResolvedValue(placedOrder);
+
+      const result = await getCheckoutOrder("order-1");
+
+      expect(result).toEqual({ ...placedOrder, current_step: "complete" });
     });
 
     it("returns null when both cart and order fail", async () => {
