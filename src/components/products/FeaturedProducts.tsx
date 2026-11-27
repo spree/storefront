@@ -1,7 +1,7 @@
 import { LazyProductCarousel } from "@/components/products/LazyProductCarousel";
 import { PRODUCT_CARD_FIELDS } from "@/lib/data/cached";
 import { cachedListProducts } from "@/lib/data/products";
-import { getAccessToken } from "@/lib/spree";
+import { getCatalogAccessToken } from "@/lib/spree";
 
 interface FeaturedProductsProps {
   basePath: string;
@@ -16,7 +16,7 @@ export async function FeaturedProducts({
   country,
   currency,
 }: FeaturedProductsProps) {
-  const userToken = await getAccessToken();
+  const userToken = await getCatalogAccessToken();
   const productsResponse = await cachedListProducts(
     { limit: 8, fields: PRODUCT_CARD_FIELDS },
     { locale, country },

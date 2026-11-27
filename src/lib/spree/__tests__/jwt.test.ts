@@ -1,5 +1,10 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { decodeJwtExp, isJwtExpired } from "@/lib/spree/jwt";
+import {
+  decodeJwtExp,
+  decodeJwtSub,
+  isJwtExpired,
+  liveAccessToken,
+} from "@/lib/spree/jwt";
 
 /** Build a JWT-shaped string (header.payload.signature) with the given payload. */
 function makeToken(payload: Record<string, unknown>): string {
@@ -46,5 +51,27 @@ describe("isJwtExpired", () => {
 
   it("treats an undecodable token as not expired (server decides)", () => {
     expect(isJwtExpired("garbage")).toBe(false);
+  });
+});
+
+describe("decodeJwtSub", () => {
+  it("extracts the sub claim as a string", () => {
+    expect(decodeJwtSub(makeToken({ sub: "cus_1" }))).toBe("cus_1");
+    expect(decodeJwtSub(makeToken({ sub: 42 }))).toBe("42");
+  });
+
+  it("returns null without a sub claim or for a malformed token", () => {
+    expect(decodeJwtSub(makeToken({ exp: 1 }))).toBeNull();
+    expect(decodeJwtSub("not-a-jwt")).toBeNull();
+  });
+});
+
+describe("liveAccessToken", () => {
+  it("keeps a live token and drops an expired or missing one", () => {
+    const now = Math.floor(Date.now() / 1000);
+    const live = makeToken({ exp: now + 3600 });
+    expect(liveAccessToken(live)).toBe(live);
+    expect(liveAccessToken(makeToken({ exp: now - 60 }))).toBeUndefined();
+    expect(liveAccessToken(undefined)).toBeUndefined();
   });
 });

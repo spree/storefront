@@ -22,7 +22,7 @@ vi.mock("@/lib/spree", () => ({
     },
   }),
   getLocaleOptions: vi.fn().mockResolvedValue({ country: "us", locale: "en" }),
-  getAccessToken: vi.fn().mockResolvedValue(undefined),
+  getCatalogAccessToken: vi.fn().mockResolvedValue(undefined),
 }));
 
 vi.mock("@/lib/data/products", () => ({ getProductFilters }));
@@ -96,6 +96,20 @@ describe("collections data", () => {
       "coll_1",
       { page: 2, limit: 12 },
       options,
+    );
+  });
+
+  it("sends a signed-in customer's token so their catalog applies", async () => {
+    const { getCatalogAccessToken } = await import("@/lib/spree");
+    vi.mocked(getCatalogAccessToken).mockResolvedValueOnce("customer-jwt");
+    listCollectionProducts.mockResolvedValue({ data: [], meta: { count: 0 } });
+
+    await getCollectionProducts("coll_1", { page: 1 });
+
+    expect(listCollectionProducts).toHaveBeenCalledWith(
+      "coll_1",
+      { page: 1 },
+      { ...options, token: "customer-jwt" },
     );
   });
 

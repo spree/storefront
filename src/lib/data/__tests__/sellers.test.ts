@@ -11,7 +11,7 @@ vi.mock("@/lib/spree", () => ({
     products: { list: listProducts },
   }),
   getLocaleOptions: vi.fn().mockResolvedValue({ country: "us", locale: "en" }),
-  getAccessToken: vi.fn().mockResolvedValue(undefined),
+  getCatalogAccessToken: vi.fn().mockResolvedValue(undefined),
 }));
 
 vi.mock("next/cache", () => ({

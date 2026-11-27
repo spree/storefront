@@ -30,6 +30,7 @@ export {
   getCartId,
   getCartOptions,
   getCartToken,
+  getCatalogAccessToken,
   getRefreshToken,
   isPoisonedDtcCartId,
   requireCartId,

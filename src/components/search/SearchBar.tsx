@@ -4,7 +4,7 @@ import type { Category, Collection, Product, Seller } from "@spree/sdk";
 import { Search } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   InputGroup,
   InputGroupAddon,
@@ -12,6 +12,7 @@ import {
 } from "@/components/ui/input-group";
 import { ProductImage } from "@/components/ui/product-image";
 import { SellerImage } from "@/components/ui/seller-image";
+import { useAuth } from "@/contexts/AuthContext";
 import { useStore } from "@/contexts/StoreContext";
 import { useFormatMoney } from "@/hooks/useFormatMoney";
 import { trackQuickSearch, trackSelectItem } from "@/lib/analytics/gtm";
@@ -45,6 +46,8 @@ const RESULT_CACHE_SIZE = 30;
 /**
  * Module-level so it survives the SearchBar remount each time the overlay
  * opens. Keyed by request URL, which carries the query, country and locale.
+ * Holds guest results only: a signed-in customer's results are narrowed to
+ * their catalogs and priced for them, and the route marks them `no-store`.
  * Entries expire with the route's browser cache, so results stay as fresh.
  */
 const resultCache = new Map<
@@ -105,6 +108,12 @@ function suggestionHref(suggestion: Suggestion, basePath: string): string {
 export function SearchBar({ basePath, autoFocus, onNavigate }: SearchBarProps) {
   const router = useRouter();
   const { country, locale, currency } = useStore();
+  const { user, loading: authLoading } = useAuth();
+  // Who the search runs as: the request carries the session cookie. null
+  // while auth is still loading and the session is unknown.
+  const sessionKey = authLoading ? null : (user?.id ?? "guest");
+  // Only a settled guest session reads and writes the result cache.
+  const cachesResults = sessionKey === "guest";
   const t = useTranslations("products");
   const formatMoney = useFormatMoney();
   const [query, setQuery] = useState("");
@@ -122,6 +131,17 @@ export function SearchBar({ basePath, autoFocus, onNavigate }: SearchBarProps) {
   // what is on screen, and loading ends when the latest query answers.
   const latestSeqRef = useRef(0);
   const shownSeqRef = useRef(0);
+
+  // The last settled session, and the last sequence number issued under the
+  // session before it.
+  const settledSessionRef = useRef(sessionKey);
+  const sessionStartSeqRef = useRef(0);
+  // A search went out while auth was still loading. Such a request may have
+  // carried an expired token and been answered as a guest.
+  const searchedWhileLoadingRef = useRef(false);
+  // The session changed while the list was closed: the query on screen has
+  // no results for the current session yet, so opening the list searches it.
+  const staleQueryRef = useRef(false);
 
   const suggestions = toSuggestions(results);
 
@@ -145,14 +165,19 @@ export function SearchBar({ basePath, autoFocus, onNavigate }: SearchBarProps) {
   const fetchSuggestions = async (
     seq: number,
     searchQuery: string,
-    cacheKey: string,
-  ) => {
+    cacheKey: string | null,
+  ): Promise<void> => {
     try {
-      const response = await fetchQuickSearch(searchQuery, {
-        country,
-        locale,
-      });
-      rememberResults(cacheKey, response);
+      const { results: response, cacheable } = await fetchQuickSearch(
+        searchQuery,
+        { country, locale },
+      );
+      // A session change since the request went out superseded it (see the
+      // session effect below): its results belong to the previous session.
+      if (seq <= sessionStartSeqRef.current) return;
+      // The route decides from the cookie it actually received, which can be
+      // ahead of the auth context (a sign-in in another tab).
+      if (cacheKey && cacheable) rememberResults(cacheKey, response);
       showResults(seq, searchQuery, response);
     } catch (error) {
       if (seq !== latestSeqRef.current) return;
@@ -161,12 +186,17 @@ export function SearchBar({ basePath, autoFocus, onNavigate }: SearchBarProps) {
     }
   };
 
-  // Debounced search — called from onChange handler, no useEffect needed.
-  const handleQueryChange = (value: string) => {
+  // Debounced search — called from the onChange handler.
+  const handleQueryChange = (value: string): void => {
     setQuery(value);
     setIsOpen(true);
-    setSelectedIndex(-1);
+    staleQueryRef.current = false;
+    search(value);
+  };
 
+  /** Starts the search for a query, superseding any earlier one. */
+  const search = (value: string): void => {
+    setSelectedIndex(-1);
     if (debounceRef.current) clearTimeout(debounceRef.current);
     latestSeqRef.current += 1;
     const seq = latestSeqRef.current;
@@ -179,18 +209,65 @@ export function SearchBar({ basePath, autoFocus, onNavigate }: SearchBarProps) {
       return;
     }
 
-    const cacheKey = quickSearchUrl(value, { country, locale });
-    const cached = cachedResults(cacheKey);
+    const cacheKey = cachesResults
+      ? quickSearchUrl(value, { country, locale })
+      : null;
+    const cached = cacheKey ? cachedResults(cacheKey) : undefined;
     if (cached) {
       showResults(seq, value, cached);
       return;
     }
 
+    if (sessionKey === null) searchedWhileLoadingRef.current = true;
     // Previous results stay on screen until the new ones arrive.
     setLoading(true);
     debounceRef.current = setTimeout(() => {
       fetchSuggestions(seq, value, cacheKey);
     }, DEBOUNCE_MS);
+  };
+
+  // A sign-in, sign-out or account switch: the results on screen and any
+  // request in flight belong to the previous session, so drop them, and if
+  // the list is open search the current query again as the new session.
+  // Auth settling for the first time counts as a switch when it settles as a
+  // customer or a search went out while it loaded: that request may have
+  // carried an expired token and been answered as a guest. Syncs with the
+  // auth session, which changes outside this component (the account menu,
+  // an expired session).
+  // biome-ignore lint/correctness/useExhaustiveDependencies: runs on session changes only; query, isOpen and search are read at that moment
+  useEffect(() => {
+    if (sessionKey === null) return;
+    const previous = settledSessionRef.current;
+    settledSessionRef.current = sessionKey;
+    if (previous === sessionKey) return;
+    if (previous === null) {
+      const searchedWhileLoading = searchedWhileLoadingRef.current;
+      searchedWhileLoadingRef.current = false;
+      if (!searchedWhileLoading && sessionKey === "guest") return;
+    }
+
+    sessionStartSeqRef.current = latestSeqRef.current;
+    shownSeqRef.current = latestSeqRef.current;
+    setResults(EMPTY_QUICK_SEARCH_RESULTS);
+    if (isOpen) {
+      search(query);
+      return;
+    }
+    // Closed: nothing to show, so don't search now; stop what was pending
+    // and search when the list opens again.
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    setSelectedIndex(-1);
+    setLoading(false);
+    staleQueryRef.current = true;
+  }, [sessionKey]);
+
+  // Opening the list after a session change searches the query on screen,
+  // which has no results for the current session yet.
+  const handleFocus = (): void => {
+    setIsOpen(true);
+    if (!staleQueryRef.current) return;
+    staleQueryRef.current = false;
+    search(query);
   };
 
   const viewAllResults = () => {
@@ -357,7 +434,7 @@ export function SearchBar({ basePath, autoFocus, onNavigate }: SearchBarProps) {
             type="search"
             value={query}
             onChange={(e) => handleQueryChange(e.target.value)}
-            onFocus={() => setIsOpen(true)}
+            onFocus={handleFocus}
             onBlur={handleBlur}
             onKeyDown={handleKeyDown}
             placeholder={t("search")}

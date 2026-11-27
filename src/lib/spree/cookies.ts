@@ -1,5 +1,6 @@
 import { cookies } from "next/headers";
 import { getConfig } from "./config";
+import { liveAccessToken } from "./jwt";
 import {
   cartCookieBaseName,
   DEFAULT_SURFACE,
@@ -43,7 +44,7 @@ function getCartIdCookieName(surface: Surface = DEFAULT_SURFACE): string {
   return `${getCartCookieName(surface)}_id`;
 }
 
-function getAccessTokenCookieName(): string {
+export function getAccessTokenCookieName(): string {
   try {
     return getConfig().accessTokenCookieName ?? DEFAULT_ACCESS_TOKEN_COOKIE;
   } catch {
@@ -114,6 +115,20 @@ export async function clearAllCartCookies(): Promise<void> {
 export async function getAccessToken(): Promise<string | undefined> {
   const cookieStore = await cookies();
   return cookieStore.get(getAccessTokenCookieName())?.value;
+}
+
+/**
+ * The customer JWT to send on catalog reads (products, filters, search), or
+ * undefined for a guest. The Store API narrows those reads to the customer's
+ * catalogs and prices them for the customer, on every channel.
+ *
+ * The cookie outlives the JWT (7-day cookie vs 1-hour JWT) and catalog reads
+ * render in Server Components, where the token can't be refreshed. An expired
+ * token reads as a guest rather than failing the whole page with a 401; the
+ * client refreshes the session on mount and re-renders with the live token.
+ */
+export async function getCatalogAccessToken(): Promise<string | undefined> {
+  return liveAccessToken(await getAccessToken());
 }
 
 export async function setAccessToken(token: string): Promise<void> {

@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { resolveSupportedLocale } from "@/i18n/locales";
 import { quickSearch } from "@/lib/data/search";
+import { getCatalogAccessToken } from "@/lib/spree";
 import {
   EMPTY_QUICK_SEARCH_RESULTS,
   QUICK_SEARCH_MAX_AGE,
@@ -18,7 +19,10 @@ const MAX_QUERY_LENGTH = 100;
  * Country and locale come from the query string (the proxy does not run on
  * `/api`), so each market's results get their own cache entries.
  *
- * Cached privately: signed-in customers may be priced differently.
+ * Signed-in customers get results narrowed to their catalogs and priced for
+ * them, so their responses are never stored. Guest responses are cached
+ * privately and vary on the cookie, so signing in or switching accounts in the
+ * same browser never serves an earlier session's results.
  */
 export async function GET(
   request: Request,
@@ -39,11 +43,17 @@ export async function GET(
     return NextResponse.json(EMPTY_QUICK_SEARCH_RESULTS);
   }
 
-  const results = await quickSearch(query, { country, locale });
+  const [results, customerToken] = await Promise.all([
+    quickSearch(query, { country, locale }),
+    getCatalogAccessToken(),
+  ]);
 
   return NextResponse.json(results, {
     headers: {
-      "Cache-Control": `private, max-age=${QUICK_SEARCH_MAX_AGE}`,
+      "Cache-Control": customerToken
+        ? "private, no-store"
+        : `private, max-age=${QUICK_SEARCH_MAX_AGE}`,
+      Vary: "Cookie",
     },
   });
 }

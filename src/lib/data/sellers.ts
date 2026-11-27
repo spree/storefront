@@ -10,7 +10,11 @@ import {
   SpreeError,
 } from "@spree/sdk";
 import { cacheLife, cacheTag } from "next/cache";
-import { getAccessToken, getClient, getLocaleOptions } from "@/lib/spree";
+import {
+  getCatalogAccessToken,
+  getClient,
+  getLocaleOptions,
+} from "@/lib/spree";
 
 type LocaleOptions = { locale?: string; country?: string };
 
@@ -91,21 +95,22 @@ export async function getSeller(
 
 /**
  * Persistent cached seller products fetch. Cache key is derived from all
- * function arguments (sellerId, params, locale, country, userToken). Guest
- * users pass undefined so the cache entry is shared.
+ * function arguments (sellerId, params, locale, country, userToken). The
+ * customer JWT is sent so the listing is narrowed to the customer's catalogs;
+ * guest users pass undefined so the cache entry is shared.
  */
 async function cachedListSellerProducts(
   sellerId: string,
   params: ProductListParams | undefined,
   options: LocaleOptions,
-  _userToken?: string,
+  userToken?: string,
 ): Promise<PaginatedResponse<Product>> {
   "use cache: remote";
   cacheLife("tenMinutes");
   cacheTag("products", `seller-products:${sellerId}`);
   return getClient().products.list(
     { ...params, seller_id_eq: sellerId },
-    options,
+    { ...options, ...(userToken ? { token: userToken } : undefined) },
   );
 }
 
@@ -119,6 +124,6 @@ export async function getSellerProducts(
   params?: ProductListParams,
 ): Promise<PaginatedResponse<Product>> {
   const options = await getLocaleOptions();
-  const userToken = await getAccessToken();
+  const userToken = await getCatalogAccessToken();
   return cachedListSellerProducts(sellerId, params, options, userToken);
 }

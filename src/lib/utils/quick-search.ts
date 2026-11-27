@@ -36,15 +36,28 @@ export function quickSearchUrl(
   return `${QUICK_SEARCH_PATH}?${params.toString()}`;
 }
 
+export interface QuickSearchResponse {
+  results: QuickSearchResults;
+  /**
+   * False when the route answered `no-store`: the results were for a
+   * signed-in customer (their catalogs and prices) and must not be reused.
+   */
+  cacheable: boolean;
+}
+
 export async function fetchQuickSearch(
   query: string,
   options: { country: string; locale: string },
-): Promise<QuickSearchResults> {
+): Promise<QuickSearchResponse> {
   const response = await fetch(quickSearchUrl(query, options), {
     headers: { accept: "application/json" },
   });
   if (!response.ok) {
     throw new Error(`Quick search failed with status ${response.status}`);
   }
-  return (await response.json()) as QuickSearchResults;
+  const cacheControl = response.headers.get("cache-control") ?? "";
+  return {
+    results: (await response.json()) as QuickSearchResults,
+    cacheable: !/\bno-store\b/i.test(cacheControl),
+  };
 }

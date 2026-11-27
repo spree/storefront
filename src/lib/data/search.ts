@@ -5,7 +5,7 @@ import { cachedListProducts } from "@/lib/data/products";
 import { getSellers } from "@/lib/data/sellers";
 import {
   DEFAULT_SURFACE,
-  getAccessToken,
+  getCatalogAccessToken,
   isMarketplaceEnabled,
 } from "@/lib/spree";
 import {
@@ -49,7 +49,7 @@ export async function quickSearch(
   if (search.length < QUICK_SEARCH_MIN_LENGTH)
     return EMPTY_QUICK_SEARCH_RESULTS;
 
-  const userToken = await getAccessToken();
+  const userToken = await getCatalogAccessToken();
 
   const [products, categories, collections, sellers] = await Promise.allSettled(
     [

@@ -2,7 +2,11 @@
 
 import type { CategoryListParams, ProductListParams } from "@spree/sdk";
 import { cacheLife, cacheTag } from "next/cache";
-import { getAccessToken, getClient, getLocaleOptions } from "@/lib/spree";
+import {
+  getCatalogAccessToken,
+  getClient,
+  getLocaleOptions,
+} from "@/lib/spree";
 
 async function cachedListCategories(
   params: CategoryListParams | undefined,
@@ -44,20 +48,21 @@ export async function getCategory(
 /**
  * Persistent cached category products fetch. Cache key is derived from
  * all function arguments (categoryId, params, locale, country, userToken).
- * Guest users pass undefined so the cache entry is shared.
+ * The customer JWT is sent so the listing is narrowed to the customer's
+ * catalogs; guest users pass undefined so the cache entry is shared.
  */
 async function cachedListCategoryProducts(
   categoryId: string,
   params: ProductListParams | undefined,
   options: { locale?: string; country?: string },
-  _userToken?: string,
+  userToken?: string,
 ) {
   "use cache: remote";
   cacheLife("tenMinutes");
   cacheTag("products", `category-products:${categoryId}`);
   return getClient().products.list(
     { ...params, in_category: categoryId },
-    options,
+    { ...options, ...(userToken ? { token: userToken } : undefined) },
   );
 }
 
@@ -66,6 +71,6 @@ export async function getCategoryProducts(
   params?: ProductListParams,
 ) {
   const options = await getLocaleOptions();
-  const userToken = await getAccessToken();
+  const userToken = await getCatalogAccessToken();
   return cachedListCategoryProducts(categoryId, params, options, userToken);
 }
