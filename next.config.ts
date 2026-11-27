@@ -53,6 +53,8 @@ const nextConfig: NextConfig = {
     // Real 404 responses for missing products, categories and policies render
     // app/global-not-found.tsx (see src/proxy.ts).
     globalNotFound: true,
+    // Order documents go through a Server Action; Spree accepts up to 10 MB.
+    serverActions: { bodySizeLimit: "11mb" },
     optimizePackageImports: [
       "lucide-react",
       "@radix-ui/react-dropdown-menu",
