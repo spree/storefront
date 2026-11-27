@@ -539,9 +539,8 @@ export function ExpressCheckoutButton(props: ExpressCheckoutButtonProps) {
   // break the flow — so skip it entirely and report unavailable.
   const payable = hasPayableTotal(cart);
   const stripeMethod = findStripeMethod(cart.payment_methods);
-  const available = Boolean(
-    stripeMethod && stripePublishableKey(stripeMethod) && payable,
-  );
+  const publishableKey = stripeMethod && stripePublishableKey(stripeMethod);
+  const available = Boolean(publishableKey && payable);
 
   useEffect(() => {
     if (!available) {
@@ -553,5 +552,7 @@ export function ExpressCheckoutButton(props: ExpressCheckoutButtonProps) {
     return null;
   }
 
-  return <ExpressCheckoutWithElements {...props} />;
+  // Elements keeps the first Stripe instance it is given, so a different
+  // account needs a fresh subtree; amount changes keep the mounted one.
+  return <ExpressCheckoutWithElements key={publishableKey} {...props} />;
 }
