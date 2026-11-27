@@ -150,3 +150,60 @@ test("a single-seller checkout reads as one plain order", async ({ page }) => {
     0,
   );
 });
+
+test("a pickup order names where to collect it, not the buyer's address", async ({
+  page,
+}) => {
+  const address = {
+    full_name: "Pat Buyer",
+    address1: "5 Mill Road",
+    city: "New York",
+    state_text: "NY",
+    postal_code: "10001",
+    country_name: "United States",
+  };
+
+  await openOrderPlaced(
+    page,
+    sellerOrder({
+      id: "or_e2e_pickup",
+      number: "R-E2E-PICKUP",
+      items: [lineItem("li_e2e_p", "E2E Espresso Machine", "879.99")],
+      billing_address: address,
+      shipping_address: address,
+      fulfillments: [
+        {
+          id: "ful_e2e_p",
+          cost: "0.0",
+          delivery_method: { name: "Store Pickup", pickup: true },
+          // Ship-to-store: it leaves a warehouse the buyer cannot visit.
+          stock_location: { id: "sloc_e2e_wh", name: "Back warehouse" },
+          pickup_location: {
+            id: "sloc_e2e",
+            name: "Shop location",
+            address1: "1 Market Street",
+            city: "Brooklyn",
+            state_code: "NY",
+            zipcode: "11201",
+            country_name: "United States",
+            pickup_instructions: "Ring the bell at the side door.",
+          },
+        },
+      ],
+      item_total: "879.99",
+      total: "879.99",
+    } as unknown as Partial<Order>),
+  );
+
+  await expect(page.getByText("Store Pickup")).toBeVisible({
+    timeout: 30_000,
+  });
+  await expect(page.getByText("Pickup location")).toBeVisible();
+  await expect(page.getByText("Shop location")).toBeVisible();
+  await expect(page.getByText("1 Market Street")).toBeVisible();
+  await expect(page.getByText("Ring the bell at the side door.")).toBeVisible();
+  await expect(page.getByText("Back warehouse")).toHaveCount(0);
+  // The buyer's address is still the billing address, but not where it goes.
+  await expect(page.getByText("Shipping Address")).toHaveCount(0);
+  await expect(page.getByText("Billing Address")).toBeVisible();
+});

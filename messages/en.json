@@ -450,6 +450,7 @@
     "failedToLoad": "Failed to load order details.",
     "qty": "Qty: {quantity}",
     "shippingMethod": "Shipping Method",
+    "pickupLocation": "Pickup location",
     "standardShipping": "Standard Shipping",
     "payment": "Payment",
     "giftCard": "Gift Card",

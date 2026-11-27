@@ -450,6 +450,7 @@
     "failedToLoad": "Bestelldetails konnten nicht geladen werden.",
     "qty": "Menge: {quantity}",
     "shippingMethod": "Versandart",
+    "pickupLocation": "Abholort",
     "standardShipping": "Standardversand",
     "payment": "Zahlung",
     "giftCard": "Geschenkkarte",

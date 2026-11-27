@@ -16,6 +16,7 @@ import type {
   Order,
   OrderGroup,
   Payment,
+  StockLocation,
 } from "@spree/sdk";
 import { isOrderGroup } from "@spree/sdk";
 
@@ -60,11 +61,30 @@ export interface Purchase {
   /** True when the checkout produced more than one order. */
   split: boolean;
   /**
+   * True when every delivery is collected by the customer, so nothing goes to
+   * the shipping address.
+   */
+  pickup_only: boolean;
+  /**
    * The money lines the summary renders. A group carries its own roll-ups of
    * its children — and the payment-side figures (gift card, store credit,
    * amount due) only exist on the group, since the payment is made against it.
    */
   totals: CompletedPurchase;
+}
+
+/**
+ * Where the customer collects a pickup delivery, or null when it is shipped.
+ * The API resolves it to the counter chosen at checkout, which is not always
+ * the stock location the order ships from: a ship-to-store order leaves a
+ * warehouse the customer cannot visit.
+ */
+export function pickupLocation(fulfillment: Fulfillment): StockLocation | null {
+  // Typed by @spree/sdk from the release that adds it to the Store API.
+  const { pickup_location } = fulfillment as Fulfillment & {
+    pickup_location?: StockLocation | null;
+  };
+  return pickup_location ?? null;
 }
 
 function toSegment(order: Order): PurchaseSegment {
@@ -85,6 +105,7 @@ function toSegment(order: Order): PurchaseSegment {
 export function toPurchase(result: CompletedPurchase): Purchase {
   const orders = isOrderGroup(result) ? (result.orders ?? []) : [result];
   const segments = orders.map(toSegment);
+  const fulfillments = segments.flatMap((segment) => segment.fulfillments);
 
   return {
     number: result.number,
@@ -99,9 +120,12 @@ export function toPurchase(result: CompletedPurchase): Purchase {
     // The payment is made once, against the group — a child serializes an
     // empty list, so the group's own is the only one to show.
     payments: result.payments ?? [],
-    fulfillments: segments.flatMap((segment) => segment.fulfillments),
+    fulfillments,
     segments,
     split: segments.length > 1,
+    pickup_only:
+      fulfillments.length > 0 &&
+      fulfillments.every((fulfillment) => fulfillment.delivery_method?.pickup),
     totals: result,
   };
 }
