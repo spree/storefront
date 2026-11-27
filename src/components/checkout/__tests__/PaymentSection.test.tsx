@@ -293,6 +293,37 @@ describe("PaymentSection", () => {
     expect(screen.getByTestId("adyen-form")).toHaveTextContent("adyen_session");
   });
 
+  it("opens a session for the method shown when the chosen one leaves the list", async () => {
+    getCreditCards.mockResolvedValue({ data: [] });
+    createCheckoutPaymentSession.mockImplementation(
+      async (_cartId: string, methodId: string) =>
+        methodId === adyenMethod.id ? adyenSession : stripeSession,
+    );
+
+    const { rerender } = renderSection();
+    fireEvent.click(screen.getByRole("radio", { name: "Adyen" }));
+    expect(await screen.findByTestId("adyen-form")).toHaveTextContent(
+      "adyen_session",
+    );
+
+    // A rule now excludes Adyen; the total is unchanged.
+    rerender(
+      section({
+        ...cart,
+        payment_methods: [stripeMethod, directMethod],
+      } as Cart),
+    );
+
+    expect(await screen.findByTestId("stripe-form")).toHaveTextContent(
+      "stripe_secret",
+    );
+    expect(createCheckoutPaymentSession).toHaveBeenLastCalledWith(
+      cart.id,
+      stripeMethod.id,
+      expect.any(Object),
+    );
+  });
+
   describe("an Adyen attempt that ends without a payment", () => {
     async function endAttempt(reason: "invalid" | "ended", status?: string) {
       getCreditCards.mockResolvedValue({ data: [] });

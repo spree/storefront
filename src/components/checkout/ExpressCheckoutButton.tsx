@@ -31,7 +31,11 @@ import {
   hasPayableTotal,
   parseName,
 } from "@/lib/utils/express-checkout";
-import { isStripeConfigured, stripePromise } from "@/lib/utils/stripe";
+import {
+  findStripeMethod,
+  getStripe,
+  stripePublishableKey,
+} from "@/lib/utils/stripe";
 
 export interface ExpressCheckoutButtonProps {
   cart: Cart;
@@ -291,9 +295,8 @@ function ExpressCheckoutInner({
 
         const orderPaymentMethods =
           advancedOrder?.payment_methods ?? cart.payment_methods;
-        const sessionPaymentMethod = orderPaymentMethods?.find(
-          (pm) => pm.session_required,
-        );
+        // The Stripe method whose account loaded these Elements.
+        const sessionPaymentMethod = findStripeMethod(orderPaymentMethods);
         if (!sessionPaymentMethod) {
           fail("fail", "No payment method available");
           return;
@@ -509,7 +512,12 @@ function ExpressCheckoutWithElements({
   );
 
   return (
-    <Elements stripe={stripePromise} options={options}>
+    <Elements
+      stripe={getStripe(
+        stripePublishableKey(findStripeMethod(cart.payment_methods)),
+      )}
+      options={options}
+    >
       <ExpressCheckoutInner
         cart={cart}
         basePath={basePath}
@@ -530,16 +538,21 @@ export function ExpressCheckoutButton(props: ExpressCheckoutButtonProps) {
   // a null total, which would otherwise mount Elements with `amount: 0` and
   // break the flow — so skip it entirely and report unavailable.
   const payable = hasPayableTotal(cart);
+  const stripeMethod = findStripeMethod(cart.payment_methods);
+  const publishableKey = stripeMethod && stripePublishableKey(stripeMethod);
+  const available = Boolean(publishableKey && payable);
 
   useEffect(() => {
-    if (!isStripeConfigured || !payable) {
+    if (!available) {
       onAvailabilityChange?.(false);
     }
-  }, [onAvailabilityChange, payable]);
+  }, [onAvailabilityChange, available]);
 
-  if (!isStripeConfigured || !payable) {
+  if (!available) {
     return null;
   }
 
-  return <ExpressCheckoutWithElements {...props} />;
+  // Elements keeps the first Stripe instance it is given, so a different
+  // account needs a fresh subtree; amount changes keep the mounted one.
+  return <ExpressCheckoutWithElements key={publishableKey} {...props} />;
 }

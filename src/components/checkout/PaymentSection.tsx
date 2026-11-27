@@ -14,6 +14,7 @@ import {
   type Ref,
   useCallback,
   useEffect,
+  useEffectEvent,
   useImperativeHandle,
   useLayoutEffect,
   useMemo,
@@ -59,6 +60,7 @@ import {
   paypalClientId,
   resolveGatewayId,
 } from "@/lib/utils/payment-gateway";
+import { stripePublishableKey } from "@/lib/utils/stripe";
 
 export type PaymentCompleteResult =
   | { type: "session"; sessionId: string; sessionResult?: string }
@@ -568,6 +570,16 @@ export function PaymentSection({
     }
   };
 
+  // A rule can drop the chosen method from the cart's list, leaving the first
+  // one shown in its place. Switch to it properly, so a Stripe form never pairs
+  // one account's key with another account's session.
+  const switchToShownMethod = useEffectEvent(handleMethodSelect);
+  useEffect(() => {
+    if (!initRef.current || !effectiveSelectedMethodId) return;
+    if (effectiveSelectedMethodId === selectedMethodId) return;
+    switchToShownMethod(effectiveSelectedMethodId);
+  }, [effectiveSelectedMethodId, selectedMethodId]);
+
   const updateBillAddress = (field: keyof AddressFormData, value: string) => {
     setBillAddress((prev) => updateAddressField(prev, field, value));
   };
@@ -897,6 +909,7 @@ export function PaymentSection({
               if (canUseSavedCard) {
                 // Stripe saved card flow
                 const result = await confirmWithSavedCard(
+                  stripePublishableKey(selectedMethod),
                   clientSecret!,
                   selectedCardId!,
                   returnUrl,
@@ -1243,6 +1256,7 @@ export function PaymentSection({
                                     <StripePaymentForm
                                       key={secret}
                                       clientSecret={secret}
+                                      publishableKey={stripePublishableKey(pm)}
                                       onReady={handleGatewayReady}
                                     />
                                   </div>
