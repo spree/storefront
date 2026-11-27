@@ -23,7 +23,9 @@ const COLLECTION_CARD_FIELDS = [
   "description",
   "products_count",
   "image_url",
+  "image_alt",
   "square_image_url",
+  "square_image_alt",
 ];
 
 export async function cachedListCollections(

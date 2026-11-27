@@ -9,6 +9,7 @@ import { generateCategoryMetadata } from "@/lib/metadata/category";
 import { buildBreadcrumbJsonLd } from "@/lib/seo";
 import { getStoreUrl } from "@/lib/store";
 import { parseListingSearchParams } from "@/lib/utils/listing-search-params";
+import { redirectToCurrentPermalink } from "@/lib/utils/permalink-redirect";
 import { CategoryBanner } from "./CategoryBanner";
 
 interface CategoryPageProps {
@@ -49,6 +50,13 @@ export default async function CategoryPage({
   if (!category) {
     notFound();
   }
+
+  redirectToCurrentPermalink(
+    fullPermalink,
+    category.permalink,
+    `${basePath}/c`,
+    rawSearchParams,
+  );
 
   const storeUrl = getStoreUrl();
   const currency = await resolveCurrency(country);
