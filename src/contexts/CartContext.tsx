@@ -29,7 +29,8 @@ interface CartContextType {
   isOpen: boolean;
   openCart: () => void;
   closeCart: () => void;
-  addItem: (variantId: string, quantity?: number) => Promise<void>;
+  /** Resolves whether the item was added; a failure has already shown its error. */
+  addItem: (variantId: string, quantity?: number) => Promise<boolean>;
   updateItem: (lineItemId: string, quantity: number) => Promise<void>;
   removeItem: (lineItemId: string) => Promise<void>;
   refreshCart: () => Promise<void>;
@@ -84,11 +85,13 @@ export function CartProvider({
           setCart(result.cart ?? null);
           onSuccess?.();
           router.refresh();
-        } else {
-          toast.error(result.error || fallbackMessage);
+          return true;
         }
+        toast.error(result.error || fallbackMessage);
+        return false;
       } catch (error) {
         toast.error(error instanceof Error ? error.message : fallbackMessage);
+        return false;
       } finally {
         setUpdating(false);
       }
@@ -97,13 +100,12 @@ export function CartProvider({
   );
 
   const addItem = useCallback(
-    async (variantId: string, quantity = 1) => {
-      await mutateCart(
+    async (variantId: string, quantity = 1) =>
+      mutateCart(
         () => addToCartAction(variantId, quantity, surface),
         t("failedToAddItem"),
         () => setIsOpen(true),
-      );
-    },
+      ),
     [mutateCart, t, surface],
   );
 
